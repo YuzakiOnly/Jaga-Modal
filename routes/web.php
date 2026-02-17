@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Language\LanguageController;
+use App\Http\Controllers\Auth\ProfileController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
@@ -26,4 +27,5 @@ Route::middleware('guest')->group(function () {
 // ── Auth (Authenticated) ──────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
