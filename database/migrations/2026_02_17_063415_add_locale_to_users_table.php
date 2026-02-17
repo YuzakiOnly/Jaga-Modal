@@ -8,14 +8,20 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('locale')->default(config('app.locale', 'id'))->after('password');
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->enum('role', ['admin', 'user', 'cashier'])
+                    ->default('user')
+                    ->after('locale');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('locale');
+            if (Schema::hasColumn('users', 'role')) {
+                $table->dropColumn('role');
+            }
         });
     }
 };

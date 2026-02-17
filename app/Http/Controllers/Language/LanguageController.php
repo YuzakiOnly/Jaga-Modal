@@ -20,14 +20,11 @@ class LanguageController extends Controller
 
         $locale = $validated['locale'];
 
-        // Simpan ke session
         Session::put('locale', $locale);
-        Session::save(); // ✅ Force save session sebelum response
+        Session::save();
 
-        // Set locale untuk aplikasi
         App::setLocale($locale);
 
-        // Simpan ke user jika login
         if (Auth::check()) {
             $user = Auth::user();
             if ($user) {
@@ -36,7 +33,6 @@ class LanguageController extends Controller
             }
         }
 
-        // ✅ Kembalikan JSON agar fetch() di frontend bisa cek response.ok
         if ($request->expectsJson() || $request->hasHeader('X-Inertia')) {
             return response()->json([
                 'success' => true,

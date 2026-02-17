@@ -1,5 +1,5 @@
 // Register.jsx
-import { Link } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
@@ -13,19 +13,61 @@ import {
 import AuthLayout from "@/Layouts/AuthLayout";
 import { Head } from "@inertiajs/react";
 import { AuthHeader, GoogleAccount } from "@/components/auth/LoginPage";
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, AtSign } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 import { countryCodes, getCountryByValue } from "@/lib/countryCodes";
 import { useTranslation } from "@/hooks/useTranslation";
 
+/**
+ * Auto-generate username dari nama:
+ * "John Doe 123" → "john_doe_123"
+ */
+function generateUsername(name) {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 20);
+}
+
 function RegisterContent({ titlePage, showDescription = false }) {
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [countryCode, setCountryCode] = useState("+62");
+    const [usernameEdited, setUsernameEdited] = useState(false);
     const { lang } = useTranslation();
 
-    const selectedCountry = getCountryByValue(countryCode);
+    const { data, setData, post, processing, errors } = useForm({
+        name: "",
+        username: "",
+        email: "",
+        phone: "",
+        country_code: "+62",
+        password: "",
+    });
+
+    const selectedCountry = getCountryByValue(data.country_code);
+
+    // Auto-generate username dari name selama belum diedit manual
+    useEffect(() => {
+        if (!usernameEdited && data.name) {
+            setData("username", generateUsername(data.name));
+        }
+    }, [data.name]);
+
+    const handleUsernameChange = (e) => {
+        setUsernameEdited(true);
+        // Paksa: lowercase, hanya a-z 0-9 _
+        setData(
+            "username",
+            e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+        );
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post("/register");
+    };
 
     return (
         <>
@@ -37,8 +79,9 @@ function RegisterContent({ titlePage, showDescription = false }) {
                 showDescription={showDescription}
             />
 
-            <form className="mt-8 space-y-6">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
                 <div className="space-y-4">
+                    {/* Full Name */}
                     <div>
                         <Label htmlFor="name" className="text-sm font-medium">
                             {lang("name")}
@@ -50,9 +93,56 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             required
                             className="w-full mt-1"
                             placeholder={lang("enter_full_name")}
+                            value={data.name}
+                            onChange={(e) => setData("name", e.target.value)}
                         />
+                        {errors.name && (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.name}
+                            </p>
+                        )}
                     </div>
 
+                    {/* Username — auto-generate dari name, bisa diedit */}
+                    <div>
+                        <Label
+                            htmlFor="username"
+                            className="text-sm font-medium"
+                        >
+                            {lang("username") || "Username"}
+                        </Label>
+                        <div className="relative mt-1">
+                            <AtSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                id="username"
+                                name="username"
+                                type="text"
+                                required
+                                className="w-full pl-10 pr-16"
+                                placeholder="auto_generated"
+                                value={data.username}
+                                onChange={handleUsernameChange}
+                            />
+                            {/* Badge "auto" tampil selama username belum diedit manual */}
+                            {!usernameEdited && data.name && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-wide text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-full pointer-events-none">
+                                    auto
+                                </span>
+                            )}
+                        </div>
+                        {errors.username ? (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.username}
+                            </p>
+                        ) : (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {lang("username_hint") ||
+                                    "Huruf kecil, angka, dan underscore saja"}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Email */}
                     <div>
                         <Label htmlFor="email" className="text-sm font-medium">
                             {lang("email_address")}
@@ -65,18 +155,29 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             required
                             className="w-full mt-1"
                             placeholder={lang("enter_email")}
+                            value={data.email}
+                            onChange={(e) => setData("email", e.target.value)}
                         />
+                        {errors.email && (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.email}
+                            </p>
+                        )}
                     </div>
 
+                    {/* Phone Number */}
                     <div>
                         <Label htmlFor="phone" className="text-sm font-medium">
                             {lang("phone_number")}
                         </Label>
                         <div className="flex mt-1 gap-2">
+                            {/* Country code selector */}
                             <div className="w-32">
                                 <Select
-                                    value={countryCode}
-                                    onValueChange={setCountryCode}
+                                    value={data.country_code}
+                                    onValueChange={(val) =>
+                                        setData("country_code", val)
+                                    }
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Code">
@@ -126,6 +227,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 </Select>
                             </div>
 
+                            {/* Nomor telepon */}
                             <Input
                                 id="phone"
                                 name="phone"
@@ -133,13 +235,28 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 required
                                 className="flex-1"
                                 placeholder="81234567890"
+                                value={data.phone}
+                                onChange={(e) =>
+                                    setData(
+                                        "phone",
+                                        e.target.value.replace(/\D/g, ""),
+                                    )
+                                }
                             />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {lang("phone_example")}: {countryCode} 81234567890
-                        </p>
+                        {errors.phone ? (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.phone}
+                            </p>
+                        ) : (
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {lang("phone_example")}: {data.country_code}{" "}
+                                81234567890
+                            </p>
+                        )}
                     </div>
 
+                    {/* Password */}
                     <div>
                         <Label
                             htmlFor="password"
@@ -147,15 +264,19 @@ function RegisterContent({ titlePage, showDescription = false }) {
                         >
                             {lang("password")}
                         </Label>
-                        <div className="relative">
+                        <div className="relative mt-1">
                             <Input
                                 id="password"
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 required
-                                className="w-full mt-1 pr-10"
+                                className="w-full pr-10"
                                 placeholder={lang("create_password")}
+                                value={data.password}
+                                onChange={(e) =>
+                                    setData("password", e.target.value)
+                                }
                             />
                             <button
                                 type="button"
@@ -169,12 +290,23 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 )}
                             </button>
                         </div>
+                        {errors.password && (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.password}
+                            </p>
+                        )}
                     </div>
                 </div>
 
                 <div>
-                    <Button type="submit" className="w-full">
-                        {lang("sign_up")}
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={processing}
+                    >
+                        {processing
+                            ? lang("creating_account") || "Creating account..."
+                            : lang("sign_up")}
                     </Button>
                 </div>
             </form>

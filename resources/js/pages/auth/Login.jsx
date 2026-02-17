@@ -1,5 +1,5 @@
 // Login.jsx
-import { Link } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
@@ -14,21 +14,33 @@ function LoginContent({ titlePage, showDescription = true }) {
     const [showPassword, setShowPassword] = useState(false);
     const { lang } = useTranslation();
 
+    const { data, setData, post, processing, errors } = useForm({
+        email: "",
+        password: "",
+        remember: false,
+    });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post("/login");
+    };
+
     return (
         <>
             <Head title={titlePage} />
 
             <AuthHeader
-                title={lang('welcome_back')}
-                description={lang('sign_in_account')}
+                title={lang("welcome_back")}
+                description={lang("sign_in_account")}
                 showDescription={showDescription}
             />
 
-            <form className="mt-8 space-y-6">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
                 <div className="space-y-4">
+                    {/* Email */}
                     <div>
                         <Label htmlFor="email" className="sr-only">
-                            {lang('email_address')}
+                            {lang("email_address")}
                         </Label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -39,13 +51,24 @@ function LoginContent({ titlePage, showDescription = true }) {
                                 autoComplete="email"
                                 required
                                 className="w-full pl-10"
-                                placeholder={lang('email_address')}
+                                placeholder={lang("email_address")}
+                                value={data.email}
+                                onChange={(e) =>
+                                    setData("email", e.target.value)
+                                }
                             />
                         </div>
+                        {errors.email && (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.email}
+                            </p>
+                        )}
                     </div>
+
+                    {/* Password */}
                     <div>
                         <Label htmlFor="password" className="sr-only">
-                            {lang('password')}
+                            {lang("password")}
                         </Label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -56,7 +79,11 @@ function LoginContent({ titlePage, showDescription = true }) {
                                 autoComplete="current-password"
                                 required
                                 className="w-full pl-10 pr-10"
-                                placeholder={lang('password')}
+                                placeholder={lang("password")}
+                                value={data.password}
+                                onChange={(e) =>
+                                    setData("password", e.target.value)
+                                }
                             />
                             <button
                                 type="button"
@@ -70,20 +97,33 @@ function LoginContent({ titlePage, showDescription = true }) {
                                 )}
                             </button>
                         </div>
+                        {errors.password && (
+                            <p className="mt-1 text-xs text-destructive">
+                                {errors.password}
+                            </p>
+                        )}
                     </div>
+
+                    {/* Forgot Password */}
                     <div className="text-end">
                         <Link
                             href="/forgot-password"
                             className="ml-auto inline-block text-sm underline"
                         >
-                            {lang('forgot_password')}
+                            {lang("forgot_password")}
                         </Link>
                     </div>
                 </div>
 
                 <div>
-                    <Button type="submit" className="w-full">
-                        {lang('sign_in')}
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={processing}
+                    >
+                        {processing
+                            ? lang("signing_in") || "Signing in..."
+                            : lang("sign_in")}
                     </Button>
                 </div>
             </form>
@@ -92,9 +132,12 @@ function LoginContent({ titlePage, showDescription = true }) {
                 <GoogleAccount />
 
                 <div className="mt-6 text-center text-sm">
-                    {lang('dont_have_account')}{" "}
-                    <Link href="/register" className="underline text-blue-500 hover:text-blue-600">
-                        {lang('sign_up')}
+                    {lang("dont_have_account")}{" "}
+                    <Link
+                        href="/register"
+                        className="underline text-blue-500 hover:text-blue-600"
+                    >
+                        {lang("sign_up")}
                     </Link>
                 </div>
             </div>

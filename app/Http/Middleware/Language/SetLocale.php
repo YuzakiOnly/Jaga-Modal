@@ -19,7 +19,6 @@ class SetLocale
         if (Session::has('locale')) {
             $locale = Session::get('locale');
 
-            // ✅ Validasi locale dari session
             if (in_array($locale, $availableLocales)) {
                 App::setLocale($locale);
             } else {
