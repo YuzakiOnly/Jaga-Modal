@@ -1,10 +1,7 @@
+import { useTranslation } from "@/hooks/useTranslation";
 import React from "react";
 
-export const AuthHeader = ({
-    title = "Welcome back",
-    description = "Please sign in to your account",
-    showDescription = true,
-}) => {
+export const AuthHeader = ({ title, description, showDescription = true }) => {
     return (
         <div className="text-center">
             <h2 className="mt-6 text-3xl font-bold">{title}</h2>
@@ -18,32 +15,84 @@ export const AuthHeader = ({
 };
 
 export const BgImage = ({ type = "login" }) => {
+    const { lang } = useTranslation();
+
     const getImage = () => {
-        return "url('/assets/images/ijen.jpg')";
+        return "url('/assets/images/cashier.jpg')";
+    };
+
+    const getTitle = () => {
+        if (type === "login") {
+            return lang("welcome_back");
+        }
+        return lang("create_account");
     };
 
     return (
-        <div
-            className="relative hidden lg:block lg:w-2/3 bg-cover bg-center"
-            style={{ backgroundImage: getImage() }}
-        >
-            <div className="absolute inset-0 bg-gray-900 opacity-25"></div>
+        <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+            <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: getImage() }}
+            >
+                <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/50 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-black/50 to-transparent" />
+            </div>
+
+            <div className="relative z-20 flex items-center text-lg font-medium">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2 h-6 w-6"
+                >
+                    <path
+                        d="M12 2L3 7v7c0 5 9 8 9 8s9-3 9-8V7l-9-5z"
+                        opacity="0.5"
+                    />
+
+                    <rect x="7" y="7" width="10" height="12" rx="1" ry="1" />
+                    <line x1="9" y1="10" x2="15" y2="10" />
+                    <line x1="9" y1="13" x2="15" y2="13" />
+                    <line x1="9" y1="16" x2="12" y2="16" />
+                </svg>
+                <span className="text-white">Jaga Modal</span>
+            </div>
+
+            {/* <div className="relative z-20 mt-8">
+                <h1 className="text-3xl font-bold text-white">{getTitle()}</h1>
+            </div> */}
+
+            <div className="relative z-20 mt-auto">
+                <blockquote className="space-y-2">
+                    <p className="text-lg text-white/90">
+                        &ldquo;{lang("app_quote")}&rdquo;
+                    </p>
+                    <footer className="text-sm text-white/70">
+                        - {lang("quote_author")}
+                    </footer>
+                </blockquote>
+            </div>
         </div>
     );
 };
 
 export const GoogleAccount = () => {
+    const { lang } = useTranslation();
+
     return (
         <>
             <div className="flex items-center justify-between mt-4">
                 <span className="w-1/5 border-b dark:border-gray-600 lg:w-1/4"></span>
                 <div className="text-xs text-center text-gray-500 uppercase dark:text-gray-400">
-                    or register with Google
+                    {lang("or_continue_with")}
                 </div>
                 <span className="w-1/5 border-b dark:border-gray-400 lg:w-1/4"></span>
             </div>
 
-            {/* Google */}
             <a
                 href="/auth-google-redirect"
                 className="flex items-center justify-center mt-4 text-gray-600 transition-colors duration-300 transform border rounded-lg dark:border-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -69,7 +118,7 @@ export const GoogleAccount = () => {
                     </svg>
                 </div>
                 <span className="w-5/6 px-4 py-3 font-bold text-center">
-                    Sign up with Google
+                    {lang("sign_up_with_google", "Sign up with Google")}
                 </span>
             </a>
         </>

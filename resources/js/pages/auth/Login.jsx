@@ -1,3 +1,4 @@
+// Login.jsx
 import { Link } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -7,17 +8,19 @@ import AuthLayout from "@/Layouts/AuthLayout";
 import { Head } from "@inertiajs/react";
 import { AuthHeader, GoogleAccount } from "@/components/auth/LoginPage";
 import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function LoginContent({ titlePage, showDescription = true }) {
     const [showPassword, setShowPassword] = useState(false);
+    const { lang } = useTranslation();
 
     return (
         <>
             <Head title={titlePage} />
 
             <AuthHeader
-                title="Welcome back"
-                description="Please sign in to your account"
+                title={lang('welcome_back')}
+                description={lang('sign_in_account')}
                 showDescription={showDescription}
             />
 
@@ -25,7 +28,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                 <div className="space-y-4">
                     <div>
                         <Label htmlFor="email" className="sr-only">
-                            Email address
+                            {lang('email_address')}
                         </Label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -36,13 +39,13 @@ function LoginContent({ titlePage, showDescription = true }) {
                                 autoComplete="email"
                                 required
                                 className="w-full pl-10"
-                                placeholder="Email address"
+                                placeholder={lang('email_address')}
                             />
                         </div>
                     </div>
                     <div>
                         <Label htmlFor="password" className="sr-only">
-                            Password
+                            {lang('password')}
                         </Label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -53,7 +56,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                                 autoComplete="current-password"
                                 required
                                 className="w-full pl-10 pr-10"
-                                placeholder="Password"
+                                placeholder={lang('password')}
                             />
                             <button
                                 type="button"
@@ -73,14 +76,14 @@ function LoginContent({ titlePage, showDescription = true }) {
                             href="/forgot-password"
                             className="ml-auto inline-block text-sm underline"
                         >
-                            Forgot your password?
+                            {lang('forgot_password')}
                         </Link>
                     </div>
                 </div>
 
                 <div>
                     <Button type="submit" className="w-full">
-                        Sign in
+                        {lang('sign_in')}
                     </Button>
                 </div>
             </form>
@@ -89,9 +92,9 @@ function LoginContent({ titlePage, showDescription = true }) {
                 <GoogleAccount />
 
                 <div className="mt-6 text-center text-sm">
-                    Don&apos;t have an account?{" "}
-                    <Link href="/register" className="underline">
-                        Sign up
+                    {lang('dont_have_account')}{" "}
+                    <Link href="/register" className="underline text-blue-500 hover:text-blue-600">
+                        {lang('sign_up')}
                     </Link>
                 </div>
             </div>

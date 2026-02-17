@@ -1,3 +1,4 @@
+// Register.jsx
 import { Link } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -15,12 +16,14 @@ import { AuthHeader, GoogleAccount } from "@/components/auth/LoginPage";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
-import { countryCodes, getCountryByValue } from "@/lib/country-codes";
+import { countryCodes, getCountryByValue } from "@/lib/countryCodes";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function RegisterContent({ titlePage, showDescription = false }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [countryCode, setCountryCode] = useState("+62");
+    const { lang } = useTranslation();
 
     const selectedCountry = getCountryByValue(countryCode);
 
@@ -29,8 +32,8 @@ function RegisterContent({ titlePage, showDescription = false }) {
             <Head title={titlePage} />
 
             <AuthHeader
-                title="Create New Account"
-                description="Fill in your details to get started"
+                title={lang("create_account")}
+                description={lang("fill_details")}
                 showDescription={showDescription}
             />
 
@@ -38,7 +41,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
                 <div className="space-y-4">
                     <div>
                         <Label htmlFor="name" className="text-sm font-medium">
-                            Name
+                            {lang("name")}
                         </Label>
                         <Input
                             id="name"
@@ -46,13 +49,13 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             type="text"
                             required
                             className="w-full mt-1"
-                            placeholder="Enter your full name"
+                            placeholder={lang("enter_full_name")}
                         />
                     </div>
 
                     <div>
                         <Label htmlFor="email" className="text-sm font-medium">
-                            Email address
+                            {lang("email_address")}
                         </Label>
                         <Input
                             id="email"
@@ -61,13 +64,13 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             autoComplete="email"
                             required
                             className="w-full mt-1"
-                            placeholder="Enter your email address"
+                            placeholder={lang("enter_email")}
                         />
                     </div>
 
                     <div>
                         <Label htmlFor="phone" className="text-sm font-medium">
-                            Phone Number
+                            {lang("phone_number")}
                         </Label>
                         <div className="flex mt-1 gap-2">
                             <div className="w-32">
@@ -133,7 +136,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Example: {countryCode} 81234567890
+                            {lang("phone_example")}: {countryCode} 81234567890
                         </p>
                     </div>
 
@@ -142,7 +145,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             htmlFor="password"
                             className="text-sm font-medium"
                         >
-                            Password
+                            {lang("password")}
                         </Label>
                         <div className="relative">
                             <Input
@@ -152,7 +155,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 autoComplete="new-password"
                                 required
                                 className="w-full mt-1 pr-10"
-                                placeholder="Create a password"
+                                placeholder={lang("create_password")}
                             />
                             <button
                                 type="button"
@@ -171,18 +174,21 @@ function RegisterContent({ titlePage, showDescription = false }) {
 
                 <div>
                     <Button type="submit" className="w-full">
-                        Sign up
+                        {lang("sign_up")}
                     </Button>
                 </div>
             </form>
 
-            <div className="mt-6">
+            <div>
                 <GoogleAccount />
 
                 <div className="mt-6 text-center text-sm">
-                    Already have an account?{" "}
-                    <Link href="/login" className="underline">
-                        Sign in
+                    {lang("already_have_account")}{" "}
+                    <Link
+                        href="/login"
+                        className="underline text-blue-500 hover:text-blue-600"
+                    >
+                        {lang("sign_in")}
                     </Link>
                 </div>
             </div>
