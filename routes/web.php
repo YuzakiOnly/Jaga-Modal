@@ -15,7 +15,6 @@ Route::middleware(['web'])->group(function () {
         ->name('language.switch');
 });
 
-// ── Auth (Guest only) ─────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -24,7 +23,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// ── Auth (Authenticated) ──────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
