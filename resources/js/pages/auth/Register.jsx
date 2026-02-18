@@ -312,8 +312,6 @@ function RegisterContent({ titlePage, showDescription = false }) {
             </form>
 
             <div>
-                <GoogleAccount />
-
                 <div className="mt-6 text-center text-sm">
                     {lang("already_have_account")}{" "}
                     <Link

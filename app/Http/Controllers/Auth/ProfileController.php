@@ -12,19 +12,31 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-z0-9_]+$/', 'unique:users,username,' . $user->id],
             'phone' => ['required', 'string', 'max:30'],
-        ], [
+        ];
+
+        if ($user->role === 'admin') {
+            $rules['email'] = ['required', 'email', 'max:255', 'unique:users,email,' . $user->id];
+        }
+
+        $messages = [
             'username.regex' => 'Username hanya boleh huruf kecil, angka, dan underscore.',
-        ]);
+        ];
+
+        $request->validate($rules, $messages);
 
         $user->name = $request->name;
         $user->username = $request->username;
         $user->phone = $request->phone;
+        if ($user->role === 'admin' && $request->has('email')) {
+            $user->email = $request->email;
+        }
+
         $user->save();
 
-        return back();
+        return back()->with('success', 'Profil berhasil diperbarui');
     }
 }

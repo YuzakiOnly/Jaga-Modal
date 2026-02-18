@@ -22,6 +22,7 @@ export default function Home() {
         name: user?.name ?? "",
         username: user?.username ?? "",
         phone: user?.phone ?? "",
+        email: user?.email ?? "", 
     });
 
     const handleLogout = () => postLogout("/logout");
@@ -31,6 +32,7 @@ export default function Home() {
             name: user?.name ?? "",
             username: user?.username ?? "",
             phone: user?.phone ?? "",
+            email: user?.email ?? "",
         });
         setEditMode(true);
     };
@@ -46,6 +48,8 @@ export default function Home() {
             onSuccess: () => setEditMode(false),
         });
     };
+
+    const isAdmin = user?.role === "admin";
 
     return (
         <div className="p-6 space-y-4">
@@ -159,12 +163,48 @@ export default function Home() {
                                 )}
                             </div>
 
+                            {isAdmin && (
+                                <div>
+                                    <label className="text-sm font-semibold block mb-1">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={data.email}
+                                        onChange={(e) =>
+                                            setData("email", e.target.value)
+                                        }
+                                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        required
+                                    />
+                                    {errors.email && (
+                                        <p className="text-xs text-red-500 mt-1">
+                                            {errors.email}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="bg-gray-50 rounded p-2 space-y-1">
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
                                     Tidak dapat diubah
                                 </p>
-                                <Row label="Email" value={user.email} muted />
+                                
+                                {!isAdmin && (
+                                    <Row
+                                        label="Email"
+                                        value={user.email}
+                                        muted
+                                    />
+                                )}
+
                                 <Row label="Role" value={user.role} muted />
+
+                                <Row
+                                    label="Locale"
+                                    value={user.locale || "id"}
+                                    muted
+                                />
                             </div>
 
                             <div className="flex gap-2 pt-1">

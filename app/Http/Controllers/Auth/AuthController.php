@@ -5,16 +5,16 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-    // ────────────────────────────────────────────────
     // Views
-    // ────────────────────────────────────────────────
 
     public function showLogin()
     {
@@ -30,9 +30,7 @@ class AuthController extends Controller
         ]);
     }
 
-    // ────────────────────────────────────────────────
     // Login
-    // ────────────────────────────────────────────────
 
     public function login(Request $request)
     {
@@ -41,20 +39,42 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
+        $guestLocale = Session::get('locale');
+
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors([
                 'email' => __('auth.failed'),
             ])->onlyInput('email');
         }
 
+        $user = Auth::user();
+
+        $availableLocales = config('app.available_locales', ['id', 'en', 'ja']);
+
+        if ($guestLocale && in_array($guestLocale, $availableLocales)) {
+            $locale = $guestLocale;
+            if ($user->locale !== $locale) {
+                $user->locale = $locale;
+                $user->save();
+            }
+        }
+        elseif ($user->locale && in_array($user->locale, $availableLocales)) {
+            $locale = $user->locale;
+        }
+        else {
+            $locale = config('app.locale', 'en');
+        }
+
+        App::setLocale($locale);
+        Session::put('locale', $locale);
+        Session::save();
+
         $request->session()->regenerate();
 
         return redirect()->intended('/');
     }
 
-    // ────────────────────────────────────────────────
     // Register
-    // ────────────────────────────────────────────────
 
     public function register(Request $request)
     {
@@ -69,6 +89,8 @@ class AuthController extends Controller
             'username.regex' => 'Username may only contain lowercase letters, numbers, and underscores.',
         ]);
 
+        $locale = Session::get('locale', config('app.locale', 'en'));
+
         $user = User::create([
             'name' => $request->name,
             'username' => $request->username,
@@ -76,25 +98,35 @@ class AuthController extends Controller
             'country_code' => $request->country_code,
             'phone' => $request->country_code . $request->phone,
             'password' => Hash::make($request->password),
-            'locale' => config('app.locale', 'en'),
+            'locale' => $locale,
         ]);
 
         Auth::login($user);
+        Session::put('locale', $locale);
+        Session::save();
 
         return redirect('/');
     }
 
-    // ────────────────────────────────────────────────
     // Logout
-    // ────────────────────────────────────────────────
 
     public function logout(Request $request)
     {
+        $user = Auth::user();
+
+        $userLocale = $user->locale ?? null;
+
         Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        if ($userLocale) {
+            Session::put('locale', $userLocale);
+            Session::save();
+            App::setLocale($userLocale);
+        }
+
         return redirect('/');
-    }
+    }   
 }

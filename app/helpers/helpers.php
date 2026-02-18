@@ -1,14 +1,39 @@
 <?php
 
-use App\Helpers\Languages\Languages;
+namespace App\Helpers\Languages;
 
-if (!function_exists('languages')) {
-    function languages($category = null)
+use Illuminate\Support\Facades\App;
+
+class Languages
+{
+    public static function getAll(): array
     {
-        if ($category) {
-            return Languages::getCategory($category);
+        $locale = App::getLocale();
+
+        return [
+            'auth' => AuthLanguages::getAll(),
+        ];
+    }
+
+    public static function getCategory(string $category): array
+    {
+        $categoryMap = [
+            'auth' => AuthLanguages::class,
+        ];
+
+        if (isset($categoryMap[$category])) {
+            $class = $categoryMap[$category];
+            return $class::getAll();
         }
 
-        return Languages::getAll();
+        // Fallback ke file JSON jika ada
+        $locale = App::getLocale();
+        $path = resource_path("lang/{$locale}/{$category}.php");
+
+        if (file_exists($path)) {
+            return require $path;
+        }
+
+        return [];
     }
 }

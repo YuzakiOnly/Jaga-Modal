@@ -27,16 +27,15 @@ class LanguageController extends Controller
 
         if (Auth::check()) {
             $user = Auth::user();
-            if ($user) {
+            if ($user && $user->locale !== $locale) {
                 $user->locale = $locale;
                 $user->save();
             }
         }
 
-        if ($request->expectsJson() || $request->hasHeader('X-Inertia')) {
-            return response()->json([
-                'success' => true,
-                'locale' => $locale,
+        if ($request->header('X-Inertia')) {
+            return redirect()->back()->with([
+                'success' => 'Language changed successfully',
             ]);
         }
 

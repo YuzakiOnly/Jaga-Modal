@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Session;
 use App\Helpers\Languages\Languages;
 
 class HandleInertiaRequests extends Middleware
@@ -18,7 +19,7 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $locale = App::getLocale();
+        $locale = Session::get('locale', config('app.locale', 'en'));
 
         return [
             ...parent::share($request),
@@ -27,7 +28,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'locale' => $locale,
             'available_locales' => config('app.available_locales', ['id', 'en', 'ja']),
-            'translations' => languages::getAll(),
+            'translations' => Languages::getAll(),
         ];
     }
 }

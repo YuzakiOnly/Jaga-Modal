@@ -7,12 +7,10 @@ class Languages
     public static function getAll(): array
     {
         return [
-            // Auth translations
             ...AuthLanguages::getAll(),
         ];
     }
 
-    // Optional: Get specific category
     public static function getCategory(string $category): array
     {
         return match($category) {

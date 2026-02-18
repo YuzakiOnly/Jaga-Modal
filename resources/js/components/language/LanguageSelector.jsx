@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePage } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import {
     DropdownMenu,
@@ -22,51 +22,45 @@ const languageNames = {
     ja: "日本語",
 };
 
-function getCsrfToken() {
-    const match = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("XSRF-TOKEN="));
-    return match ? decodeURIComponent(match.split("=")[1]) : "";
-}
-
 export default function LanguageSelector() {
     const { props } = usePage();
-    const currentLocale = props.locale || "id";
+    const currentLocale = props.locale || "en";
     const availableLocales = props.available_locales || ["id", "en", "ja"];
     const [isChanging, setIsChanging] = useState(false);
 
-    const switchLanguage = async (locale) => {
+    const switchLanguage = (locale) => {
         if (locale === currentLocale || isChanging) return;
 
         setIsChanging(true);
 
-        try {
-            const response = await fetch("/language/switch", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-XSRF-TOKEN": getCsrfToken(),
-                    Accept: "application/json",
+        router.post(
+            "/language/switch",
+            {
+                locale: locale,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onSuccess: () => {
+                    console.log("Language changed successfully");
+                    setIsChanging(false);
                 },
-                body: JSON.stringify({ locale }),
-            });
-
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                console.error("Gagal ganti bahasa:", response.status);
-                setIsChanging(false);
-            }
-        } catch (error) {
-            console.error("Error ganti bahasa:", error);
-            setIsChanging(false);
-        }
+                onError: (errors) => {
+                    console.error("Gagal ganti bahasa:", errors);
+                    setIsChanging(false);
+                },
+                onFinish: () => {
+                    setIsChanging(false);
+                },
+            },
+        );
     };
 
     const currentLang = {
         code: currentLocale,
-        name: languageNames[currentLocale] || "Indonesia",
-        flag: languageFlags[currentLocale] || "ID",
+        name: languageNames[currentLocale] || "English",
+        flag: languageFlags[currentLocale] || "US",
     };
 
     return (
@@ -100,6 +94,7 @@ export default function LanguageSelector() {
                         className={`gap-2 cursor-pointer ${
                             currentLocale === locale ? "bg-gray-100" : ""
                         } ${isChanging ? "opacity-50 pointer-events-none" : ""}`}
+                        disabled={isChanging}
                     >
                         <ReactCountryFlag
                             countryCode={languageFlags[locale]}

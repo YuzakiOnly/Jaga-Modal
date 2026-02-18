@@ -13,33 +13,30 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $defaultLocale = config('app.locale', 'id');
+        $defaultLocale = config('app.locale', 'en');
         $availableLocales = config('app.available_locales', ['id', 'en', 'ja']);
 
+        $locale = $defaultLocale;
+
         if (Session::has('locale')) {
-            $locale = Session::get('locale');
-
-            if (in_array($locale, $availableLocales)) {
-                App::setLocale($locale);
-            } else {
-                App::setLocale($defaultLocale);
-                Session::put('locale', $defaultLocale);
+            $sessionLocale = Session::get('locale');
+            if (in_array($sessionLocale, $availableLocales)) {
+                $locale = $sessionLocale;
             }
-
-        } elseif (Auth::check()) {
+        }
+        elseif (Auth::check()) {
             $user = Auth::user();
-
             if ($user && isset($user->locale) && in_array($user->locale, $availableLocales)) {
-                App::setLocale($user->locale);
-                Session::put('locale', $user->locale);
-            } else {
-                App::setLocale($defaultLocale);
-                Session::put('locale', $defaultLocale);
+                $locale = $user->locale;
+                Session::put('locale', $locale);
             }
+        }
 
-        } else {
-            App::setLocale($defaultLocale);
-            Session::put('locale', $defaultLocale);
+        App::setLocale($locale);
+
+        if (!Session::has('locale')) {
+            Session::put('locale', $locale);
+            Session::save();
         }
 
         return $next($request);
