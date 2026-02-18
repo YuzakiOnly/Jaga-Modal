@@ -85,6 +85,8 @@ return [
 
     'available_locales' => explode(',', env('APP_AVAILABLE_LOCALES', 'id,en,ja')),
 
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+
     /*
     |--------------------------------------------------------------------------
     | Encryption Key

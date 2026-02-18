@@ -1,4 +1,3 @@
-// Login.jsx
 import { Link, useForm } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -9,19 +8,37 @@ import { Head } from "@inertiajs/react";
 import { AuthHeader, GoogleAccount } from "@/components/auth/LoginPage";
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { validateLogin } from "@/lib/validation";
+import { useValidation } from "@/hooks/useAuthValidation";
 
 function LoginContent({ titlePage, showDescription = true }) {
     const [showPassword, setShowPassword] = useState(false);
-    const { lang } = useTranslation();
+    const { lang, locale } = useTranslation();
 
-    const { data, setData, post, processing, errors } = useForm({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors: serverErrors,
+    } = useForm({
         email: "",
         password: "",
         remember: false,
     });
 
-    const handleSubmit = (e) => {
+    const combinedServerErrors =
+        Object.keys(serverErrors).length > 0
+            ? {
+                  email: lang("validation_email_password_invalid"),
+                  password: " ",
+              }
+            : {};
+    const valueError = useValidation(validateLogin, lang, combinedServerErrors, locale);
+
+    const handleSubmit = (e) => {   
         e.preventDefault();
+        if (!valueError.onSubmit(["email", "password"], data)) return;
         post("/login");
     };
 
@@ -35,7 +52,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                 showDescription={showDescription}
             />
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
                 <div className="space-y-4">
                     {/* Email */}
                     <div>
@@ -43,24 +60,30 @@ function LoginContent({ titlePage, showDescription = true }) {
                             {lang("email_address")}
                         </Label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                            <Mail
+                                className={`absolute left-3 top-2.5 h-5 w-5 ${valueError.iconClass("email")}`}
+                            />
                             <Input
                                 id="email"
                                 name="email"
                                 type="email"
                                 autoComplete="email"
-                                required
-                                className="w-full pl-10"
+                                className={valueError.inputClass("email", "pl-10")}
                                 placeholder={lang("email_address")}
                                 value={data.email}
-                                onChange={(e) =>
-                                    setData("email", e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setData("email", e.target.value);
+                                    valueError.onChange("email", {
+                                        ...data,
+                                        email: e.target.value,
+                                    });
+                                }}
+                                onBlur={() => valueError.onBlur("email", data)}
                             />
                         </div>
-                        {errors.email && (
+                        {valueError.showError("email") && (
                             <p className="mt-1 text-xs text-destructive">
-                                {errors.email}
+                                {valueError.errors.email}
                             </p>
                         )}
                     </div>
@@ -71,19 +94,28 @@ function LoginContent({ titlePage, showDescription = true }) {
                             {lang("password")}
                         </Label>
                         <div className="relative">
-                            <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                            <Lock
+                                className={`absolute left-3 top-2.5 h-5 w-5 ${valueError.iconClass("password")}`}
+                            />
                             <Input
                                 id="password"
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="current-password"
-                                required
-                                className="w-full pl-10 pr-10"
+                                className={valueError.inputClass(
+                                    "password",
+                                    "pl-10 pr-10",
+                                )}
                                 placeholder={lang("password")}
                                 value={data.password}
-                                onChange={(e) =>
-                                    setData("password", e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setData("password", e.target.value);
+                                    valueError.onChange("password", {
+                                        ...data,
+                                        password: e.target.value,
+                                    });
+                                }}
+                                onBlur={() => valueError.onBlur("password", data)}
                             />
                             <button
                                 type="button"
@@ -97,11 +129,6 @@ function LoginContent({ titlePage, showDescription = true }) {
                                 )}
                             </button>
                         </div>
-                        {errors.password && (
-                            <p className="mt-1 text-xs text-destructive">
-                                {errors.password}
-                            </p>
-                        )}
                     </div>
 
                     {/* Forgot Password */}
@@ -115,22 +142,15 @@ function LoginContent({ titlePage, showDescription = true }) {
                     </div>
                 </div>
 
-                <div>
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={processing}
-                    >
-                        {processing
-                            ? lang("signing_in") || "Signing in..."
-                            : lang("sign_in")}
-                    </Button>
-                </div>
+                <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
+                    {processing
+                        ? lang("signing_in") || "Signing in..."
+                        : lang("sign_in")}
+                </Button>
             </form>
 
             <div className="mt-6">
                 <GoogleAccount />
-
                 <div className="mt-6 text-center text-sm">
                     {lang("dont_have_account")}{" "}
                     <Link

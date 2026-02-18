@@ -1,4 +1,3 @@
-// Register.jsx
 import { Link, useForm } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -18,11 +17,12 @@ import { Eye, EyeOff, AtSign } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 import { countryCodes, getCountryByValue } from "@/lib/countryCodes";
 import { useTranslation } from "@/hooks/useTranslation";
+import { validateRegister } from "@/lib/validation";
+import { useValidation } from "@/hooks/useAuthValidation";
 
-/**
- * Auto-generate username dari nama:
- * "John Doe 123" → "john_doe_123"
- */
+
+const REGISTER_FIELDS = ["name", "username", "email", "phone", "password"];
+
 function generateUsername(name) {
     return name
         .toLowerCase()
@@ -35,9 +35,15 @@ function generateUsername(name) {
 function RegisterContent({ titlePage, showDescription = false }) {
     const [showPassword, setShowPassword] = useState(false);
     const [usernameEdited, setUsernameEdited] = useState(false);
-    const { lang } = useTranslation();
+    const { lang, locale } = useTranslation();
 
-    const { data, setData, post, processing, errors } = useForm({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors: serverErrors,
+    } = useForm({
         name: "",
         username: "",
         email: "",
@@ -46,19 +52,25 @@ function RegisterContent({ titlePage, showDescription = false }) {
         password: "",
     });
 
+    const valueError = useValidation(validateRegister, lang, serverErrors, locale);
     const selectedCountry = getCountryByValue(data.country_code);
 
-    // Auto-generate username dari name selama belum diedit manual
+    const update = (field, value) => {
+        const updated = { ...data, [field]: value };
+        setData(field, value);
+        valueError.onChange(field, updated);
+        return updated;
+    };
+
     useEffect(() => {
         if (!usernameEdited && data.name) {
-            setData("username", generateUsername(data.name));
+            update("username", generateUsername(data.name));
         }
     }, [data.name]);
 
     const handleUsernameChange = (e) => {
         setUsernameEdited(true);
-        // Paksa: lowercase, hanya a-z 0-9 _
-        setData(
+        update(
             "username",
             e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
         );
@@ -66,6 +78,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!valueError.onSubmit(REGISTER_FIELDS, data)) return;
         post("/register");
     };
 
@@ -79,7 +92,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
                 showDescription={showDescription}
             />
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
                 <div className="space-y-4">
                     {/* Full Name */}
                     <div>
@@ -90,54 +103,57 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             id="name"
                             name="name"
                             type="text"
-                            required
-                            className="w-full mt-1"
+                            className={valueError.inputClass("name", "mt-1")}
                             placeholder={lang("enter_full_name")}
                             value={data.name}
-                            onChange={(e) => setData("name", e.target.value)}
+                            onChange={(e) => update("name", e.target.value)}
+                            onBlur={() => valueError.onBlur("name", data)}
                         />
-                        {errors.name && (
+                        {valueError.showError("name") && (
                             <p className="mt-1 text-xs text-destructive">
-                                {errors.name}
+                                {valueError.errors.name}
                             </p>
                         )}
                     </div>
 
-                    {/* Username — auto-generate dari name, bisa diedit */}
+                    {/* Username */}
                     <div>
                         <Label
                             htmlFor="username"
                             className="text-sm font-medium"
                         >
-                            {lang("username") || "Username"}
+                            {lang("username")}
                         </Label>
                         <div className="relative mt-1">
-                            <AtSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                            <AtSign
+                                className={`absolute left-3 top-2.5 h-5 w-5 ${valueError.iconClass("username")}`}
+                            />
                             <Input
                                 id="username"
                                 name="username"
                                 type="text"
-                                required
-                                className="w-full pl-10 pr-16"
-                                placeholder="auto_generated"
+                                className={valueError.inputClass(
+                                    "username",
+                                    "pl-10 pr-16",
+                                )}
+                                placeholder={lang("username_placeholder")}
                                 value={data.username}
                                 onChange={handleUsernameChange}
+                                onBlur={() => valueError.onBlur("username", data)}
                             />
-                            {/* Badge "auto" tampil selama username belum diedit manual */}
                             {!usernameEdited && data.name && (
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-wide text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-full pointer-events-none">
                                     auto
                                 </span>
                             )}
                         </div>
-                        {errors.username ? (
+                        {valueError.showError("username") ? (
                             <p className="mt-1 text-xs text-destructive">
-                                {errors.username}
+                                {valueError.errors.username}
                             </p>
                         ) : (
                             <p className="mt-1 text-xs text-muted-foreground">
-                                {lang("username_hint") ||
-                                    "Huruf kecil, angka, dan underscore saja"}
+                                {lang("username_hint")}
                             </p>
                         )}
                     </div>
@@ -152,15 +168,15 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             name="email"
                             type="email"
                             autoComplete="email"
-                            required
-                            className="w-full mt-1"
+                            className={valueError.inputClass("email", "mt-1")}
                             placeholder={lang("enter_email")}
                             value={data.email}
-                            onChange={(e) => setData("email", e.target.value)}
+                            onChange={(e) => update("email", e.target.value)}
+                            onBlur={() => valueError.onBlur("email", data)}
                         />
-                        {errors.email && (
+                        {valueError.showError("email") && (
                             <p className="mt-1 text-xs text-destructive">
-                                {errors.email}
+                                {valueError.errors.email}
                             </p>
                         )}
                     </div>
@@ -171,12 +187,11 @@ function RegisterContent({ titlePage, showDescription = false }) {
                             {lang("phone_number")}
                         </Label>
                         <div className="flex mt-1 gap-2">
-                            {/* Country code selector */}
                             <div className="w-32">
                                 <Select
                                     value={data.country_code}
                                     onValueChange={(val) =>
-                                        setData("country_code", val)
+                                        update("country_code", val)
                                     }
                                 >
                                     <SelectTrigger className="w-full">
@@ -227,26 +242,25 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 </Select>
                             </div>
 
-                            {/* Nomor telepon */}
                             <Input
                                 id="phone"
                                 name="phone"
                                 type="tel"
-                                required
-                                className="flex-1"
+                                className={valueError.inputClass("phone", "flex-1")}
                                 placeholder="81234567890"
                                 value={data.phone}
                                 onChange={(e) =>
-                                    setData(
+                                    update(
                                         "phone",
                                         e.target.value.replace(/\D/g, ""),
                                     )
                                 }
+                                onBlur={() => valueError.onBlur("phone", data)}
                             />
                         </div>
-                        {errors.phone ? (
+                        {valueError.showError("phone") ? (
                             <p className="mt-1 text-xs text-destructive">
-                                {errors.phone}
+                                {valueError.errors.phone}
                             </p>
                         ) : (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -270,13 +284,13 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
-                                required
-                                className="w-full pr-10"
+                                className={valueError.inputClass("password", "pr-10")}
                                 placeholder={lang("create_password")}
                                 value={data.password}
                                 onChange={(e) =>
-                                    setData("password", e.target.value)
+                                    update("password", e.target.value)
                                 }
+                                onBlur={() => valueError.onBlur("password", data)}
                             />
                             <button
                                 type="button"
@@ -290,37 +304,29 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 )}
                             </button>
                         </div>
-                        {errors.password && (
+                        {valueError.showError("password") && (
                             <p className="mt-1 text-xs text-destructive">
-                                {errors.password}
+                                {valueError.errors.password}
                             </p>
                         )}
                     </div>
                 </div>
 
-                <div>
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={processing}
-                    >
-                        {processing
-                            ? lang("creating_account") || "Creating account..."
-                            : lang("sign_up")}
-                    </Button>
-                </div>
+                <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
+                    {processing
+                        ? lang("creating_account") || "Creating account..."
+                        : lang("sign_up")}
+                </Button>
             </form>
 
-            <div>
-                <div className="mt-6 text-center text-sm">
-                    {lang("already_have_account")}{" "}
-                    <Link
-                        href="/login"
-                        className="underline text-blue-500 hover:text-blue-600"
-                    >
-                        {lang("sign_in")}
-                    </Link>
-                </div>
+            <div className="mt-4 text-center text-sm">
+                {lang("already_have_account")}{" "}
+                <Link
+                    href="/login"
+                    className="underline text-blue-500 hover:text-blue-600"
+                >
+                    {lang("sign_in")}
+                </Link>
             </div>
         </>
     );
