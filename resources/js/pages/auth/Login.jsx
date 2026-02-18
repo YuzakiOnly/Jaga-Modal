@@ -144,7 +144,7 @@ function LoginContent({ titlePage, showDescription = true }) {
 
                 <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
                     {processing
-                        ? lang("signing_in") || "Signing in..."
+                        ? lang("signing_in")
                         : lang("sign_in")}
                 </Button>
             </form>

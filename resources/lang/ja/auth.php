@@ -8,8 +8,10 @@ return [
     'password' => 'パスワード',
     'forgot_password' => 'パスワードをお忘れですか？',
     'sign_in' => 'サインイン',
+    'signing_in' => 'サインイン中...',
     'dont_have_account' => 'アカウントをお持ちでないですか？',
     'sign_up' => '新規登録',
+    'creating_account' => 'アカウントの作成...',
     
     // 登録ページ
     'create_account' => '新規アカウント作成',

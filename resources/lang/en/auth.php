@@ -8,8 +8,10 @@ return [
     'password' => 'Password',
     'forgot_password' => 'Forgot your password?',
     'sign_in' => 'Sign In',
+    'signing_in' => 'Signing In...',
     'dont_have_account' => "Don't have an account?",
     'sign_up' => 'Sign Up',
+    'creating_account' => 'Creating Account...',
     
     // Register page
     'create_account' => 'Create New Account',

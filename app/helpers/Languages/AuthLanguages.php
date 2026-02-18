@@ -14,6 +14,7 @@ class AuthLanguages
             'password' => __('auth.password'),
             'forgot_password' => __('auth.forgot_password'),
             'sign_in' => __('auth.sign_in'),
+            'signing_in' => __('auth.signing_in'),
             'dont_have_account' => __('auth.dont_have_account'),
 
             // Register
@@ -33,6 +34,7 @@ class AuthLanguages
 
             // Common
             'sign_up' => __('auth.sign_up'),
+            'creating_account' => __('auth.creating_account'),
             'or_continue_with' => __('auth.or_continue_with'),
             'google_account' => __('auth.google_account'),
 

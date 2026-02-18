@@ -8,8 +8,10 @@ return [
     'password' => 'Kata Sandi',
     'forgot_password' => 'Lupa kata sandi?',
     'sign_in' => 'Masuk',
+    'signing_in' => 'Masuk...',
     'dont_have_account' => 'Belum punya akun?',
     'sign_up' => 'Daftar',
+    'creating_account' => 'Membuat Akun...',
     
     // Halaman Register
     'create_account' => 'Buat Akun Baru',

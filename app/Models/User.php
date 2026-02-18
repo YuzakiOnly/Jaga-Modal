@@ -34,7 +34,16 @@ class User extends Authenticatable
         ];
     }
 
-    // ── Role helpers ──────────────────────────────────
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === 'owner';
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
@@ -45,8 +54,8 @@ class User extends Authenticatable
         return $this->role === 'cashier';
     }
 
-    public function isUser(): bool
+    public function isStaff(): bool
     {
-        return $this->role === 'user';
+        return $this->role === 'staff';
     }
 }

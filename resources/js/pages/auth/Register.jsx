@@ -314,7 +314,7 @@ function RegisterContent({ titlePage, showDescription = false }) {
 
                 <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
                     {processing
-                        ? lang("creating_account") || "Creating account..."
+                        ? lang("creating_account")
                         : lang("sign_up")}
                 </Button>
             </form>

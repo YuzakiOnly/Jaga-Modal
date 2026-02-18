@@ -12,13 +12,15 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
+        $canEditEmail = in_array($user->role, ['super_admin', 'owner', 'admin']);
+
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-z0-9_]+$/', 'unique:users,username,' . $user->id],
             'phone' => ['required', 'string', 'max:30'],
         ];
 
-        if ($user->role === 'admin') {
+        if ($canEditEmail) {
             $rules['email'] = ['required', 'email', 'max:255', 'unique:users,email,' . $user->id];
         }
 
@@ -31,7 +33,7 @@ class ProfileController extends Controller
         $user->name = $request->name;
         $user->username = $request->username;
         $user->phone = $request->phone;
-        if ($user->role === 'admin' && $request->has('email')) {
+        if ($canEditEmail && $request->has('email')) {
             $user->email = $request->email;
         }
 

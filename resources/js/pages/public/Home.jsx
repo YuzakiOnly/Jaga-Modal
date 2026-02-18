@@ -1,6 +1,7 @@
-import LanguageSelector from "@/components/language/LanguageSelector";
 import { Link, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import LanguageSelector from "@/components/language/LanguageSelector";
+import { roleLabel } from "@/lib/role";
 
 export default function Home() {
     const { auth } = usePage().props;
@@ -22,7 +23,7 @@ export default function Home() {
         name: user?.name ?? "",
         username: user?.username ?? "",
         phone: user?.phone ?? "",
-        email: user?.email ?? "", 
+        email: user?.email ?? "",
     });
 
     const handleLogout = () => postLogout("/logout");
@@ -49,7 +50,13 @@ export default function Home() {
         });
     };
 
+    const isSuperAdmin = user?.role === "super_admin";
+    const isOwner = user?.role === "owner";
     const isAdmin = user?.role === "admin";
+    const isStaff = user?.role === "staff";
+    const isCashier = user?.role === "cashier";
+    const canEditEmail = isSuperAdmin || isOwner || isAdmin;
+    const canEdit = isSuperAdmin || isOwner || isAdmin; // Super Admin, Owner, dan Admin bisa edit
 
     return (
         <div className="p-6 space-y-4">
@@ -68,7 +75,14 @@ export default function Home() {
                                 />
                                 <Row label="No. HP" value={user.phone} />
                                 <Row label="Email" value={user.email} />
-                                <Row label="Role" value={user.role} />
+                                <Row
+                                    label="Role"
+                                    value={roleLabel(user.role)}
+                                />
+                                <Row
+                                    label="Locale"
+                                    value={user.locale || "id"}
+                                />
                             </div>
 
                             {wasSuccessful && (
@@ -78,22 +92,36 @@ export default function Home() {
                             )}
 
                             <div className="flex gap-2 pt-2">
-                                <button
-                                    onClick={handleEdit}
-                                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded cursor-pointer"
-                                >
-                                    Edit Profil
-                                </button>
-                                <button
-                                    onClick={handleLogout}
-                                    disabled={loggingOut}
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 cursor-pointer"
-                                >
-                                    {loggingOut ? "..." : "Logout"}
-                                </button>
+                                {/* Staff dan Cashier hanya bisa melihat tombol logout */}
+                                {!canEdit ? (
+                                    <button
+                                        onClick={handleLogout}
+                                        disabled={loggingOut}
+                                        className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {loggingOut ? "..." : "Logout"}
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={handleEdit}
+                                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded cursor-pointer"
+                                        >
+                                            Edit Profil
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            disabled={loggingOut}
+                                            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {loggingOut ? "..." : "Logout"}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </>
                     ) : (
+                        // Form edit hanya untuk admin dan user
                         <form onSubmit={handleSave} className="space-y-3">
                             <div>
                                 <label className="text-sm font-semibold block mb-1">
@@ -163,7 +191,7 @@ export default function Home() {
                                 )}
                             </div>
 
-                            {isAdmin && (
+                            {canEditEmail && (
                                 <div>
                                     <label className="text-sm font-semibold block mb-1">
                                         Email
@@ -189,8 +217,8 @@ export default function Home() {
                                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
                                     Tidak dapat diubah
                                 </p>
-                                
-                                {!isAdmin && (
+
+                                {!canEditEmail && (
                                     <Row
                                         label="Email"
                                         value={user.email}

@@ -43,7 +43,7 @@ class AuthController extends Controller
 
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors([
-                'email' => __('auth.failed'),
+                'email' => __('auth.validation_email_password_invalid'),
             ])->onlyInput('email');
         }
 
@@ -127,6 +127,6 @@ class AuthController extends Controller
             App::setLocale($userLocale);
         }
 
-        return redirect('/');
+        return redirect('/login');
     }   
 }

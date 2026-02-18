@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'role')) {
-                $table->enum('role', ['admin', 'user', 'cashier'])
-                    ->default('user')
+                $table->enum('role', ['super_admin', 'owner', 'admin', 'cashier', 'staff'])
+                    ->default('staff')
                     ->after('locale');
             }
         });
