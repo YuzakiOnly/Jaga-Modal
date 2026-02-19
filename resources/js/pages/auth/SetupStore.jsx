@@ -189,7 +189,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                     id="name"
                     className="mt-1"
                     placeholder="Contoh: Toko Makmur Jaya"
-                    value={data.name}
+                    value={data.name || ""}
                     onChange={(e) => setData("name", e.target.value)}
                 />
                 {errors.name && (
@@ -203,7 +203,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
             <div>
                 <Label className="text-sm font-medium">Negara</Label>
                 <Select
-                    value={data.country}
+                    value={data.country || "ID"}
                     onValueChange={(val) => setData("country", val)}
                 >
                     <SelectTrigger className="mt-1 w-full">
@@ -231,7 +231,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                 </Label>
                 {provinces.length > 0 ? (
                     <Select
-                        value={data.province}
+                        value={data.province || ""}
                         onValueChange={(val) => setData("province", val)}
                     >
                         <SelectTrigger className="mt-1 w-full">
@@ -249,7 +249,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                     <Input
                         className="mt-1"
                         placeholder="Masukkan wilayah / provinsi"
-                        value={data.province}
+                        value={data.province || ""}
                         onChange={(e) => setData("province", e.target.value)}
                     />
                 )}
@@ -313,8 +313,8 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
         if (!mapLoaded || !mapRef.current || mapInstanceRef.current) return;
 
         const L = window.L;
-        const defaultLat = data.latitude || -6.2088;
-        const defaultLng = data.longitude || 106.8456;
+        const defaultLat = data.latitude ? parseFloat(data.latitude) : -6.2088;
+        const defaultLng = data.longitude ? parseFloat(data.longitude) : 106.8456;
 
         const map = L.map(mapRef.current).setView([defaultLat, defaultLng], 13);
         mapInstanceRef.current = map;
@@ -329,11 +329,9 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
         markerRef.current = marker;
 
         const updatePosition = (latlng) => {
-            setData((prev) => ({
-                ...prev,
-                latitude: latlng.lat.toFixed(7),
-                longitude: latlng.lng.toFixed(7),
-            }));
+            // Update data langsung
+            setData("latitude", latlng.lat.toFixed(7));
+            setData("longitude", latlng.lng.toFixed(7));
         };
 
         marker.on("dragend", (e) => updatePosition(e.target.getLatLng()));
@@ -343,7 +341,10 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
         });
 
         if (data.latitude && data.longitude) {
-            updatePosition({ lat: data.latitude, lng: data.longitude });
+            updatePosition({ 
+                lat: parseFloat(data.latitude), 
+                lng: parseFloat(data.longitude) 
+            });
         }
     }, [mapLoaded]);
 
@@ -359,16 +360,17 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                     const latlng = L.latLng(lat, lng);
                     map.setView(latlng, 16);
                     marker.setLatLng(latlng);
-                    setData((prev) => ({
-                        ...prev,
-                        latitude: lat.toFixed(7),
-                        longitude: lng.toFixed(7),
-                    }));
+                    setData("latitude", lat.toFixed(7));
+                    setData("longitude", lng.toFixed(7));
                 }
                 setLocating(false);
             },
             () => setLocating(false),
         );
+    };
+
+    const handleAddressChange = (e) => {
+        setData("address", e.target.value);
     };
 
     return (
@@ -391,8 +393,8 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                     className="mt-1 resize-none"
                     rows={2}
                     placeholder="Jl. Contoh No. 1, Kelurahan, Kecamatan, Kota"
-                    value={data.address}
-                    onChange={(e) => setData("address", e.target.value)}
+                    value={data.address || ""}
+                    onChange={handleAddressChange}
                 />
                 {errors.address && (
                     <p className="mt-1 text-xs text-destructive">
@@ -469,15 +471,6 @@ function SetupStore({ titlePage }) {
         post("/setup-store");
     };
 
-    const setField = (field, value) => setData(field, value);
-
-    // Untuk StepLocation yang perlu setData seluruh object
-    const setBulkData = (updater) => {
-        if (typeof updater === "function") {
-            setData((prev) => updater(prev));
-        }
-    };
-
     return (
         <>
             <Head title={titlePage ?? "Setup Toko"} />
@@ -496,7 +489,7 @@ function SetupStore({ titlePage }) {
                 {step === 1 && (
                     <StepBusinessType
                         value={data.business_type}
-                        onChange={(val) => setField("business_type", val)}
+                        onChange={(val) => setData("business_type", val)}
                         onNext={() => setStep(2)}
                     />
                 )}
@@ -504,7 +497,7 @@ function SetupStore({ titlePage }) {
                 {step === 2 && (
                     <StepStoreInfo
                         data={data}
-                        setData={setField}
+                        setData={setData} // Langsung pakai setData dari useForm
                         errors={errors}
                         onNext={() => setStep(3)}
                         onBack={() => setStep(1)}
@@ -514,7 +507,7 @@ function SetupStore({ titlePage }) {
                 {step === 3 && (
                     <StepLocation
                         data={data}
-                        setData={setBulkData}
+                        setData={setData} // Langsung pakai setData dari useForm
                         errors={errors}
                         processing={processing}
                         onBack={() => setStep(2)}

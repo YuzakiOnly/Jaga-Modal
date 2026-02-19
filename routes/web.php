@@ -23,7 +23,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Setup store - TANPA middleware guest, hanya pending.store
+// Setup store 
 Route::middleware(['pending.store'])->group(function () {
     Route::get('/setup-store', [StoreSetupController::class, 'show'])->name('store.setup');
     Route::post('/setup-store', [StoreSetupController::class, 'store'])->name('store.setup.save');

@@ -13,10 +13,6 @@ use Inertia\Inertia;
 
 class StoreSetupController extends Controller
 {
-    /**
-     * Tampilkan halaman setup toko.
-     * Hanya bisa diakses jika ada pending_user_id di session (baru saja register).
-     */
     public function show()
     {
         if (!Session::has('pending_user_id')) {
@@ -28,9 +24,6 @@ class StoreSetupController extends Controller
         ]);
     }
 
-    /**
-     * Simpan data toko, lalu login user dan arahkan ke dashboard.
-     */
     public function store(Request $request)
     {
         $userId = Session::get('pending_user_id');
@@ -62,10 +55,8 @@ class StoreSetupController extends Controller
             'longitude' => $request->longitude,
         ]);
 
-        // Hapus session sementara
         Session::forget('pending_user_id');
 
-        // Login user
         Auth::login($user);
 
         $locale = $user->locale ?? config('app.locale', 'en');

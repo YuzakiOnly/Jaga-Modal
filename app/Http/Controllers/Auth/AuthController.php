@@ -99,12 +99,10 @@ class AuthController extends Controller
             'locale' => $locale,
         ]);
 
-        // Simpan user ID sementara di session
         Session::put('pending_user_id', $user->id);
         Session::put('locale', $locale);
         Session::save();
-
-        // PASTIKAN INI REDIRECT KE SETUP STORE
+        
         return Inertia::location(route('store.setup'));
     }
 

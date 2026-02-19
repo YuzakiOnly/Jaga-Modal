@@ -15,14 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Daftar middleware untuk group web
         $middleware->web(append: [
             SetLocale::class,
             EnsureLocaleIsConsistent::class,
             HandleInertiaRequests::class,
         ]);
 
-        // Daftar alias middleware dengan cara yang benar
         $middleware->alias([
             'pending.store' => PendingStoreSetup::class,
         ]);
