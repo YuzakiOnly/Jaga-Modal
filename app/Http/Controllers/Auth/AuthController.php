@@ -57,11 +57,9 @@ class AuthController extends Controller
                 $user->locale = $locale;
                 $user->save();
             }
-        }
-        elseif ($user->locale && in_array($user->locale, $availableLocales)) {
+        } elseif ($user->locale && in_array($user->locale, $availableLocales)) {
             $locale = $user->locale;
-        }
-        else {
+        } else {
             $locale = config('app.locale', 'en');
         }
 
@@ -101,11 +99,13 @@ class AuthController extends Controller
             'locale' => $locale,
         ]);
 
-        Auth::login($user);
+        // Simpan user ID sementara di session
+        Session::put('pending_user_id', $user->id);
         Session::put('locale', $locale);
         Session::save();
 
-        return redirect('/');
+        // PASTIKAN INI REDIRECT KE SETUP STORE
+        return Inertia::location(route('store.setup'));
     }
 
     // Logout
@@ -128,5 +128,5 @@ class AuthController extends Controller
         }
 
         return redirect('/login');
-    }   
+    }
 }

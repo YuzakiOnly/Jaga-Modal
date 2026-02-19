@@ -20,7 +20,6 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { validateRegister } from "@/lib/validation";
 import { useValidation } from "@/hooks/useAuthValidation";
 
-
 const REGISTER_FIELDS = ["name", "username", "email", "phone", "password"];
 
 function generateUsername(name) {
@@ -52,7 +51,12 @@ function RegisterContent({ titlePage, showDescription = false }) {
         password: "",
     });
 
-    const valueError = useValidation(validateRegister, lang, serverErrors, locale);
+    const valueError = useValidation(
+        validateRegister,
+        lang,
+        serverErrors,
+        locale,
+    );
     const selectedCountry = getCountryByValue(data.country_code);
 
     const update = (field, value) => {
@@ -79,7 +83,17 @@ function RegisterContent({ titlePage, showDescription = false }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!valueError.onSubmit(REGISTER_FIELDS, data)) return;
-        post("/register");
+
+        // POST ke /register
+        post("/register", {
+            onSuccess: () => {
+                // Redirect akan dihandle oleh backend
+                console.log("Register success, redirecting to setup store...");
+            },
+            onError: (errors) => {
+                console.error("Register failed:", errors);
+            },
+        });
     };
 
     return (
@@ -139,7 +153,9 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 placeholder={lang("username_placeholder")}
                                 value={data.username}
                                 onChange={handleUsernameChange}
-                                onBlur={() => valueError.onBlur("username", data)}
+                                onBlur={() =>
+                                    valueError.onBlur("username", data)
+                                }
                             />
                             {!usernameEdited && data.name && (
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-wide text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-full pointer-events-none">
@@ -246,7 +262,10 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 id="phone"
                                 name="phone"
                                 type="tel"
-                                className={valueError.inputClass("phone", "flex-1")}
+                                className={valueError.inputClass(
+                                    "phone",
+                                    "flex-1",
+                                )}
                                 placeholder="81234567890"
                                 value={data.phone}
                                 onChange={(e) =>
@@ -284,13 +303,18 @@ function RegisterContent({ titlePage, showDescription = false }) {
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
-                                className={valueError.inputClass("password", "pr-10")}
+                                className={valueError.inputClass(
+                                    "password",
+                                    "pr-10",
+                                )}
                                 placeholder={lang("create_password")}
                                 value={data.password}
                                 onChange={(e) =>
                                     update("password", e.target.value)
                                 }
-                                onBlur={() => valueError.onBlur("password", data)}
+                                onBlur={() =>
+                                    valueError.onBlur("password", data)
+                                }
                             />
                             <button
                                 type="button"
@@ -312,10 +336,12 @@ function RegisterContent({ titlePage, showDescription = false }) {
                     </div>
                 </div>
 
-                <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
-                    {processing
-                        ? lang("creating_account")
-                        : lang("sign_up")}
+                <Button
+                    type="submit"
+                    className="w-full cursor-pointer"
+                    disabled={processing}
+                >
+                    {processing ? lang("creating_account") : lang("sign_up")}
                 </Button>
             </form>
 
