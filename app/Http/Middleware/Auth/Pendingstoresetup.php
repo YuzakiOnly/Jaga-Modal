@@ -10,8 +10,19 @@ class PendingStoreSetup
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Session::has('pending_user_id')) {
-            return redirect()->route('register');
+        if (Session::has('pending_user_id')) {
+            $allowedRoutes = [
+                'store.setup',
+                'store.setup.save',
+                'logout',
+                'language.switch'
+            ];
+
+            if ($request->routeIs($allowedRoutes)) {
+                return $next($request);
+            }
+
+            return redirect()->route('store.setup');
         }
 
         return $next($request);

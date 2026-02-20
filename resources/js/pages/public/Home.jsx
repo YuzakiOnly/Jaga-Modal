@@ -1,7 +1,7 @@
 import { Link, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import LanguageSelector from "@/components/language/LanguageSelector";
-import { roleLabel } from "@/lib/role";
+import { roleLabel } from "@/lib/auth/role";
 
 export default function Home() {
     const { auth } = usePage().props;
@@ -56,7 +56,7 @@ export default function Home() {
     const isStaff = user?.role === "staff";
     const isCashier = user?.role === "cashier";
     const canEditEmail = isSuperAdmin || isOwner || isAdmin;
-    const canEdit = isSuperAdmin || isOwner || isAdmin; // Super Admin, Owner, dan Admin bisa edit
+    const canEdit = isSuperAdmin || isOwner || isAdmin; 
 
     return (
         <div className="p-6 space-y-4">
@@ -121,7 +121,6 @@ export default function Home() {
                             </div>
                         </>
                     ) : (
-                        // Form edit hanya untuk admin dan user
                         <form onSubmit={handleSave} className="space-y-3">
                             <div>
                                 <label className="text-sm font-semibold block mb-1">

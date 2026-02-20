@@ -15,7 +15,7 @@ import { AuthHeader, GoogleAccount } from "@/components/auth/LoginPage";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, AtSign } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
-import { countryCodes, getCountryByValue } from "@/lib/countryCodes";
+import { countryCodes, getCountryByValue } from "@/lib/auth/countryCodes";
 import { useTranslation } from "@/hooks/useTranslation";
 import { validateRegister } from "@/lib/validation";
 import { useValidation } from "@/hooks/useAuthValidation";
@@ -84,10 +84,8 @@ function RegisterContent({ titlePage, showDescription = false }) {
         e.preventDefault();
         if (!valueError.onSubmit(REGISTER_FIELDS, data)) return;
 
-        // POST ke /register
         post("/register", {
             onSuccess: () => {
-                // Redirect akan dihandle oleh backend
                 console.log("Register success, redirecting to setup store...");
             },
             onError: (errors) => {

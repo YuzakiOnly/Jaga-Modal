@@ -13,118 +13,15 @@ import {
 } from "@/Components/ui/select";
 import AuthLayout from "@/Layouts/AuthLayout";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapPin, Store, Building2, ChevronRight } from "lucide-react";
+import { MapPin, Store, Building2, ChevronRight, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
-// ─── Daftar jenis usaha ───────────────────────────────────────────────────────
-const BUSINESS_TYPES = [
-    { value: "retail", label: "Retail / Toko Umum" },
-    { value: "food", label: "Makanan & Minuman" },
-    { value: "fashion", label: "Fashion & Pakaian" },
-    { value: "electronics", label: "Elektronik" },
-    { value: "beauty", label: "Kecantikan & Perawatan" },
-    { value: "pharmacy", label: "Apotek / Kesehatan" },
-    { value: "automotive", label: "Otomotif" },
-    { value: "furniture", label: "Furnitur & Dekorasi" },
-    { value: "grocery", label: "Sembako / Supermarket" },
-    { value: "service", label: "Jasa / Servis" },
-    { value: "education", label: "Pendidikan" },
-    { value: "other", label: "Lainnya" },
-];
+import { BUSINESS_TYPES } from "@/lib/setup-store/business-types";
+import { COUNTRIES } from "@/lib/setup-store/countries";
+import { PROVINCES_ID } from "@/lib/setup-store/provinces";
+import { StepIndicator } from "@/components/auth/step-indicator";
+import { loadLeaflet, initMap, createDraggableMarker } from "@/lib/setup-store/map-utils";
 
-// ─── Daftar negara (sederhana) ────────────────────────────────────────────────
-const COUNTRIES = [
-    { value: "ID", label: "Indonesia" },
-    { value: "MY", label: "Malaysia" },
-    { value: "SG", label: "Singapore" },
-    { value: "TH", label: "Thailand" },
-    { value: "PH", label: "Philippines" },
-    { value: "VN", label: "Vietnam" },
-    { value: "JP", label: "Japan" },
-    { value: "US", label: "United States" },
-    { value: "GB", label: "United Kingdom" },
-    { value: "AU", label: "Australia" },
-];
-
-// ─── Provinsi Indonesia ───────────────────────────────────────────────────────
-const PROVINCES_ID = [
-    "Aceh",
-    "Bali",
-    "Bangka Belitung",
-    "Banten",
-    "Bengkulu",
-    "DI Yogyakarta",
-    "DKI Jakarta",
-    "Gorontalo",
-    "Jambi",
-    "Jawa Barat",
-    "Jawa Tengah",
-    "Jawa Timur",
-    "Kalimantan Barat",
-    "Kalimantan Selatan",
-    "Kalimantan Tengah",
-    "Kalimantan Timur",
-    "Kalimantan Utara",
-    "Kepulauan Riau",
-    "Lampung",
-    "Maluku",
-    "Maluku Utara",
-    "Nusa Tenggara Barat",
-    "Nusa Tenggara Timur",
-    "Papua",
-    "Papua Barat",
-    "Papua Barat Daya",
-    "Papua Pegunungan",
-    "Papua Selatan",
-    "Papua Tengah",
-    "Riau",
-    "Sulawesi Barat",
-    "Sulawesi Selatan",
-    "Sulawesi Tengah",
-    "Sulawesi Tenggara",
-    "Sulawesi Utara",
-    "Sumatera Barat",
-    "Sumatera Selatan",
-    "Sumatera Utara",
-];
-
-// ─── Step indicator ───────────────────────────────────────────────────────────
-function StepIndicator({ currentStep }) {
-    const steps = ["Jenis Usaha", "Info Toko", "Lokasi"];
-    return (
-        <div className="flex items-center justify-center gap-2 mb-6">
-            {steps.map((label, idx) => {
-                const step = idx + 1;
-                const done = currentStep > step;
-                const active = currentStep === step;
-                return (
-                    <div key={step} className="flex items-center gap-2">
-                        <div className="flex flex-col items-center gap-1">
-                            <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all
-                                    ${done ? "bg-green-500 text-white" : active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                            >
-                                {done ? "✓" : step}
-                            </div>
-                            <span
-                                className={`text-[10px] font-medium ${active ? "text-primary" : "text-muted-foreground"}`}
-                            >
-                                {label}
-                            </span>
-                        </div>
-                        {idx < steps.length - 1 && (
-                            <div
-                                className={`w-10 h-0.5 mb-4 ${done ? "bg-green-500" : "bg-muted"}`}
-                            />
-                        )}
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
-
-// ─── Step 1: Jenis Usaha ──────────────────────────────────────────────────────
 function StepBusinessType({ value, onChange, onNext }) {
     return (
         <div className="space-y-4">
@@ -166,7 +63,6 @@ function StepBusinessType({ value, onChange, onNext }) {
     );
 }
 
-// ─── Step 2: Info Toko ────────────────────────────────────────────────────────
 function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
     const provinces = data.country === "ID" ? PROVINCES_ID : [];
 
@@ -180,7 +76,6 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                 </p>
             </div>
 
-            {/* Nama Toko */}
             <div>
                 <Label htmlFor="name" className="text-sm font-medium">
                     Nama Toko / Usaha
@@ -199,7 +94,6 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                 )}
             </div>
 
-            {/* Negara */}
             <div>
                 <Label className="text-sm font-medium">Negara</Label>
                 <Select
@@ -224,7 +118,6 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                 )}
             </div>
 
-            {/* Provinsi */}
             <div>
                 <Label className="text-sm font-medium">
                     Provinsi / Wilayah
@@ -282,7 +175,6 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
     );
 }
 
-// ─── Step 3: Lokasi & Alamat ──────────────────────────────────────────────────
 function StepLocation({ data, setData, errors, processing, onBack }) {
     const mapRef = useRef(null);
     const markerRef = useRef(null);
@@ -290,62 +182,40 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
     const [mapLoaded, setMapLoaded] = useState(false);
     const [locating, setLocating] = useState(false);
 
-    // Load Leaflet dynamically
     useEffect(() => {
-        if (window.L) {
-            setMapLoaded(true);
-            return;
-        }
-
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        document.head.appendChild(link);
-
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-        script.onload = () => setMapLoaded(true);
-        document.head.appendChild(script);
+        loadLeaflet().then(() => setMapLoaded(true));
     }, []);
 
-    // Init map
     useEffect(() => {
         if (!mapLoaded || !mapRef.current || mapInstanceRef.current) return;
 
-        const L = window.L;
         const defaultLat = data.latitude ? parseFloat(data.latitude) : -6.2088;
-        const defaultLng = data.longitude ? parseFloat(data.longitude) : 106.8456;
+        const defaultLng = data.longitude
+            ? parseFloat(data.longitude)
+            : 106.8456;
 
-        const map = L.map(mapRef.current).setView([defaultLat, defaultLng], 13);
+        const map = initMap(mapRef, defaultLat, defaultLng);
+        if (!map) return;
+
         mapInstanceRef.current = map;
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: "© OpenStreetMap contributors",
-        }).addTo(map);
-
-        const marker = L.marker([defaultLat, defaultLng], {
-            draggable: true,
-        }).addTo(map);
-        markerRef.current = marker;
-
         const updatePosition = (latlng) => {
-            // Update data langsung
             setData("latitude", latlng.lat.toFixed(7));
             setData("longitude", latlng.lng.toFixed(7));
         };
 
-        marker.on("dragend", (e) => updatePosition(e.target.getLatLng()));
+        const marker = createDraggableMarker(
+            map,
+            defaultLat,
+            defaultLng,
+            updatePosition,
+        );
+        markerRef.current = marker;
+
         map.on("click", (e) => {
             marker.setLatLng(e.latlng);
             updatePosition(e.latlng);
         });
-
-        if (data.latitude && data.longitude) {
-            updatePosition({ 
-                lat: parseFloat(data.latitude), 
-                lng: parseFloat(data.longitude) 
-            });
-        }
     }, [mapLoaded]);
 
     const handleLocate = () => {
@@ -369,10 +239,6 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
         );
     };
 
-    const handleAddressChange = (e) => {
-        setData("address", e.target.value);
-    };
-
     return (
         <div className="space-y-4">
             <div className="text-center mb-2">
@@ -383,7 +249,6 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                 </p>
             </div>
 
-            {/* Alamat */}
             <div>
                 <Label htmlFor="address" className="text-sm font-medium">
                     Alamat Lengkap
@@ -394,7 +259,7 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                     rows={2}
                     placeholder="Jl. Contoh No. 1, Kelurahan, Kecamatan, Kota"
                     value={data.address || ""}
-                    onChange={handleAddressChange}
+                    onChange={(e) => setData("address", e.target.value)}
                 />
                 {errors.address && (
                     <p className="mt-1 text-xs text-destructive">
@@ -403,17 +268,26 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                 )}
             </div>
 
-            {/* Peta */}
             <div>
                 <div className="flex items-center justify-between mb-1">
                     <Label className="text-sm font-medium">Pin Lokasi</Label>
                     <button
                         type="button"
                         onClick={handleLocate}
-                        className="text-xs text-primary underline hover:no-underline"
+                        className="text-xs text-primary underline hover:no-underline inline-flex items-center gap-1 cursor-pointer"
                         disabled={locating}
                     >
-                        {locating ? "Mendeteksi..." : "📍 Lokasi Saya"}
+                        {locating ? (
+                            <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Mendeteksi...
+                            </>
+                        ) : (
+                            <>
+                                <MapPin className="h-3 w-3" />
+                                Lokasi Saya
+                            </>
+                        )}
                     </button>
                 </div>
                 <div
@@ -452,7 +326,6 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
     );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 function SetupStore({ titlePage }) {
     const [step, setStep] = useState(1);
 
@@ -474,15 +347,6 @@ function SetupStore({ titlePage }) {
     return (
         <>
             <Head title={titlePage ?? "Setup Toko"} />
-            <div className="mb-4">
-                <h1 className="text-xl font-bold text-center">
-                    Selamat Datang! 🎉
-                </h1>
-                <p className="text-sm text-muted-foreground text-center">
-                    Lengkapi profil toko Anda untuk mulai berjualan
-                </p>
-            </div>
-
             <StepIndicator currentStep={step} />
 
             <form onSubmit={handleSubmit}>
@@ -497,7 +361,7 @@ function SetupStore({ titlePage }) {
                 {step === 2 && (
                     <StepStoreInfo
                         data={data}
-                        setData={setData} // Langsung pakai setData dari useForm
+                        setData={setData}
                         errors={errors}
                         onNext={() => setStep(3)}
                         onBack={() => setStep(1)}
@@ -507,7 +371,7 @@ function SetupStore({ titlePage }) {
                 {step === 3 && (
                     <StepLocation
                         data={data}
-                        setData={setData} // Langsung pakai setData dari useForm
+                        setData={setData}
                         errors={errors}
                         processing={processing}
                         onBack={() => setStep(2)}

@@ -26,7 +26,6 @@ class Languages
             return $class::getAll();
         }
 
-        // Fallback ke file JSON jika ada
         $locale = App::getLocale();
         $path = resource_path("lang/{$locale}/{$category}.php");
 
