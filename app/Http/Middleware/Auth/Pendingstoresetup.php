@@ -15,7 +15,7 @@ class PendingStoreSetup
                 'store.setup',
                 'store.setup.save',
                 'logout',
-                'language.switch'
+                'language.switch',
             ];
 
             if ($request->routeIs($allowedRoutes)) {
@@ -23,6 +23,21 @@ class PendingStoreSetup
             }
 
             return redirect()->route('store.setup');
+        }
+
+        if (Session::has('pending_registration')) {
+            $allowedRoutes = [
+                'verify.email',
+                'verify.email.submit',
+                'verify.email.resend',
+                'language.switch',
+            ];
+
+            if ($request->routeIs($allowedRoutes)) {
+                return $next($request);
+            }
+
+            return redirect()->route('verify.email');
         }
 
         return $next($request);

@@ -3,18 +3,21 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\VerificationCodeMail;
+use App\Models\EmailVerificationCode;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-    // Views
+    // Views 
 
     public function showLogin()
     {
@@ -30,7 +33,21 @@ class AuthController extends Controller
         ]);
     }
 
-    // Login
+    public function showVerifyEmail()
+    {
+        if (!Session::has('pending_registration')) {
+            return redirect('/register');
+        }
+
+        $email = Session::get('pending_registration.email');
+
+        return Inertia::render('auth/VerifyEmail', [
+            'titlePage' => 'Verify Your Email',
+            'email' => $email,
+        ]);
+    }
+
+    // Login 
 
     public function login(Request $request)
     {
@@ -72,7 +89,7 @@ class AuthController extends Controller
         return redirect()->intended('/');
     }
 
-    // Register
+    // Register 
 
     public function register(Request $request)
     {
@@ -89,7 +106,7 @@ class AuthController extends Controller
 
         $locale = Session::get('locale', config('app.locale', 'en'));
 
-        $user = User::create([
+        Session::put('pending_registration', [
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
@@ -98,12 +115,82 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'locale' => $locale,
         ]);
+        Session::save();
+
+        $this->sendVerificationCode($request->email, $request->name);
+
+        return Inertia::location(route('verify.email'));
+    }
+
+    // Email Verification 
+
+    public function verify(Request $request)
+    {
+        $request->validate([
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        $pending = Session::get('pending_registration');
+
+        if (!$pending) {
+            return back()->withErrors([
+                'error' => 'Your registration session has expired. Please register again.'
+            ])->withInput();
+        }
+
+        $record = EmailVerificationCode::where('email', $pending['email'])
+            ->where('code', $request->code)
+            ->latest()
+            ->first();
+
+        if (!$record) {
+            return back()->withErrors([
+                'code' => 'The verification code you entered is incorrect.'
+            ])->withInput();
+        }
+
+        if ($record->isExpired()) {
+            $record->delete();
+            return back()->withErrors([
+                'code' => 'This verification code has expired. Please request a new one.'
+            ])->withInput();
+        }
+        
+        $record->delete();
+
+        $user = User::create([
+            'name' => $pending['name'],
+            'username' => $pending['username'],
+            'email' => $pending['email'],
+            'country_code' => $pending['country_code'],
+            'phone' => $pending['phone'],
+            'password' => $pending['password'],
+            'locale' => $pending['locale'],
+            'email_verified_at' => now(),
+        ]);
+
+        Session::forget('pending_registration');
 
         Session::put('pending_user_id', $user->id);
-        Session::put('locale', $locale);
+        Session::put('locale', $user->locale);
         Session::save();
-        
-        return Inertia::location(route('store.setup'));
+
+        return redirect()->route('store.setup')->with([
+            'success' => 'Email verified successfully! Please set up your store.'
+        ]);
+    }
+
+    public function resendCode(Request $request)
+    {
+        $pending = Session::get('pending_registration');
+
+        if (!$pending) {
+            return response()->json(['message' => 'Session expired.'], 422);
+        }
+
+        $this->sendVerificationCode($pending['email'], $pending['name']);
+
+        return response()->json(['message' => 'Verification code resent.']);
     }
 
     // Logout
@@ -111,8 +198,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $user = Auth::user();
-
-        $userLocale = $user->locale ?? null;
+        $userLocale = $user?->locale ?? null;
 
         Auth::logout();
 
@@ -126,5 +212,22 @@ class AuthController extends Controller
         }
 
         return redirect('/login');
+    }
+
+    // Helpers
+
+    private function sendVerificationCode(string $email, string $name): void
+    {
+        EmailVerificationCode::where('email', $email)->delete();
+
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        EmailVerificationCode::create([
+            'email' => $email,
+            'code' => $code,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        Mail::to($email)->send(new VerificationCodeMail($code, $name));
     }
 }

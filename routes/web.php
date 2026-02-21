@@ -20,6 +20,10 @@ Route::middleware(['pending.store'])->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
     });
 
+    Route::get('/verify-email', [AuthController::class, 'showVerifyEmail'])->name('verify.email');
+    Route::post('/verify-email', [AuthController::class, 'verify'])->name('verify.email.submit');
+    Route::post('/verify-email/resend', [AuthController::class, 'resendCode'])->name('verify.email.resend');
+
     Route::middleware('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
