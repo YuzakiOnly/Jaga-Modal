@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Language\LanguageController;
 use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Auth\StoreSetupController;
+use App\Http\Controllers\StoreController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +27,8 @@ Route::middleware(['pending.store'])->group(function () {
 
     Route::middleware('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/store', [StoreController::class, 'update'])->name('store.update');
     });
 });
 

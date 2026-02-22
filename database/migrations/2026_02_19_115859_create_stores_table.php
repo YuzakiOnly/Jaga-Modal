@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->string('logo')->nullable();
+            $table->string('thumbnail')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

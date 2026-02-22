@@ -16,6 +16,8 @@ class User extends Authenticatable
         'email',
         'country_code',
         'phone',
+        'avatar',
+        'thumbnail',
         'password',
         'locale',
         'role',
@@ -43,22 +45,18 @@ class User extends Authenticatable
     {
         return $this->role === 'super_admin';
     }
-
     public function isOwner(): bool
     {
         return $this->role === 'owner';
     }
-
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
-
     public function isCashier(): bool
     {
         return $this->role === 'cashier';
     }
-
     public function isStaff(): bool
     {
         return $this->role === 'staff';

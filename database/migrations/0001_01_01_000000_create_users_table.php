@@ -16,6 +16,8 @@ return new class extends Migration {
             $table->string('password');
             $table->string('country_code', 10)->default('+62');
             $table->string('phone', 30)->nullable();
+            $table->string('avatar')->nullable();
+            $table->string('thumbnail')->nullable();
             $table->string('locale', 10)->default('en');
             $table->enum('role', ['super_admin', 'owner', 'admin', 'cashier', 'staff'])->default('owner');
             $table->rememberToken();

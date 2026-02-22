@@ -19,6 +19,7 @@ class Store extends Model
         'latitude',
         'longitude',
         'logo',
+        'thumbnail',
         'is_active',
     ];
 
