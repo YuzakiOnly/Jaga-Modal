@@ -8,9 +8,13 @@ use App\Http\Controllers\StoreController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+    return Inertia::render('public/Home');
+});
+
 Route::middleware(['pending.store'])->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('public/Home');
+    Route::get('/profile', function () {
+        return Inertia::render('public/Profile');
     });
 
     Route::middleware(['guest'])->group(function () {
