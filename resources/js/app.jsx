@@ -18,8 +18,8 @@ createInertiaApp({
     },
 
     resolve: (name) => {
-        const pages = import.meta.glob("./Pages/**/*.jsx", { eager: true });
-        let page = pages[`./Pages/${name}.jsx`];
+        const pages = import.meta.glob("./pages/**/*.jsx", { eager: true });
+        let page = pages[`./pages/${name}.jsx`];
 
         if (!page) {
             throw new Error(

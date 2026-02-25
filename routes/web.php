@@ -12,6 +12,10 @@ Route::get('/', function () {
     return Inertia::render('public/Home');
 });
 
+Route::get('/admin/dashboard', function () {
+    return Inertia::render('admin/dashboard/Dashboard');
+});
+
 Route::middleware(['pending.store'])->group(function () {
     Route::get('/profile', function () {
         return Inertia::render('public/Profile');

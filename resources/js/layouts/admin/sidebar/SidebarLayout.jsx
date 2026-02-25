@@ -1,7 +1,11 @@
-
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import {
+    SidebarProvider,
+    SidebarInset,
+    SidebarTrigger,
+    useSidebar,
+} from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { AppSidebar } from "@/components/sidebar-admin/AppSidebar";
+import { AppSidebar } from "@/components/admin/sidebar/AppSidebar";
 
 function Navbar() {
     return (
@@ -18,9 +22,7 @@ export default function SidebarLayout({ children }) {
             <AppSidebar />
             <SidebarInset>
                 <Navbar />
-                <main className="flex-1 overflow-auto">
-                    {children}
-                </main>
+                <main className="flex-1 overflow-auto">{children}</main>
             </SidebarInset>
         </SidebarProvider>
     );
