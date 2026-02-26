@@ -8,6 +8,7 @@ import {
     UserCircle2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link, router } from "@inertiajs/react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,10 +24,15 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import { userData } from "@/lib/sidebar-data";
 
-export function NavUser() {
+export function NavUser({ user }) {
     const { isMobile } = useSidebar();
+
+    const handleLogout = () => {
+        router.post(route("logout"));
+    };
+
+    if (!user) return null;
 
     return (
         <SidebarMenu>
@@ -39,19 +45,19 @@ export function NavUser() {
                         >
                             <Avatar className="rounded-full">
                                 <AvatarImage
-                                    src={userData.avatar}
-                                    alt={userData.name}
+                                    src={user.avatar}
+                                    alt={user.name}
                                 />
                                 <AvatarFallback className="rounded-lg">
-                                    {userData.fallback}
+                                    {user.fallback}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-medium">
-                                    {userData.name}
+                                    {user.name}
                                 </span>
                                 <span className="text-muted-foreground truncate text-xs">
-                                    {userData.email}
+                                    {user.email}
                                 </span>
                             </div>
                             <MoreVertical className="ml-auto size-4" />
@@ -67,28 +73,33 @@ export function NavUser() {
                             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                 <Avatar className="h-8 w-8 rounded-lg">
                                     <AvatarImage
-                                        src={userData.avatar}
-                                        alt={userData.name}
+                                        src={user.avatar}
+                                        alt={user.name}
                                     />
                                     <AvatarFallback className="rounded-lg">
-                                        {userData.fallback}
+                                        {user.fallback}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">
-                                        {userData.name}
+                                        {user.name}
                                     </span>
                                     <span className="text-muted-foreground truncate text-xs">
-                                        {userData.email}
+                                        {user.email}
                                     </span>
                                 </div>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <UserCircle2 />
-                                Account
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/profile"
+                                    className="flex items-center gap-2"
+                                >
+                                    <UserCircle2 />
+                                    Account
+                                </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <CreditCard />
@@ -100,7 +111,10 @@ export function NavUser() {
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={handleLogout}
+                            className="text-destructive focus:text-destructive"
+                        >
                             <LogOut />
                             Log out
                         </DropdownMenuItem>

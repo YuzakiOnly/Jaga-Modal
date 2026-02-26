@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useEffect } from "react";
-import { ChevronsUpDown, ShoppingBag, UserCircle2 } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 import { Plus } from "lucide-react";
 import { Link, usePage } from "@inertiajs/react";
 
@@ -28,7 +28,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { projects } from "@/lib/sidebar-data";
 
 function Logo() {
     return (
@@ -38,16 +37,22 @@ function Logo() {
     );
 }
 
-export function AppSidebar({ ...props }) {
+export function AppSidebar({
+    appName = "Shadcn UI Kit",
+    projects = [],
+    navItems = [],
+    user,
+    ...props
+}) {
     const { url } = usePage();
-    const { setOpen, setOpenMobile, isMobile } = useSidebar();
+    const { setOpenMobile, isMobile } = useSidebar();
 
     useEffect(() => {
         if (isMobile) setOpenMobile(false);
     }, [url]);
 
     return (
-        <Sidebar collapsible="icon" {...props}>
+        <Sidebar collapsible="icon" className="border-none" {...props}>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -56,7 +61,7 @@ export function AppSidebar({ ...props }) {
                                 <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-(--primary)/5">
                                     <Logo />
                                     <span className="font-semibold">
-                                        Shadcn UI Kit
+                                        {appName}
                                     </span>
                                     <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
                                 </SidebarMenuButton>
@@ -102,12 +107,12 @@ export function AppSidebar({ ...props }) {
 
             <SidebarContent>
                 <ScrollArea className="h-full">
-                    <NavMain />
+                    <NavMain navItems={navItems} />
                 </ScrollArea>
             </SidebarContent>
 
             <SidebarFooter>
-                <NavUser />
+                <NavUser user={user} />
             </SidebarFooter>
         </Sidebar>
     );

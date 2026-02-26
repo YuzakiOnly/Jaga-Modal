@@ -1,99 +1,129 @@
 import {
-    Activity,
-    BadgeDollarSign,
-    Building2,
-    ChartBarDecreasing,
-    ChartPie,
-    CreditCard,
-    Folder,
-    FolderDot,
-    Gauge,
-    GraduationCap,
-    ShoppingBag,
-    UserCircle2,
-    WalletMinimal,
+    LayoutDashboard,
+    Users,
+    Settings,
+    ShieldCheck,
+    Package,
+    ShoppingCart,
+    BarChart2,
+    FileText,
+    Store,
+    Wallet,
+    ClipboardList,
 } from "lucide-react";
 
-
-export const userData = {
-    name: "Toby Belhome",
-    email: "hello@tobybelhome.com",
-    avatar: "/images/avatars/01.png",
-    fallback: "TB",
-};
-
-
-export const projects = [
+// ─── Super Admin nav ──────────────────────────────────────────────────────────
+export const adminNavItems = [
     {
-        id: 1,
-        name: "E-commerce",
-        status: "Active",
-        statusColor: "text-green-600",
-        icon: ShoppingBag,
+        title: "Overview",
+        items: [
+            { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+            { title: "Analytics", href: "/admin/analytics", icon: BarChart2 },
+            { title: "Reports", href: "/admin/reports", icon: FileText },
+        ],
     },
     {
-        id: 2,
-        name: "Blog Platform",
-        status: "Inactive",
-        statusColor: "text-muted-foreground",
-        icon: UserCircle2,
+        title: "Management",
+        items: [
+            {
+                title: "Users",
+                icon: Users,
+                items: [
+                    { title: "All Users", href: "/admin/users" },
+                    { title: "Roles & Permissions", href: "/admin/users/roles" },
+                ],
+            },
+            { title: "Products", href: "/admin/products", icon: Package },
+            { title: "Orders", href: "/admin/orders", icon: ShoppingCart, isDataBadge: "12" },
+        ],
+    },
+    {
+        title: "System",
+        items: [
+            { title: "Security", href: "/admin/security", icon: ShieldCheck },
+            { title: "Settings", href: "/admin/settings", icon: Settings },
+        ],
     },
 ];
 
-
-export const navItems = [
+// ─── Owner nav (akses penuh) ──────────────────────────────────────────────────
+export const ownerNavItems = [
     {
-        title: "Dashboards",
+        title: "Overview",
         items: [
-            { title: "Default", href: "/dashboard/default", icon: ChartPie },
+            { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+            { title: "My Store", href: "/store", icon: Store },
+            { title: "Revenue", href: "/revenue", icon: Wallet },       // owner only
+        ],
+    },
+    {
+        title: "Store",
+        items: [
+            { title: "Products", href: "/products", icon: Package },
             {
-                title: "E-commerce",
-                href: "#",
-                icon: ShoppingBag,
+                title: "Orders",
+                icon: ShoppingCart,
+                isDataBadge: "5",
                 items: [
-                    { title: "Dashboard", href: "/dashboard/ecommerce" },
-                    { title: "Product List", href: "/dashboard/pages/products" },
-                    { title: "Product Detail", href: "/dashboard/pages/products/1" },
-                    { title: "Add Product", href: "/dashboard/pages/products/create" },
-                    { title: "Order List", href: "/dashboard/pages/orders" },
-                    { title: "Order Detail", href: "/dashboard/pages/orders/detail" },
-                ],
-            },
-            { title: "Sales", href: "/dashboard/sales", icon: BadgeDollarSign },
-            { title: "CRM", href: "/dashboard/crm", icon: ChartBarDecreasing },
-            { title: "Website Analytics", href: "/dashboard/website-analytics", icon: Gauge },
-            {
-                title: "Project Management",
-                href: "/dashboard/project-management",
-                icon: FolderDot,
-                items: [
-                    { title: "Dashboard", href: "/dashboard/project-management" },
-                    { title: "Project List", href: "/dashboard/project-list" },
-                ],
-            },
-            { title: "File Manager", href: "/dashboard/file-manager", icon: Folder },
-            { title: "Crypto", href: "/dashboard/crypto", icon: WalletMinimal },
-            { title: "Academy/School", href: "/dashboard/academy", icon: GraduationCap },
-            { title: "Hospital Management", href: "/dashboard/hospital-management", icon: Activity },
-            {
-                title: "Hotel Dashboard",
-                href: "/dashboard/hotel",
-                icon: Building2,
-                items: [
-                    { title: "Dashboard", href: "/dashboard/hotel" },
-                    { title: "Bookings", href: "/dashboard/hotel/bookings" },
-                ],
-            },
-            { title: "Finance Dashboard", href: "/dashboard/finance", icon: WalletMinimal },
-            {
-                title: "Payment Dashboard",
-                href: "/dashboard/payment",
-                icon: CreditCard,
-                items: [
-                    { title: "Dashboard", href: "/dashboard/payment" },
-                    { title: "Transactions", href: "/dashboard/payment/transactions" },
+                    { title: "All Orders", href: "/orders" },
+                    { title: "Pending", href: "/orders/pending" },
+                    { title: "Completed", href: "/orders/completed" },
                 ],
             },
         ],
+    },
+    {
+        title: "Account",
+        items: [
+            { title: "Settings", href: "/settings", icon: Settings },  // owner only
+        ],
+    },
+];
+
+// ─── Admin (melihat dashboard owner, nav terbatas) ────────────────────────────
+// Sama seperti owner tapi tanpa Revenue & Settings toko
+export const adminAsOwnerNavItems = [
+    {
+        title: "Overview",
+        items: [
+            { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+            { title: "My Store", href: "/store", icon: Store },
+            // Revenue disembunyikan — hanya owner
+        ],
+    },
+    {
+        title: "Store",
+        items: [
+            { title: "Products", href: "/products", icon: Package },
+            {
+                title: "Orders",
+                icon: ShoppingCart,
+                isDataBadge: "5",
+                items: [
+                    { title: "All Orders", href: "/orders" },
+                    { title: "Pending", href: "/orders/pending" },
+                    { title: "Completed", href: "/orders/completed" },
+                ],
+            },
+        ],
+    },
+    // Settings toko disembunyikan — hanya owner
+];
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+export const sharedProjects = [
+    {
+        id: 1,
+        name: "Main Store",
+        icon: Store,
+        status: "Active",
+        statusColor: "text-green-500",
+    },
+    {
+        id: 2,
+        name: "Warehouse",
+        icon: Package,
+        status: "Maintenance",
+        statusColor: "text-yellow-500",
     },
 ];

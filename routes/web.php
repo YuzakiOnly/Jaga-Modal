@@ -12,10 +12,21 @@ Route::get('/', function () {
     return Inertia::render('public/Home');
 });
 
-Route::get('/admin/dashboard', function () {
-    return Inertia::render('admin/dashboard/Dashboard');
+// ─── Admin routes — hanya super_admin ─────────────────────────────────────────
+Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('admin/dashboard/Dashboard');
+    })->name('admin.dashboard');
 });
 
+// ─── Store routes — owner dan admin ───────────────────────────────────────────
+Route::middleware(['auth', 'role:owner,admin'])->prefix('store')->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('owner/dashboard/Dashboard');
+    })->name('store.dashboard');
+});
+
+// ─── Auth & public routes ─────────────────────────────────────────────────────
 Route::middleware(['pending.store'])->group(function () {
     Route::get('/profile', function () {
         return Inertia::render('public/Profile');
@@ -47,3 +58,8 @@ Route::middleware(['pending.store'])->group(function () {
 
 Route::post('/language/switch', [LanguageController::class, 'switch'])
     ->name('language.switch');
+
+// ─── Fallback — semua route yang tidak ditemukan ──────────────────────────────
+Route::fallback(function () {
+    return Inertia::render('errors/NotFound');
+});

@@ -28,9 +28,8 @@ import {
     SidebarMenuSubItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import { navItems } from "@/lib/sidebar-data";
 
-export function NavMain() {
+export function NavMain({ navItems = [] }) {
     const { url } = usePage();
     const { isMobile } = useSidebar();
 
@@ -46,7 +45,6 @@ export function NavMain() {
                                     {Array.isArray(item.items) &&
                                     item.items.length > 0 ? (
                                         <>
-                                            {/* Collapsed icon mode → dropdown */}
                                             <div className="hidden group-data-[collapsible=icon]:block">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger
@@ -105,7 +103,6 @@ export function NavMain() {
                                                 </DropdownMenu>
                                             </div>
 
-                                            {/* Expanded mode → collapsible */}
                                             <Collapsible
                                                 className="group/collapsible block group-data-[collapsible=icon]:hidden"
                                                 defaultOpen={
