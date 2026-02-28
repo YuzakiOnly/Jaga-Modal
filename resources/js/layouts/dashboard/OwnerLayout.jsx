@@ -1,4 +1,4 @@
-import SidebarLayout from "@/layouts/sidebar/SidebarLayout";
+import SidebarLayout from "@/layouts/sidebar-v1/SidebarLayout";
 import {
     ownerNavItems,
     adminAsOwnerNavItems,

@@ -3,21 +3,20 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Mail\VerificationCodeMail;
-use App\Models\EmailVerificationCode;
+use App\Models\PhoneVerificationCode;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-    // Views 
 
     public function showLogin()
     {
@@ -33,21 +32,23 @@ class AuthController extends Controller
         ]);
     }
 
-    public function showVerifyEmail()
+    public function showVerifyPhone()
     {
         if (!Session::has('pending_registration')) {
             return redirect('/register');
         }
 
-        $email = Session::get('pending_registration.email');
+        $phone = Session::get('pending_registration.phone');
+        $countryCode = Session::get('pending_registration.country_code');
 
-        return Inertia::render('auth/VerifyEmail', [
-            'titlePage' => 'Verify Your Email',
-            'email' => $email,
+        $maskedPhone = $countryCode . ' ' . $this->maskPhone($phone);
+
+        return Inertia::render('auth/VerifyPhone', [
+            'titlePage' => 'Verify Your Phone',
+            'phone' => $maskedPhone,
+            'raw_phone' => $phone,
         ]);
     }
-
-    // Login 
 
     public function login(Request $request)
     {
@@ -89,8 +90,6 @@ class AuthController extends Controller
         return redirect()->intended('/');
     }
 
-    // Register 
-
     public function register(Request $request)
     {
         $request->validate([
@@ -105,24 +104,31 @@ class AuthController extends Controller
         ]);
 
         $locale = Session::get('locale', config('app.locale', 'en'));
+        $countryCode = ltrim($request->country_code, '+');
+        $localPhone = ltrim($request->phone, '0');
+        $fullPhone = $countryCode . $localPhone;
+
+        if (User::where('phone', $fullPhone)->exists()) {
+            return back()->withErrors([
+                'phone' => 'This phone number is already registered.',
+            ])->onlyInput('name', 'username', 'email', 'country_code');
+        }
 
         Session::put('pending_registration', [
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
             'country_code' => $request->country_code,
-            'phone' => $request->country_code . $request->phone,
+            'phone' => $fullPhone,
             'password' => Hash::make($request->password),
             'locale' => $locale,
         ]);
         Session::save();
 
-        $this->sendVerificationCode($request->email, $request->name);
+        $this->sendVerificationCode($fullPhone, $request->name);
 
-        return Inertia::location(route('verify.email'));
+        return Inertia::location(route('verify.phone'));
     }
-
-    // Email Verification 
 
     public function verify(Request $request)
     {
@@ -134,28 +140,28 @@ class AuthController extends Controller
 
         if (!$pending) {
             return back()->withErrors([
-                'error' => 'Your registration session has expired. Please register again.'
+                'error' => 'Your registration session has expired. Please register again.',
             ])->withInput();
         }
 
-        $record = EmailVerificationCode::where('email', $pending['email'])
+        $record = PhoneVerificationCode::where('phone', $pending['phone'])
             ->where('code', $request->code)
             ->latest()
             ->first();
 
         if (!$record) {
             return back()->withErrors([
-                'code' => 'The verification code you entered is incorrect.'
+                'code' => 'The verification code you entered is incorrect.',
             ])->withInput();
         }
 
         if ($record->isExpired()) {
             $record->delete();
             return back()->withErrors([
-                'code' => 'This verification code has expired. Please request a new one.'
+                'code' => 'This verification code has expired. Please request a new one.',
             ])->withInput();
         }
-        
+
         $record->delete();
 
         $user = User::create([
@@ -167,6 +173,7 @@ class AuthController extends Controller
             'password' => $pending['password'],
             'locale' => $pending['locale'],
             'email_verified_at' => now(),
+            'phone_verified_at' => now(),
         ]);
 
         Session::forget('pending_registration');
@@ -176,7 +183,7 @@ class AuthController extends Controller
         Session::save();
 
         return redirect()->route('store.setup')->with([
-            'success' => 'Email verified successfully! Please set up your store.'
+            'success' => 'Phone verified successfully! Please set up your store.',
         ]);
     }
 
@@ -188,12 +195,10 @@ class AuthController extends Controller
             return response()->json(['message' => 'Session expired.'], 422);
         }
 
-        $this->sendVerificationCode($pending['email'], $pending['name']);
+        $this->sendVerificationCode($pending['phone'], $pending['name']);
 
-        return response()->json(['message' => 'Verification code resent.']);
+        return response()->json(['message' => 'Verification code resent to your WhatsApp/SMS.']);
     }
-
-    // Logout
 
     public function logout(Request $request)
     {
@@ -214,20 +219,80 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
-    // Helpers
-
-    private function sendVerificationCode(string $email, string $name): void
+    private function sendVerificationCode(string $phone, string $name): void
     {
-        EmailVerificationCode::where('email', $email)->delete();
+        // Delete old codes for this phone
+        PhoneVerificationCode::where('phone', $phone)->delete();
 
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        EmailVerificationCode::create([
-            'email' => $email,
+        PhoneVerificationCode::create([
+            'phone' => $phone,
             'code' => $code,
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        Mail::to($email)->send(new VerificationCodeMail($code, $name));
+        $provider = config('services.otp.provider', 'twilio');
+
+        match ($provider) {
+            'twilio' => $this->sendViaTwilio($phone, $code, $name),
+            'fonnte' => $this->sendViaFonnte($phone, $code, $name),
+            'wablas' => $this->sendViaWablas($phone, $code, $name),
+            default => $this->sendViaTwilio($phone, $code, $name),
+        };
+    }
+
+    private function sendViaTwilio(string $phone, string $code, string $name): void
+    {
+        $sid = config('services.twilio.sid');
+        $token = config('services.twilio.token');
+        $verifySid = config('services.twilio.verify_sid');
+
+        $message = "Hi {$name}, your verification code is: *{$code}*\n\nThis code expires in 10 minutes. Do not share this code with anyone.";
+
+        Http::withBasicAuth($sid, $token)
+            ->asForm()
+            ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
+                'From' => 'whatsapp:' . config('services.twilio.whatsapp_from'),
+                'To' => 'whatsapp:' . $phone,
+                'Body' => $message,
+            ]);
+    }
+
+    private function sendViaFonnte(string $phone, string $code, string $name): void
+    {
+        $message = "Halo {$name}, kode verifikasi Anda adalah: *{$code}*\n\nKode ini berlaku 10 menit. Jangan bagikan kode ini kepada siapapun.";
+
+        Http::withoutVerifying()
+            ->withHeaders([
+                'Authorization' => config('services.fonnte.token'),
+            ])->post('https://api.fonnte.com/send', [
+                    'target' => $phone,
+                    'message' => $message,
+                    'countryCode' => '62',
+                ]);
+    }
+
+    private function sendViaWablas(string $phone, string $code, string $name): void
+    {
+        $message = "Halo {$name}, kode verifikasi Anda adalah: *{$code}*\n\nKode ini berlaku 10 menit. Jangan bagikan kode ini kepada siapapun.";
+
+        Http::withHeaders([
+            'Authorization' => config('services.wablas.token'),
+        ])->post(config('services.wablas.domain') . '/api/send-message', [
+                    'phone' => $phone,
+                    'message' => $message,
+                ]);
+    }
+
+    private function maskPhone(string $fullPhone): string
+    {
+        $digits = preg_replace('/^\+\d{1,3}/', '', $fullPhone);
+        $len = strlen($digits);
+
+        if ($len <= 4)
+            return str_repeat('*', $len);
+
+        return str_repeat('*', $len - 4) . substr($digits, -4);
     }
 }

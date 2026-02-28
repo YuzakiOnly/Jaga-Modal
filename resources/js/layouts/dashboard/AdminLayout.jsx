@@ -1,4 +1,4 @@
-import SidebarLayout from "@/layouts/sidebar/SidebarLayout";
+import SidebarLayout from "@/layouts/sidebar-v1/SidebarLayout";
 import { adminNavItems, sharedProjects } from "@/lib/sidebar-data";
 import { usePage } from "@inertiajs/react";
 

@@ -4,13 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class EmailVerificationCode extends Model
+class PhoneVerificationCode extends Model
 {
-    protected $fillable = [
-        'email',
-        'code',
-        'expires_at',
-    ];
+    protected $fillable = ['phone', 'code', 'expires_at'];
 
     protected $casts = [
         'expires_at' => 'datetime',

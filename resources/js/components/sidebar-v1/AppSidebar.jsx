@@ -16,8 +16,8 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import { NavMain } from "@/components/sidebar/NavMain";
-import { NavUser } from "@/components/sidebar/NavUser";
+import { NavMain } from "@/components/sidebar-v1/NavMain";
+import { NavUser } from "@/components/sidebar-v1/NavUser";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     DropdownMenu,

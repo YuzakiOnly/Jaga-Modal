@@ -11,16 +11,13 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         User::create([
             'name' => 'Super Admin',
             'username' => 'superadmin',
             'email' => 'superadmin@jagamodal.com',
-            'email_verified_at' => now(),
+            'phone_verified_at' => now(),
             'password' => Hash::make('jagamodal@_2026_@'),
             'country_code' => '+62',
             'phone' => '085231823088',
@@ -32,7 +29,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Owner Demo',
             'username' => 'owner',
             'email' => 'owner@jagamodal.com',
-            'email_verified_at' => now(),
+            'phone_verified_at' => now(),
             'password' => Hash::make('owner1234'),
             'country_code' => '+62',
             'phone' => '081234567890',
@@ -44,7 +41,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin Demo',
             'username' => 'admin',
             'email' => 'admin@jagamodal.com',
-            'email_verified_at' => now(),
+            'phone_verified_at' => now(),
             'password' => Hash::make('admin1234'),
             'country_code' => '+62',
             'phone' => '081234567891',
@@ -56,7 +53,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Cashier Demo',
             'username' => 'cashier',
             'email' => 'cashier@jagamodal.com',
-            'email_verified_at' => now(),
+            'phone_verified_at' => now(),
             'password' => Hash::make('cashier1234'),
             'country_code' => '+62',
             'phone' => '081234567892',
@@ -68,7 +65,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Staff Demo',
             'username' => 'staff',
             'email' => 'staff@jagamodal.com',
-            'email_verified_at' => now(),
+            'phone_verified_at' => now(),
             'password' => Hash::make('staff1234'),
             'country_code' => '+62',
             'phone' => '081234567893',
@@ -76,5 +73,4 @@ class DatabaseSeeder extends Seeder
             'role' => 'staff',
         ]);
     }
-
 }

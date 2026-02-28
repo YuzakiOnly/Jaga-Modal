@@ -12,10 +12,10 @@ return new class extends Migration {
             $table->string('name');
             $table->string('username', 20)->unique();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('phone_verified_at')->nullable();
             $table->string('password');
             $table->string('country_code', 10)->default('+62');
-            $table->string('phone', 30)->nullable();
+            $table->string('phone', 30)->nullable()->unique();  
             $table->string('avatar')->nullable();
             $table->string('thumbnail')->nullable();
             $table->string('locale', 10)->default('en');

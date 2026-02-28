@@ -4,19 +4,18 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import AuthLayout from "@/Layouts/AuthLayout";
 import { AuthHeader } from "@/components/auth/LoginPage";
-import { useTranslation } from "@/hooks/useTranslation";
 import axios from "axios";
 import {
     AlertCircle,
     CheckCircle2,
     Loader2,
-    Mail,
+    Smartphone,
     Clock,
     Send,
+    MessageCircle,
 } from "lucide-react";
 
-function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
-    const { lang } = useTranslation();
+function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
     const [digits, setDigits] = useState(["", "", "", "", "", ""]);
     const [resending, setResending] = useState(false);
     const [resendMessage, setResendMessage] = useState("");
@@ -26,9 +25,7 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
     const inputsRef = useRef([]);
 
     const { data, setData, processing, errors, setError, clearErrors } =
-        useForm({
-            code: "",
-        });
+        useForm({ code: "" });
 
     useEffect(() => {
         if (countdown > 0) {
@@ -92,7 +89,7 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
             return;
         }
 
-        router.post("/verify-email", { code });
+        router.post("/verify-phone", { code });
     };
 
     const handleResend = async () => {
@@ -103,11 +100,12 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
         setResendError("");
 
         try {
-            const res = await axios.post("/verify-email/resend");
-            setResendMessage(res.data.message ?? "Code resent successfully!");
+            const res = await axios.post("/verify-phone/resend");
+            setResendMessage(
+                res.data.message ?? "Code resent to your WhatsApp/SMS!",
+            );
             setCountdown(60);
         } catch (error) {
-            console.error("Resend error:", error.response?.data);
             setResendError(
                 error.response?.data?.message ??
                     "Failed to resend. Please try again.",
@@ -131,10 +129,27 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
             <Head title={titlePage} />
 
             <AuthHeader
-                title="Verify Your Email"
-                description={`We sent a 6-digit code to ${email}. Enter it below to continue.`}
+                title="Verify Your Phone Number"
+                description={
+                    <>
+                        We sent a 6-digit code to your WhatsApp/SMS at{" "}
+                        <span className="font-semibold text-foreground">
+                            {phone}
+                        </span>
+                        . Enter it below to continue.
+                    </>
+                }
                 showDescription
             />
+
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                <MessageCircle className="h-4 w-4 shrink-0" />
+                <span>
+                    Code sent via{" "}
+                    <span className="font-semibold">WhatsApp</span> or{" "}
+                    <span className="font-semibold">SMS</span>
+                </span>
+            </div>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6" noValidate>
                 <div className="space-y-3">
@@ -171,7 +186,9 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
                             <div className="flex items-center gap-2 text-red-500 bg-red-50 px-4 py-2 rounded-full">
                                 <AlertCircle className="h-4 w-4" />
                                 <span className="text-sm font-medium">
-                                    Invalid code
+                                    {errors.code ||
+                                        serverErrors?.code ||
+                                        "Invalid code. Please try again."}
                                 </span>
                             </div>
                         </div>
@@ -201,7 +218,7 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
                     ) : (
                         <>
                             <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Verify Email
+                            Verify Phone Number
                         </>
                     )}
                 </Button>
@@ -209,7 +226,7 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
 
             <div className="mt-6 text-center">
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
-                    <Mail className="h-4 w-4" />
+                    <Smartphone className="h-4 w-4" />
                     <span>Didn't receive a code?</span>
                 </div>
 
@@ -270,8 +287,8 @@ function VerifyEmailContent({ titlePage, email, errors: serverErrors }) {
     );
 }
 
-VerifyEmailContent.layout = (page) => (
+VerifyPhoneContent.layout = (page) => (
     <AuthLayout type="register">{page}</AuthLayout>
 );
 
-export default VerifyEmailContent;
+export default VerifyPhoneContent;
