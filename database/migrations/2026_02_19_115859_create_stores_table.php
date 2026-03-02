@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('stores', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); 
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('business_type');
             $table->string('country', 10)->default('ID');
@@ -21,8 +21,6 @@ return new class extends Migration {
             $table->string('thumbnail')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            $table->index('user_id');
         });
     }
 

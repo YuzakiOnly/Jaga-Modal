@@ -2,9 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Language\LanguageController;
-use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Auth\StoreSetupController;
-use App\Http\Controllers\StoreController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
@@ -25,9 +23,6 @@ Route::middleware(['auth', 'role:owner,admin'])->prefix('store')->group(function
 });
 
 Route::middleware(['pending.store'])->group(function () {
-    Route::get('/profile', function () {
-        return Inertia::render('public/Profile');
-    });
 
     Route::middleware(['guest'])->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -43,8 +38,6 @@ Route::middleware(['pending.store'])->group(function () {
 
     Route::middleware('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-        Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::post('/store', [StoreController::class, 'update'])->name('store.update');
     });
 });
 

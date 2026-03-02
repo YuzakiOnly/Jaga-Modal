@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Store;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'role' => 'super_admin',
         ]);
 
-        User::create([
+        $owner = User::create([
             'name' => 'Owner Demo',
             'username' => 'owner',
             'email' => 'owner@jagamodal.com',
@@ -35,6 +36,16 @@ class DatabaseSeeder extends Seeder
             'phone' => '081234567890',
             'locale' => 'id',
             'role' => 'owner',
+        ]);
+
+        Store::create([
+            'user_id' => $owner->id,
+            'name' => 'Toko Demo',
+            'business_type' => 'retail',
+            'country' => 'ID',
+            'province' => 'Jawa Timur',
+            'address' => 'Jl. Demo No. 1, Banyuwangi',
+            'is_active' => true,
         ]);
 
         User::create([
