@@ -16,10 +16,10 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->group(function
     })->name('admin.dashboard');
 });
 
-Route::middleware(['auth', 'role:owner,admin'])->prefix('store')->group(function () {
+Route::middleware(['auth', 'role:owner,admin'])->prefix('owner')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('owner/dashboard/Dashboard');
-    })->name('store.dashboard');
+    })->name('owner.dashboard');
 });
 
 Route::middleware(['pending.store'])->group(function () {
