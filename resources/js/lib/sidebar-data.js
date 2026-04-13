@@ -9,10 +9,9 @@ import {
     FileText,
     Store,
     Wallet,
-    ClipboardList,
 } from "lucide-react";
 
-// ─── Super Admin nav ──────────────────────────────────────────────────────────
+// Super Admin nav
 export const adminNavItems = [
     {
         title: "Overview",
@@ -30,11 +29,20 @@ export const adminNavItems = [
                 icon: Users,
                 items: [
                     { title: "All Users", href: "/admin/users" },
-                    { title: "Roles & Permissions", href: "/admin/users/roles" },
+                    { title: "Roles & Permissions", href: "/admin/users/roles", isNew: true },
                 ],
             },
-            { title: "Products", href: "/admin/products", icon: Package },
-            { title: "Orders", href: "/admin/orders", icon: ShoppingCart, isDataBadge: "12" },
+            {
+                title: "Products",
+                href: "/admin/products",
+                icon: Package,
+            },
+            {
+                title: "Orders",
+                href: "/admin/orders",
+                icon: ShoppingCart,
+                isDataBadge: "12",
+            },
         ],
     },
     {
@@ -46,27 +54,31 @@ export const adminNavItems = [
     },
 ];
 
-// ─── Owner nav (akses penuh) ──────────────────────────────────────────────────
+// Owner nav 
 export const ownerNavItems = [
     {
         title: "Overview",
         items: [
             { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
             { title: "My Store", href: "/store", icon: Store },
-            { title: "Revenue", href: "/revenue", icon: Wallet },       // owner only
+            { title: "Revenue", href: "/revenue", icon: Wallet },
         ],
     },
     {
         title: "Store",
         items: [
-            { title: "Products", href: "/products", icon: Package },
+            {
+                title: "Products",
+                href: "/products",
+                icon: Package,
+                isDataBadge: "5",
+            },
             {
                 title: "Orders",
                 icon: ShoppingCart,
-                isDataBadge: "5",
                 items: [
                     { title: "All Orders", href: "/orders" },
-                    { title: "Pending", href: "/orders/pending" },
+                    { title: "Pending", href: "/orders/pending", isDataBadge: "5" },
                     { title: "Completed", href: "/orders/completed" },
                 ],
             },
@@ -75,42 +87,43 @@ export const ownerNavItems = [
     {
         title: "Account",
         items: [
-            { title: "Settings", href: "/settings", icon: Settings },  // owner only
+            { title: "Settings", href: "/settings", icon: Settings },
         ],
     },
 ];
 
-// ─── Admin (melihat dashboard owner, nav terbatas) ────────────────────────────
-// Sama seperti owner tapi tanpa Revenue & Settings toko
+// Admin as Owner nav
 export const adminAsOwnerNavItems = [
     {
         title: "Overview",
         items: [
             { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
             { title: "My Store", href: "/store", icon: Store },
-            // Revenue disembunyikan — hanya owner
         ],
     },
     {
         title: "Store",
         items: [
-            { title: "Products", href: "/products", icon: Package },
+            {
+                title: "Products",
+                href: "/products",
+                icon: Package,
+                isDataBadge: "5",
+            },
             {
                 title: "Orders",
                 icon: ShoppingCart,
-                isDataBadge: "5",
                 items: [
                     { title: "All Orders", href: "/orders" },
-                    { title: "Pending", href: "/orders/pending" },
+                    { title: "Pending", href: "/orders/pending", isDataBadge: "5" },
                     { title: "Completed", href: "/orders/completed" },
                 ],
             },
         ],
     },
-    // Settings toko disembunyikan — hanya owner
 ];
 
-// ─── Projects ─────────────────────────────────────────────────────────────────
+// Projects
 export const sharedProjects = [
     {
         id: 1,

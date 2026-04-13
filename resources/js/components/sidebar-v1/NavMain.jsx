@@ -29,6 +29,64 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 
+// ─── Helper: render badge untuk setiap item / sub ────────────────────────────
+function ItemBadge({ item, className = "" }) {
+    if (item.isComing) {
+        return (
+            <SidebarMenuBadge
+                className={`opacity-50 absolute right-2 top-1/2 -translate-y-1/2 ${className}`}
+            >
+                Coming
+            </SidebarMenuBadge>
+        );
+    }
+    if (item.isNew) {
+        return (
+            <SidebarMenuBadge
+                className={`border border-green-400 text-green-600 absolute right-2 top-1/2 -translate-y-1/2 ${className}`}
+            >
+                New
+            </SidebarMenuBadge>
+        );
+    }
+    if (item.isDataBadge) {
+        return (
+            <SidebarMenuBadge
+                className={`absolute right-2 top-1/2 -translate-y-1/2 ${className}`}
+            >
+                {item.isDataBadge}
+            </SidebarMenuBadge>
+        );
+    }
+    return null;
+}
+
+// ─── Helper: render badge inline (untuk dropdown) ────────────────────────────
+function InlineBadge({ item }) {
+    if (item.isComing) {
+        return (
+            <span className="ml-auto text-xs opacity-50 leading-none">
+                Coming
+            </span>
+        );
+    }
+    if (item.isNew) {
+        return (
+            <span className="ml-auto text-xs border border-green-400 text-green-600 rounded px-1 leading-none">
+                New
+            </span>
+        );
+    }
+    if (item.isDataBadge) {
+        return (
+            <span className="ml-auto text-xs leading-none">
+                {item.isDataBadge}
+            </span>
+        );
+    }
+    return null;
+}
+
 export function NavMain({ navItems = [] }) {
     const { url } = usePage();
     const { isMobile } = useSidebar();
@@ -41,10 +99,14 @@ export function NavMain({ navItems = [] }) {
                     <SidebarGroupContent className="flex flex-col gap-2">
                         <SidebarMenu>
                             {nav.items.map((item) => (
-                                <SidebarMenuItem key={item.title}>
+                                <SidebarMenuItem
+                                    key={item.title}
+                                    className="relative"
+                                >
                                     {Array.isArray(item.items) &&
                                     item.items.length > 0 ? (
                                         <>
+                                            {/* ── Collapsed icon mode → Dropdown ── */}
                                             <div className="hidden group-data-[collapsible=icon]:block">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger
@@ -92,9 +154,16 @@ export function NavMain({ navItems = [] }) {
                                                                             sub.href
                                                                         }
                                                                     >
-                                                                        {
-                                                                            sub.title
-                                                                        }
+                                                                        <span>
+                                                                            {
+                                                                                sub.title
+                                                                            }
+                                                                        </span>
+                                                                        <InlineBadge
+                                                                            item={
+                                                                                sub
+                                                                            }
+                                                                        />
                                                                     </Link>
                                                                 </DropdownMenuItem>
                                                             ),
@@ -125,6 +194,7 @@ export function NavMain({ navItems = [] }) {
                                                         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                                                     </SidebarMenuButton>
                                                 </CollapsibleTrigger>
+
                                                 <CollapsibleContent>
                                                     <SidebarMenuSub>
                                                         {item.items?.map(
@@ -133,6 +203,7 @@ export function NavMain({ navItems = [] }) {
                                                                     key={
                                                                         sub.title
                                                                     }
+                                                                    className="relative"
                                                                 >
                                                                     <SidebarMenuSubButton
                                                                         className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
@@ -159,48 +230,34 @@ export function NavMain({ navItems = [] }) {
                                                                             </span>
                                                                         </Link>
                                                                     </SidebarMenuSubButton>
+
+                                                                    <ItemBadge
+                                                                        item={
+                                                                            sub
+                                                                        }
+                                                                    />
                                                                 </SidebarMenuSubItem>
                                                             ),
                                                         )}
                                                     </SidebarMenuSub>
                                                 </CollapsibleContent>
                                             </Collapsible>
+
+                                            <ItemBadge item={item} />
                                         </>
                                     ) : (
                                         <SidebarMenuButton
                                             className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
                                             isActive={url === item.href}
                                             tooltip={item.title}
-                                            asChild
+                                            onClick={() =>
+                                                router.visit(item.href)
+                                            }
                                         >
-                                            <Link
-                                                href={item.href}
-                                                target={
-                                                    item.newTab
-                                                        ? "_blank"
-                                                        : undefined
-                                                }
-                                            >
-                                                {item.icon && <item.icon />}
-                                                <span>{item.title}</span>
-                                            </Link>
+                                            {item.icon && <item.icon />}
+                                            <span>{item.title}</span>
+                                            <ItemBadge item={item} />
                                         </SidebarMenuButton>
-                                    )}
-
-                                    {!!item.isComing && (
-                                        <SidebarMenuBadge className="peer-hover/menu-button:text-foreground opacity-50">
-                                            Coming
-                                        </SidebarMenuBadge>
-                                    )}
-                                    {!!item.isNew && (
-                                        <SidebarMenuBadge className="border border-green-400 text-green-600 peer-hover/menu-button:text-green-600">
-                                            New
-                                        </SidebarMenuBadge>
-                                    )}
-                                    {!!item.isDataBadge && (
-                                        <SidebarMenuBadge className="peer-hover/menu-button:text-foreground">
-                                            {item.isDataBadge}
-                                        </SidebarMenuBadge>
                                     )}
                                 </SidebarMenuItem>
                             ))}
