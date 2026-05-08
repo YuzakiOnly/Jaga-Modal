@@ -10,13 +10,13 @@ Route::get('/', function () {
     return Inertia::render('public/Home');
 });
 
-Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('admin/dashboard/Dashboard');
     })->name('admin.dashboard');
 });
 
-Route::middleware(['auth', 'role:owner,admin'])->prefix('owner')->group(function () {
+Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('owner/dashboard/Dashboard');
     })->name('owner.dashboard');

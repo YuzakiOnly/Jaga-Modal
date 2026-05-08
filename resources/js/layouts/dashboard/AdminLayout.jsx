@@ -1,5 +1,5 @@
 import SidebarLayout from "@/layouts/sidebar-v1/SidebarLayout";
-import { adminNavItems, sharedProjects } from "@/lib/sidebar-data";
+import { AdminNavItems, sharedProjects } from "@/lib/sidebar-data";
 import { usePage } from "@inertiajs/react";
 
 export default function AdminLayout({ children }) {
@@ -7,7 +7,7 @@ export default function AdminLayout({ children }) {
 
     return (
         <SidebarLayout
-            navItems={adminNavItems}
+            navItems={AdminNavItems}
             projects={sharedProjects}
             appName="Admin Panel"
             user={{

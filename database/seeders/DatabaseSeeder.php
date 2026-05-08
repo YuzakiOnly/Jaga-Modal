@@ -15,15 +15,15 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'name' => 'Super Admin',
-            'username' => 'superadmin',
-            'email' => 'superadmin@jagamodal.com',
+            'name' => 'Admin',
+            'username' => 'admin',
+            'email' => 'admin@jagamodal.com',
             'phone_verified_at' => now(),
             'password' => Hash::make('jagamodal@_2026_@'),
             'country_code' => '+62',
             'phone' => '085231823088',
             'locale' => 'id',
-            'role' => 'super_admin',
+            'role' => 'admin',
         ]);
 
         $owner = User::create([
@@ -49,18 +49,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Admin Demo',
-            'username' => 'admin',
-            'email' => 'admin@jagamodal.com',
-            'phone_verified_at' => now(),
-            'password' => Hash::make('admin1234'),
-            'country_code' => '+62',
-            'phone' => '081234567891',
-            'locale' => 'id',
-            'role' => 'admin',
-        ]);
-
-        User::create([
             'name' => 'Cashier Demo',
             'username' => 'cashier',
             'email' => 'cashier@jagamodal.com',
@@ -70,18 +58,6 @@ class DatabaseSeeder extends Seeder
             'phone' => '081234567892',
             'locale' => 'id',
             'role' => 'cashier',
-        ]);
-
-        User::create([
-            'name' => 'Staff Demo',
-            'username' => 'staff',
-            'email' => 'staff@jagamodal.com',
-            'phone_verified_at' => now(),
-            'password' => Hash::make('staff1234'),
-            'country_code' => '+62',
-            'phone' => '081234567893',
-            'locale' => 'id',
-            'role' => 'staff',
         ]);
     }
 }

@@ -11,8 +11,8 @@ import {
     Wallet,
 } from "lucide-react";
 
-// Super Admin nav
-export const adminNavItems = [
+// Admin nav
+export const AdminNavItems = [
     {
         title: "Overview",
         items: [
@@ -32,11 +32,7 @@ export const adminNavItems = [
                     { title: "Roles & Permissions", href: "/admin/users/roles", isNew: true },
                 ],
             },
-            {
-                title: "Products",
-                href: "/admin/products",
-                icon: Package,
-            },
+            { title: "Products", href: "/admin/products", icon: Package },
             {
                 title: "Orders",
                 href: "/admin/orders",
@@ -54,7 +50,7 @@ export const adminNavItems = [
     },
 ];
 
-// Owner nav 
+// Owner nav
 export const ownerNavItems = [
     {
         title: "Overview",
@@ -88,37 +84,6 @@ export const ownerNavItems = [
         title: "Account",
         items: [
             { title: "Settings", href: "/settings", icon: Settings },
-        ],
-    },
-];
-
-// Admin as Owner nav
-export const adminAsOwnerNavItems = [
-    {
-        title: "Overview",
-        items: [
-            { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-            { title: "My Store", href: "/store", icon: Store },
-        ],
-    },
-    {
-        title: "Store",
-        items: [
-            {
-                title: "Products",
-                href: "/products",
-                icon: Package,
-                isDataBadge: "5",
-            },
-            {
-                title: "Orders",
-                icon: ShoppingCart,
-                items: [
-                    { title: "All Orders", href: "/orders" },
-                    { title: "Pending", href: "/orders/pending", isDataBadge: "5" },
-                    { title: "Completed", href: "/orders/completed" },
-                ],
-            },
         ],
     },
 ];

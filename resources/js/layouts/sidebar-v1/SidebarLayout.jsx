@@ -18,7 +18,7 @@ export default function SidebarLayout({
                 user={user}
             />
             <SidebarInset className="bg-sidebar">
-                <div className="flex flex-col h-full mt-2.5 mr-2.5 rounded-tl-xl rounded-tr-xl bg-background overflow-hidden">
+                <div className="flex flex-col h-full md:mt-2.5 md:mr-2.5 md:rounded-tl-xl md:rounded-tr-xl bg-background overflow-hidden">
                     <AppHeader />
                     <main className="flex-1 overflow-auto">{children}</main>
                 </div>

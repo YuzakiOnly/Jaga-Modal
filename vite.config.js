@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite'
 import path from 'node:path'
-import laravel from 'laravel-vite-plugin';
-import react from "@vitejs/plugin-react"
-import tailwindcss from '@tailwindcss/vite';
+import laravel from 'laravel-vite-plugin'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
     plugins: [
@@ -11,17 +11,21 @@ export default defineConfig({
             refresh: true,
         }),
         tailwindcss(),
-        react()
+        react(),
     ],
+
     resolve: {
         alias: {
-            "@": path.resolve(__dirname, "./resources/js"),
+            '@': path.resolve(__dirname, './resources/js'),
         },
     },
+
     server: {
-        host: '0.0.0.0',
+        host: true,
+        port: 5173,
+        strictPort: true,
         hmr: {
-            host: '192.168.1.2',
+            host: 'localhost', 
         },
     },
-});
+})

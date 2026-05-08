@@ -221,7 +221,6 @@ class AuthController extends Controller
 
     private function sendVerificationCode(string $phone, string $name): void
     {
-        // Delete old codes for this phone
         PhoneVerificationCode::where('phone', $phone)->delete();
 
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
