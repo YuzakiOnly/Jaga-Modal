@@ -12,24 +12,39 @@ import {
     SelectValue,
 } from "@/Components/ui/select";
 import AuthLayout from "@/Layouts/AuthLayout";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { MapPin, Store, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+    MapPin,
+    Store,
+    Building2,
+    ChevronRight,
+    ChevronLeft,
+    Loader2,
+} from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-
 import { BUSINESS_TYPES } from "@/lib/setup-store/business-types";
 import { COUNTRIES } from "@/lib/setup-store/countries";
 import { PROVINCES_ID } from "@/lib/setup-store/provinces";
 import { StepIndicator } from "@/components/auth/step-indicator";
-import { loadLeaflet, initMap, createDraggableMarker } from "@/lib/setup-store/map-utils";
+import {
+    loadLeaflet,
+    initMap,
+    createDraggableMarker,
+} from "@/lib/setup-store/map-utils";
 
+/* ── Step 1: Jenis Usaha ── */
 function StepBusinessType({ value, onChange, onNext }) {
     return (
-        <div className="space-y-4">
-            <div className="text-center mb-2">
-                <Building2 className="mx-auto h-10 w-10 text-primary mb-2" />
-                <h2 className="text-lg font-semibold">Pilih Jenis Usaha</h2>
-                <p className="text-sm text-muted-foreground">
-                    Pilih kategori yang paling sesuai dengan usaha Anda
+        <div className="space-y-5">
+            <div className="text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <Building2 className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-base font-semibold text-foreground">
+                    Jenis Usaha
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Pilih kategori yang paling sesuai
                 </p>
             </div>
 
@@ -39,12 +54,11 @@ function StepBusinessType({ value, onChange, onNext }) {
                         key={type.value}
                         type="button"
                         onClick={() => onChange(type.value)}
-                        className={`p-3 rounded-lg border text-sm text-left transition-all cursor-pointer
-                            ${
-                                value === type.value
-                                    ? "border-primary bg-primary/10 text-primary font-semibold"
-                                    : "border-border hover:border-primary/50 hover:bg-muted"
-                            }`}
+                        className={`rounded-lg border px-3 py-2.5 text-sm text-left font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            value === type.value
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border text-foreground hover:border-primary/40 hover:bg-muted"
+                        }`}
                     >
                         {type.label}
                     </button>
@@ -53,7 +67,8 @@ function StepBusinessType({ value, onChange, onNext }) {
 
             <Button
                 type="button"
-                className="w-full mt-2"
+                className="w-full"
+                size="lg"
                 disabled={!value}
                 onClick={onNext}
             >
@@ -63,104 +78,111 @@ function StepBusinessType({ value, onChange, onNext }) {
     );
 }
 
+/* ── Step 2: Info Toko ── */
 function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
     const provinces = data.country === "ID" ? PROVINCES_ID : [];
 
     return (
-        <div className="space-y-4">
-            <div className="text-center mb-2">
-                <Store className="mx-auto h-10 w-10 text-primary mb-2" />
-                <h2 className="text-lg font-semibold">Informasi Toko</h2>
-                <p className="text-sm text-muted-foreground">
+        <div className="space-y-5">
+            <div className="text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <Store className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-base font-semibold text-foreground">
+                    Informasi Toko
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
                     Isi detail toko Anda
                 </p>
             </div>
 
-            <div>
-                <Label htmlFor="name" className="text-sm font-medium">
-                    Nama Toko / Usaha
-                </Label>
-                <Input
-                    id="name"
-                    className="mt-1"
-                    placeholder="Contoh: Toko Makmur Jaya"
-                    value={data.name || ""}
-                    onChange={(e) => setData("name", e.target.value)}
-                />
-                {errors.name && (
-                    <p className="mt-1 text-xs text-destructive">
-                        {errors.name}
-                    </p>
-                )}
-            </div>
+            <div className="space-y-4">
+                <div className="space-y-1.5">
+                    <Label htmlFor="store-name" className="text-sm font-medium">
+                        Nama Toko / Usaha
+                    </Label>
+                    <Input
+                        id="store-name"
+                        placeholder="Contoh: Toko Makmur Jaya"
+                        value={data.name || ""}
+                        onChange={(e) => setData("name", e.target.value)}
+                    />
+                    {errors.name && (
+                        <p className="text-xs text-destructive">
+                            {errors.name}
+                        </p>
+                    )}
+                </div>
 
-            <div>
-                <Label className="text-sm font-medium">Negara</Label>
-                <Select
-                    value={data.country || "ID"}
-                    onValueChange={(val) => setData("country", val)}
-                >
-                    <SelectTrigger className="mt-1 w-full">
-                        <SelectValue placeholder="Pilih negara" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {COUNTRIES.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                                {c.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                {errors.country && (
-                    <p className="mt-1 text-xs text-destructive">
-                        {errors.country}
-                    </p>
-                )}
-            </div>
-
-            <div>
-                <Label className="text-sm font-medium">
-                    Provinsi / Wilayah
-                </Label>
-                {provinces.length > 0 ? (
+                <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Negara</Label>
                     <Select
-                        value={data.province || ""}
-                        onValueChange={(val) => setData("province", val)}
+                        value={data.country || "ID"}
+                        onValueChange={(val) => setData("country", val)}
                     >
-                        <SelectTrigger className="mt-1 w-full">
-                            <SelectValue placeholder="Pilih provinsi" />
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pilih negara" />
                         </SelectTrigger>
-                        <SelectContent className="max-h-60 overflow-y-auto">
-                            {provinces.map((p) => (
-                                <SelectItem key={p} value={p}>
-                                    {p}
+                        <SelectContent>
+                            {COUNTRIES.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>
+                                    {c.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                ) : (
-                    <Input
-                        className="mt-1"
-                        placeholder="Masukkan wilayah / provinsi"
-                        value={data.province || ""}
-                        onChange={(e) => setData("province", e.target.value)}
-                    />
-                )}
-                {errors.province && (
-                    <p className="mt-1 text-xs text-destructive">
-                        {errors.province}
-                    </p>
-                )}
+                    {errors.country && (
+                        <p className="text-xs text-destructive">
+                            {errors.country}
+                        </p>
+                    )}
+                </div>
+
+                <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">
+                        Provinsi / Wilayah
+                    </Label>
+                    {provinces.length > 0 ? (
+                        <Select
+                            value={data.province || ""}
+                            onValueChange={(val) => setData("province", val)}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih provinsi" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                                {provinces.map((p) => (
+                                    <SelectItem key={p} value={p}>
+                                        {p}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    ) : (
+                        <Input
+                            placeholder="Masukkan wilayah / provinsi"
+                            value={data.province || ""}
+                            onChange={(e) =>
+                                setData("province", e.target.value)
+                            }
+                        />
+                    )}
+                    {errors.province && (
+                        <p className="text-xs text-destructive">
+                            {errors.province}
+                        </p>
+                    )}
+                </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2">
                 <Button
                     type="button"
                     variant="outline"
                     className="flex-1"
                     onClick={onBack}
                 >
-                    Kembali
+                    <ChevronLeft className="mr-1 h-4 w-4" /> Kembali
                 </Button>
                 <Button
                     type="button"
@@ -175,6 +197,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
     );
 }
 
+/* ── Step 3: Lokasi ── */
 function StepLocation({ data, setData, errors, processing, onBack }) {
     const mapRef = useRef(null);
     const markerRef = useRef(null);
@@ -196,7 +219,6 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
 
         const map = initMap(mapRef, defaultLat, defaultLng);
         if (!map) return;
-
         mapInstanceRef.current = map;
 
         const updatePosition = (latlng) => {
@@ -211,7 +233,6 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
             updatePosition,
         );
         markerRef.current = marker;
-
         map.on("click", (e) => {
             marker.setLatLng(e.latlng);
             updatePosition(e.latlng);
@@ -240,92 +261,108 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
     };
 
     return (
-        <div className="space-y-4">
-            <div className="text-center mb-2">
-                <MapPin className="mx-auto h-10 w-10 text-primary mb-2" />
-                <h2 className="text-lg font-semibold">Lokasi Toko</h2>
-                <p className="text-sm text-muted-foreground">
-                    Tandai lokasi toko Anda di peta
-                </p>
-            </div>
-
-            <div>
-                <Label htmlFor="address" className="text-sm font-medium">
-                    Alamat Lengkap
-                </Label>
-                <Textarea
-                    id="address"
-                    className="mt-1 resize-none"
-                    rows={2}
-                    placeholder="Jl. Contoh No. 1, Kelurahan, Kecamatan, Kota"
-                    value={data.address || ""}
-                    onChange={(e) => setData("address", e.target.value)}
-                />
-                {errors.address && (
-                    <p className="mt-1 text-xs text-destructive">
-                        {errors.address}
-                    </p>
-                )}
-            </div>
-
-            <div>
-                <div className="flex items-center justify-between mb-1">
-                    <Label className="text-sm font-medium">Pin Lokasi</Label>
-                    <button
-                        type="button"
-                        onClick={handleLocate}
-                        className="text-xs text-primary underline hover:no-underline inline-flex items-center gap-1 cursor-pointer"
-                        disabled={locating}
-                    >
-                        {locating ? (
-                            <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Mendeteksi...
-                            </>
-                        ) : (
-                            <>
-                                <MapPin className="h-3 w-3" />
-                                Lokasi Saya
-                            </>
-                        )}
-                    </button>
+        <div className="space-y-5">
+            <div className="text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <MapPin className="h-6 w-6 text-primary" />
                 </div>
-                <div
-                    ref={mapRef}
-                    className="w-full h-56 rounded-lg border overflow-hidden bg-muted"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                    Klik peta atau seret pin untuk menentukan lokasi toko
+                <h2 className="text-base font-semibold text-foreground">
+                    Lokasi Toko
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Tandai lokasi toko di peta
                 </p>
-                {data.latitude && data.longitude && (
-                    <p className="text-xs text-green-600 mt-0.5">
-                        ✓ Koordinat: {parseFloat(data.latitude).toFixed(5)},{" "}
-                        {parseFloat(data.longitude).toFixed(5)}
-                    </p>
-                )}
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="space-y-4">
+                <div className="space-y-1.5">
+                    <Label htmlFor="address" className="text-sm font-medium">
+                        Alamat Lengkap
+                    </Label>
+                    <Textarea
+                        id="address"
+                        className="resize-none"
+                        rows={2}
+                        placeholder="Jl. Contoh No. 1, Kelurahan, Kecamatan, Kota"
+                        value={data.address || ""}
+                        onChange={(e) => setData("address", e.target.value)}
+                    />
+                    {errors.address && (
+                        <p className="text-xs text-destructive">
+                            {errors.address}
+                        </p>
+                    )}
+                </div>
+
+                <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">
+                            Pin Lokasi
+                        </Label>
+                        <button
+                            type="button"
+                            onClick={handleLocate}
+                            disabled={locating}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline underline-offset-4 cursor-pointer disabled:opacity-50"
+                        >
+                            {locating ? (
+                                <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />{" "}
+                                    Mendeteksi...
+                                </>
+                            ) : (
+                                <>
+                                    <MapPin className="h-3 w-3" /> Lokasi Saya
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    <div
+                        ref={mapRef}
+                        className="h-52 w-full overflow-hidden rounded-lg border bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Klik peta atau seret pin untuk menentukan lokasi
+                    </p>
+                    {data.latitude && data.longitude && (
+                        <p className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                            <span>✓</span>
+                            {parseFloat(data.latitude).toFixed(5)},{" "}
+                            {parseFloat(data.longitude).toFixed(5)}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex gap-2">
                 <Button
                     type="button"
                     variant="outline"
                     className="flex-1"
                     onClick={onBack}
                 >
-                    Kembali
+                    <ChevronLeft className="mr-1 h-4 w-4" /> Kembali
                 </Button>
                 <Button
                     type="submit"
                     className="flex-1"
                     disabled={processing || !data.address}
                 >
-                    {processing ? "Menyimpan..." : "Selesai & Masuk →"}
+                    {processing ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                            Menyimpan...
+                        </>
+                    ) : (
+                        "Selesai →"
+                    )}
                 </Button>
             </div>
         </div>
     );
 }
 
+/* ── Main ── */
 function SetupStore({ titlePage }) {
     const [step, setStep] = useState(1);
 
@@ -349,7 +386,7 @@ function SetupStore({ titlePage }) {
             <Head title={titlePage ?? "Setup Toko"} />
             <StepIndicator currentStep={step} />
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="mt-6">
                 {step === 1 && (
                     <StepBusinessType
                         value={data.business_type}
@@ -357,7 +394,6 @@ function SetupStore({ titlePage }) {
                         onNext={() => setStep(2)}
                     />
                 )}
-
                 {step === 2 && (
                     <StepStoreInfo
                         data={data}
@@ -367,7 +403,6 @@ function SetupStore({ titlePage }) {
                         onBack={() => setStep(1)}
                     />
                 )}
-
                 {step === 3 && (
                     <StepLocation
                         data={data}
@@ -383,5 +418,4 @@ function SetupStore({ titlePage }) {
 }
 
 SetupStore.layout = (page) => <AuthLayout type="setup">{page}</AuthLayout>;
-
 export default SetupStore;

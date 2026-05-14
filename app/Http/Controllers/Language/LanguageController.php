@@ -12,7 +12,7 @@ class LanguageController extends Controller
 {
     public function switch(Request $request)
     {
-        $availableLocales = config('app.available_locales', ['id', 'en', 'ja']);
+        $availableLocales = config('app.available_locales', ['id', 'en']);
 
         $validated = $request->validate([
             'locale' => 'required|in:' . implode(',', $availableLocales)

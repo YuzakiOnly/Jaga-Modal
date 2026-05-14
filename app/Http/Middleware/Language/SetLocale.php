@@ -14,7 +14,7 @@ class SetLocale
     public function handle(Request $request, Closure $next): Response
     {
         $defaultLocale = config('app.locale', 'en');
-        $availableLocales = config('app.available_locales', ['id', 'en', 'ja']);
+        $availableLocales = config('app.available_locales', ['id', 'en']);
 
         $locale = $defaultLocale;
 

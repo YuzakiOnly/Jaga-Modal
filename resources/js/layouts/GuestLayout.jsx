@@ -53,9 +53,9 @@ function Navbar() {
                         {auth?.user ? (
                             <Link
                                 href={
-                                    auth.user.role === "admin"
+                                    auth.user.role === "super_admin"
                                         ? "/admin/dashboard"
-                                        : "/owner/dashboard"
+                                        : "/dashboard"
                                 }
                                 className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-brand-600/30 no-underline"
                             >

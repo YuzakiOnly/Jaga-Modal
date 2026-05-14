@@ -1,4 +1,4 @@
-import AdminLayout from "@/layouts/dashboard/AdminLayout";
+import AppLayout from "@/layouts/dashboard/AppLayout";
 
 export default function Dashboard() {
     return (
@@ -9,4 +9,4 @@ export default function Dashboard() {
     );
 }
 
-Dashboard.layout = (page) => <AdminLayout>{page}</AdminLayout>;
+Dashboard.layout = (page) => <AppLayout>{page}</AppLayout>;

@@ -12,7 +12,7 @@ class EnsureLocaleIsConsistent
 {
     public function handle(Request $request, Closure $next)
     {
-        $availableLocales = config('app.available_locales', ['id', 'en', 'ja']);
+        $availableLocales = config('app.available_locales', ['id', 'en']);
 
         if (Auth::check()) {
             $user = Auth::user();

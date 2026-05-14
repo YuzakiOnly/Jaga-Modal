@@ -83,9 +83,13 @@ return [
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
-    'available_locales' => explode(',', env('APP_AVAILABLE_LOCALES', 'id,en,ja')),
+    'available_locales' => explode(',', env('APP_AVAILABLE_LOCALES', 'id,en')),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+
+    'invite_code' => env('INVITE_CODE', ''),
+    'invite_wa_number' => env('INVITE_WA_NUMBER'),
+    'invite_wa_message' => env('INVITE_WA_MESSAGE'),
 
     /*
     |--------------------------------------------------------------------------

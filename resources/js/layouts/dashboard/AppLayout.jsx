@@ -1,15 +1,20 @@
 import SidebarLayout from "@/layouts/sidebar-v1/SidebarLayout";
-import { AdminNavItems, sharedProjects } from "@/lib/sidebar-data";
+import { baseNavItems, superAdminExtraItems, sharedProjects } from "@/lib/sidebar-data";
 import { usePage } from "@inertiajs/react";
 
-export default function AdminLayout({ children }) {
+export default function AppLayout({ children }) {
     const { auth } = usePage().props;
+    const isSuperAdmin = auth.user.role === "super_admin";
+
+    const navItems = isSuperAdmin
+        ? [...superAdminExtraItems, ...baseNavItems]
+        : baseNavItems;
 
     return (
         <SidebarLayout
-            navItems={AdminNavItems}
+            navItems={navItems}
             projects={sharedProjects}
-            appName="Admin Panel"
+            appName="Dashboard Panel"
             user={{
                 name: auth.user.name,
                 email: auth.user.email,

@@ -11,47 +11,8 @@ import {
     Wallet,
 } from "lucide-react";
 
-// Admin nav
-export const AdminNavItems = [
-    {
-        title: "Overview",
-        items: [
-            { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-            { title: "Analytics", href: "/admin/analytics", icon: BarChart2 },
-            { title: "Reports", href: "/admin/reports", icon: FileText },
-        ],
-    },
-    {
-        title: "Management",
-        items: [
-            {
-                title: "Users",
-                icon: Users,
-                items: [
-                    { title: "All Users", href: "/admin/users" },
-                    { title: "Roles & Permissions", href: "/admin/users/roles", isNew: true },
-                ],
-            },
-            { title: "Products", href: "/admin/products", icon: Package },
-            {
-                title: "Orders",
-                href: "/admin/orders",
-                icon: ShoppingCart,
-                isDataBadge: "12",
-            },
-        ],
-    },
-    {
-        title: "System",
-        items: [
-            { title: "Security", href: "/admin/security", icon: ShieldCheck },
-            { title: "Settings", href: "/admin/settings", icon: Settings },
-        ],
-    },
-];
-
-// Owner nav
-export const ownerNavItems = [
+// all role
+export const baseNavItems = [
     {
         title: "Overview",
         items: [
@@ -63,14 +24,11 @@ export const ownerNavItems = [
     {
         title: "Store",
         items: [
-            {
-                title: "Products",
-                href: "/products",
-                icon: Package,
-                isDataBadge: "5",
-            },
+            { title: "Categories", href: "/categories", icon: Package },
+            { title: "Products", href: "/products", icon: Package },
             {
                 title: "Orders",
+                href: "/orders",
                 icon: ShoppingCart,
                 items: [
                     { title: "All Orders", href: "/orders" },
@@ -84,6 +42,24 @@ export const ownerNavItems = [
         title: "Account",
         items: [
             { title: "Settings", href: "/settings", icon: Settings },
+        ],
+    },
+];
+
+// super_admin
+export const superAdminExtraItems = [
+    {
+        title: "Administration",
+        items: [
+            { title: "Admin Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+            { title: "Analytics", href: "/admin/analytics", icon: BarChart2 },
+            { title: "Reports", href: "/admin/reports", icon: FileText },
+            {
+                title: "Users",
+                href: "/admin/users",
+                icon: Users,
+            },
+            { title: "Security", href: "/admin/security", icon: ShieldCheck },
         ],
     },
 ];
@@ -105,3 +81,6 @@ export const sharedProjects = [
         statusColor: "text-yellow-500",
     },
 ];
+
+// Combined navItems for use in search and other components
+export const navItems = [...baseNavItems, ...superAdminExtraItems];

@@ -21,6 +21,8 @@ class User extends Authenticatable
         'password',
         'locale',
         'role',
+        'is_primary',
+        'phone_verified_at',
     ];
 
     protected $hidden = [
@@ -33,6 +35,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_primary' => 'boolean',
         ];
     }
 
@@ -43,14 +46,20 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === 'super_admin';
     }
+
     public function isOwner(): bool
     {
         return $this->role === 'owner';
     }
+
     public function isCashier(): bool
     {
         return $this->role === 'cashier';
+    }
+    public function isPrimary(): bool
+    {
+        return (bool) $this->is_primary;
     }
 }

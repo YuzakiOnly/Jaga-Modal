@@ -12,7 +12,7 @@ export default function AuthLayout({ children, type }) {
                 <BgImage type={type} />
 
                 <div className="lg:p-8">
-                    <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-87.5">
+                    <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[24rem]">
                         {children}
                     </div>
                 </div>

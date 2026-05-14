@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, usePage, router } from "@inertiajs/react";
 
 import {
     Collapsible,
@@ -29,7 +29,43 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 
-// ─── Helper: render badge untuk setiap item / sub ────────────────────────────
+// Helper function to check if URL matches the menu item
+function isUrlActive(currentUrl, itemUrl) {
+    if (!itemUrl) return false;
+
+    // Exact match
+    if (currentUrl === itemUrl) return true;
+
+    // Check if current URL starts with item URL (for nested routes like /admin/users/create)
+    // But make sure we don't match /admin/users when on /admin/users/roles
+    if (itemUrl !== "/admin/users" && currentUrl.startsWith(itemUrl + "/")) {
+        return true;
+    }
+
+    // Special handling for /admin/users to match /admin/users, /admin/users/create, /admin/users/1/edit
+    if (
+        itemUrl === "/admin/users" &&
+        currentUrl.match(/^\/admin\/users(\/create|\/\d+\/edit)?$/)
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+// Helper function to check if any submenu item is active
+function isAnySubItemActive(items, currentUrl) {
+    if (!items) return false;
+
+    for (const item of items) {
+        if (isUrlActive(currentUrl, item.href)) return true;
+        if (item.items && isAnySubItemActive(item.items, currentUrl))
+            return true;
+    }
+    return false;
+}
+
+// ─── Helper: render badge setiap item / sub ────────────────────────────
 function ItemBadge({ item, className = "" }) {
     if (item.isComing) {
         return (
@@ -61,7 +97,7 @@ function ItemBadge({ item, className = "" }) {
     return null;
 }
 
-// ─── Helper: render badge inline (untuk dropdown) ────────────────────────────
+// ─── Helper: render badge inline ────────────────────────────
 function InlineBadge({ item }) {
     if (item.isComing) {
         return (
@@ -93,134 +129,85 @@ export function NavMain({ navItems = [] }) {
 
     return (
         <>
-            {navItems.map((nav) => (
-                <SidebarGroup key={nav.title}>
-                    <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
+            {navItems.map((nav, navIdx) => (
+                <SidebarGroup
+                    className="px-4 group-data-[collapsible=icon]:px-2!"
+                    key={`${nav.title}-${navIdx}`}
+                >
+                    <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+                        {nav.title}
+                    </SidebarGroupLabel>
                     <SidebarGroupContent className="flex flex-col gap-2">
-                        <SidebarMenu>
-                            {nav.items.map((item) => (
-                                <SidebarMenuItem
-                                    key={item.title}
-                                    className="relative"
-                                >
-                                    {Array.isArray(item.items) &&
-                                    item.items.length > 0 ? (
-                                        <>
-                                            {/* ── Collapsed icon mode → Dropdown ── */}
-                                            <div className="hidden group-data-[collapsible=icon]:block">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger
-                                                        asChild
-                                                    >
-                                                        <SidebarMenuButton
-                                                            tooltip={item.title}
+                        <SidebarMenu className="group-data-[collapsible=icon]:px-0">
+                            {nav.items.map((item, itemIdx) => {
+                                const isActive = isUrlActive(url, item.href);
+                                const hasActiveChild = item.items
+                                    ? isAnySubItemActive(item.items, url)
+                                    : false;
+                                const isCollapsibleOpen =
+                                    hasActiveChild || isActive;
+
+                                return (
+                                    <SidebarMenuItem
+                                        key={`${nav.title}-${item.title}-${itemIdx}`}
+                                        className="relative"
+                                    >
+                                        {Array.isArray(item.items) &&
+                                        item.items.length > 0 ? (
+                                            <>
+                                                {/* ── Collapsed icon mode ── */}
+                                                <div className="hidden group-data-[collapsible=icon]:block">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
                                                         >
-                                                            {item.icon && (
-                                                                <item.icon />
-                                                            )}
-                                                            <span>
+                                                            <SidebarMenuButton
+                                                                tooltip={
+                                                                    item.title
+                                                                }
+                                                                isActive={
+                                                                    isActive ||
+                                                                    hasActiveChild
+                                                                }
+                                                            >
+                                                                {item.icon && (
+                                                                    <item.icon />
+                                                                )}
+                                                                <span>
+                                                                    {item.title}
+                                                                </span>
+                                                                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                                            </SidebarMenuButton>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent
+                                                            side={
+                                                                isMobile
+                                                                    ? "bottom"
+                                                                    : "right"
+                                                            }
+                                                            align={
+                                                                isMobile
+                                                                    ? "end"
+                                                                    : "start"
+                                                            }
+                                                            className="min-w-48 rounded-lg"
+                                                        >
+                                                            <DropdownMenuLabel>
                                                                 {item.title}
-                                                            </span>
-                                                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                                        </SidebarMenuButton>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent
-                                                        side={
-                                                            isMobile
-                                                                ? "bottom"
-                                                                : "right"
-                                                        }
-                                                        align={
-                                                            isMobile
-                                                                ? "end"
-                                                                : "start"
-                                                        }
-                                                        className="min-w-48 rounded-lg"
-                                                    >
-                                                        <DropdownMenuLabel>
-                                                            {item.title}
-                                                        </DropdownMenuLabel>
-                                                        {item.items?.map(
-                                                            (sub) => (
-                                                                <DropdownMenuItem
-                                                                    className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10! active:bg-(--primary)/10!"
-                                                                    asChild
-                                                                    key={
-                                                                        sub.title
-                                                                    }
-                                                                >
-                                                                    <Link
-                                                                        href={
-                                                                            sub.href
-                                                                        }
-                                                                    >
-                                                                        <span>
-                                                                            {
-                                                                                sub.title
-                                                                            }
-                                                                        </span>
-                                                                        <InlineBadge
-                                                                            item={
-                                                                                sub
-                                                                            }
-                                                                        />
-                                                                    </Link>
-                                                                </DropdownMenuItem>
-                                                            ),
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-
-                                            <Collapsible
-                                                className="group/collapsible block group-data-[collapsible=icon]:hidden"
-                                                defaultOpen={
-                                                    !!item.items.find(
-                                                        (s) => s.href === url,
-                                                    )
-                                                }
-                                            >
-                                                <CollapsibleTrigger asChild>
-                                                    <SidebarMenuButton
-                                                        className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
-                                                        tooltip={item.title}
-                                                    >
-                                                        {item.icon && (
-                                                            <item.icon />
-                                                        )}
-                                                        <span>
-                                                            {item.title}
-                                                        </span>
-                                                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                                    </SidebarMenuButton>
-                                                </CollapsibleTrigger>
-
-                                                <CollapsibleContent>
-                                                    <SidebarMenuSub>
-                                                        {item.items?.map(
-                                                            (sub) => (
-                                                                <SidebarMenuSubItem
-                                                                    key={
-                                                                        sub.title
-                                                                    }
-                                                                    className="relative"
-                                                                >
-                                                                    <SidebarMenuSubButton
-                                                                        className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
-                                                                        isActive={
-                                                                            url ===
-                                                                            sub.href
-                                                                        }
+                                                            </DropdownMenuLabel>
+                                                            {item.items?.map(
+                                                                (
+                                                                    sub,
+                                                                    subIdx,
+                                                                ) => (
+                                                                    <DropdownMenuItem
+                                                                        className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10! active:bg-(--primary)/10!"
                                                                         asChild
+                                                                        key={`${item.title}-${sub.title}-${subIdx}`}
                                                                     >
                                                                         <Link
                                                                             href={
                                                                                 sub.href
-                                                                            }
-                                                                            target={
-                                                                                sub.newTab
-                                                                                    ? "_blank"
-                                                                                    : undefined
                                                                             }
                                                                         >
                                                                             <span>
@@ -228,39 +215,125 @@ export function NavMain({ navItems = [] }) {
                                                                                     sub.title
                                                                                 }
                                                                             </span>
+                                                                            <InlineBadge
+                                                                                item={
+                                                                                    sub
+                                                                                }
+                                                                            />
                                                                         </Link>
-                                                                    </SidebarMenuSubButton>
+                                                                    </DropdownMenuItem>
+                                                                ),
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
 
-                                                                    <ItemBadge
-                                                                        item={
-                                                                            sub
-                                                                        }
-                                                                    />
-                                                                </SidebarMenuSubItem>
-                                                            ),
-                                                        )}
-                                                    </SidebarMenuSub>
-                                                </CollapsibleContent>
-                                            </Collapsible>
+                                                <Collapsible
+                                                    className="group/collapsible block group-data-[collapsible=icon]:hidden"
+                                                    defaultOpen={
+                                                        isCollapsibleOpen
+                                                    }
+                                                >
+                                                    <CollapsibleTrigger asChild>
+                                                        <SidebarMenuButton
+                                                            className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
+                                                            isActive={
+                                                                isActive ||
+                                                                hasActiveChild
+                                                            }
+                                                            tooltip={item.title}
+                                                            asChild
+                                                        >
+                                                            <Link
+                                                                href={item.href}
+                                                            >
+                                                                {item.icon && (
+                                                                    <item.icon />
+                                                                )}
+                                                                <span>
+                                                                    {item.title}
+                                                                </span>
+                                                                <ItemBadge
+                                                                    item={item}
+                                                                />
+                                                            </Link>
+                                                        </SidebarMenuButton>
+                                                    </CollapsibleTrigger>
 
-                                            <ItemBadge item={item} />
-                                        </>
-                                    ) : (
-                                        <SidebarMenuButton
-                                            className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
-                                            isActive={url === item.href}
-                                            tooltip={item.title}
-                                            onClick={() =>
-                                                router.visit(item.href)
-                                            }
-                                        >
-                                            {item.icon && <item.icon />}
-                                            <span>{item.title}</span>
-                                            <ItemBadge item={item} />
-                                        </SidebarMenuButton>
-                                    )}
-                                </SidebarMenuItem>
-                            ))}
+                                                    <CollapsibleContent>
+                                                        <SidebarMenuSub>
+                                                            {item.items?.map(
+                                                                (
+                                                                    sub,
+                                                                    subIdx,
+                                                                ) => {
+                                                                    const isSubActive =
+                                                                        isUrlActive(
+                                                                            url,
+                                                                            sub.href,
+                                                                        );
+                                                                    return (
+                                                                        <SidebarMenuSubItem
+                                                                            key={`${item.title}-${sub.title}-${subIdx}`}
+                                                                            className="relative"
+                                                                        >
+                                                                            <SidebarMenuSubButton
+                                                                                className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
+                                                                                isActive={
+                                                                                    isSubActive
+                                                                                }
+                                                                                asChild
+                                                                            >
+                                                                                <Link
+                                                                                    href={
+                                                                                        sub.href
+                                                                                    }
+                                                                                    target={
+                                                                                        sub.newTab
+                                                                                            ? "_blank"
+                                                                                            : undefined
+                                                                                    }
+                                                                                >
+                                                                                    <span>
+                                                                                        {
+                                                                                            sub.title
+                                                                                        }
+                                                                                    </span>
+                                                                                </Link>
+                                                                            </SidebarMenuSubButton>
+
+                                                                            <ItemBadge
+                                                                                item={
+                                                                                    sub
+                                                                                }
+                                                                            />
+                                                                        </SidebarMenuSubItem>
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </SidebarMenuSub>
+                                                    </CollapsibleContent>
+                                                </Collapsible>
+
+                                                <ItemBadge item={item} />
+                                            </>
+                                        ) : (
+                                            <SidebarMenuButton
+                                                className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
+                                                isActive={isActive}
+                                                tooltip={item.title}
+                                                onClick={() =>
+                                                    router.visit(item.href)
+                                                }
+                                            >
+                                                {item.icon && <item.icon />}
+                                                <span>{item.title}</span>
+                                                <ItemBadge item={item} />
+                                            </SidebarMenuButton>
+                                        )}
+                                    </SidebarMenuItem>
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

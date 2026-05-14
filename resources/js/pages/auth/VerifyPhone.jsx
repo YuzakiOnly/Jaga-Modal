@@ -9,10 +9,9 @@ import {
     AlertCircle,
     CheckCircle2,
     Loader2,
-    Smartphone,
     Clock,
     Send,
-    MessageCircle,
+    RefreshCw,
 } from "lucide-react";
 
 function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
@@ -24,29 +23,26 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
     const [localError, setLocalError] = useState("");
     const inputsRef = useRef([]);
 
-    const { data, setData, processing, errors, setError, clearErrors } =
-        useForm({ code: "" });
+    const { data, setData, processing, errors, clearErrors } = useForm({
+        code: "",
+    });
 
     useEffect(() => {
         if (countdown > 0) {
-            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-            return () => clearTimeout(timer);
+            const t = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(t);
         }
     }, [countdown]);
 
     const handleChange = (index, value) => {
         if (!/^\d?$/.test(value)) return;
-
         const updated = [...digits];
         updated[index] = value;
         setDigits(updated);
         setData("code", updated.join(""));
         setLocalError("");
         clearErrors();
-
-        if (value && index < 5) {
-            inputsRef.current[index + 1]?.focus();
-        }
+        if (value && index < 5) inputsRef.current[index + 1]?.focus();
     };
 
     const handleKeyDown = (index, e) => {
@@ -61,54 +57,41 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
             .getData("text")
             .replace(/\D/g, "")
             .slice(0, 6);
-
-        if (pasted) {
-            const newDigits = [...digits];
-            for (let i = 0; i < pasted.length; i++) {
-                newDigits[i] = pasted[i];
-            }
-            setDigits(newDigits);
-            setData("code", newDigits.join(""));
-            setLocalError("");
-            clearErrors();
-
-            const lastFilledIndex = Math.min(pasted.length - 1, 5);
-            inputsRef.current[lastFilledIndex]?.focus();
-        }
+        if (!pasted) return;
+        const newDigits = [...digits];
+        for (let i = 0; i < pasted.length; i++) newDigits[i] = pasted[i];
+        setDigits(newDigits);
+        setData("code", newDigits.join(""));
+        setLocalError("");
+        clearErrors();
+        inputsRef.current[Math.min(pasted.length - 1, 5)]?.focus();
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         clearErrors();
         setLocalError("");
-
         const code = digits.join("");
-
         if (code.length < 6) {
-            setLocalError("Please enter the complete 6-digit code.");
+            setLocalError("Masukkan 6 digit kode verifikasi.");
             return;
         }
-
         router.post("/verify-phone", { code });
     };
 
     const handleResend = async () => {
         if (countdown > 0) return;
-
         setResending(true);
         setResendMessage("");
         setResendError("");
-
         try {
             const res = await axios.post("/verify-phone/resend");
-            setResendMessage(
-                res.data.message ?? "Code resent to your WhatsApp/SMS!",
-            );
+            setResendMessage(res.data.message ?? "Kode dikirim ulang!");
             setCountdown(60);
         } catch (error) {
             setResendError(
                 error.response?.data?.message ??
-                    "Failed to resend. Please try again.",
+                    "Gagal mengirim ulang. Coba lagi.",
             );
             setCountdown(30);
         } finally {
@@ -116,90 +99,68 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
         }
     };
 
-    const formatCountdown = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
-
+    const formatCountdown = (s) =>
+        `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     const hasError = !!(errors.code || errors.error || serverErrors?.code);
+    const errorMsg =
+        errors.code || serverErrors?.code || "Kode tidak valid. Coba lagi.";
+    const codeComplete = digits.join("").length === 6;
 
     return (
         <>
             <Head title={titlePage} />
 
             <AuthHeader
-                title="Verify Your Phone Number"
+                title="Verifikasi Nomor HP"
                 description={
                     <>
-                        We sent a 6-digit code to your WhatsApp/SMS at{" "}
+                        Kode 6 digit telah dikirim ke{" "}
                         <span className="font-semibold text-foreground">
                             {phone}
-                        </span>
-                        . Enter it below to continue.
+                        </span>{" "}
+                        via WhatsApp / SMS.
                     </>
                 }
                 showDescription
             />
 
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
-                <MessageCircle className="h-4 w-4 shrink-0" />
-                <span>
-                    Code sent via{" "}
-                    <span className="font-semibold">WhatsApp</span> or{" "}
-                    <span className="font-semibold">SMS</span>
-                </span>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-6 space-y-6" noValidate>
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
+                {/* OTP inputs */}
                 <div className="space-y-3">
                     <div
                         className="flex justify-center gap-2"
                         onPaste={handlePaste}
                     >
                         {digits.map((digit, i) => (
-                            <div key={i} className="relative">
-                                <Input
-                                    ref={(el) => (inputsRef.current[i] = el)}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={(e) =>
-                                        handleChange(i, e.target.value)
-                                    }
-                                    onKeyDown={(e) => handleKeyDown(i, e)}
-                                    disabled={processing}
-                                    className={`w-11 h-12 text-center text-xl font-bold tracking-widest transition-colors ${
-                                        hasError
-                                            ? "border-red-500 ring-red-500/20 focus-visible:ring-red-500 bg-red-50"
-                                            : ""
-                                    }`}
-                                    autoFocus={i === 0}
-                                />
-                            </div>
+                            <Input
+                                key={i}
+                                ref={(el) => (inputsRef.current[i] = el)}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={1}
+                                value={digit}
+                                onChange={(e) =>
+                                    handleChange(i, e.target.value)
+                                }
+                                onKeyDown={(e) => handleKeyDown(i, e)}
+                                disabled={processing}
+                                autoFocus={i === 0}
+                                className={`h-12 w-11 text-center text-lg font-bold tracking-widest transition-all ${
+                                    hasError
+                                        ? "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                                        : codeComplete && !hasError
+                                          ? "border-emerald-500 bg-emerald-50/50 focus-visible:ring-emerald-500 dark:bg-emerald-950/20"
+                                          : ""
+                                }`}
+                            />
                         ))}
                     </div>
 
-                    {hasError && (
-                        <div className="flex justify-center">
-                            <div className="flex items-center gap-2 text-red-500 bg-red-50 px-4 py-2 rounded-full">
-                                <AlertCircle className="h-4 w-4" />
-                                <span className="text-sm font-medium">
-                                    {errors.code ||
-                                        serverErrors?.code ||
-                                        "Invalid code. Please try again."}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-
-                    {localError && (
-                        <div className="flex justify-center">
-                            <div className="flex items-center gap-2 text-red-500 bg-red-50 px-4 py-2 rounded-full">
-                                <AlertCircle className="h-4 w-4" />
-                                <span className="text-sm">{localError}</span>
-                            </div>
+                    {/* Error */}
+                    {(hasError || localError) && (
+                        <div className="flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <span>{hasError ? errorMsg : localError}</span>
                         </div>
                     )}
                 </div>
@@ -207,81 +168,71 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                 <Button
                     type="submit"
                     className="w-full"
-                    disabled={processing || digits.join("").length < 6}
                     size="lg"
+                    disabled={processing || !codeComplete}
                 >
                     {processing ? (
                         <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Verifying...
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                            Memverifikasi...
                         </>
                     ) : (
                         <>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Verify Phone Number
+                            <CheckCircle2 className="mr-2 h-4 w-4" /> Verifikasi
                         </>
                     )}
                 </Button>
             </form>
 
-            <div className="mt-6 text-center">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
-                    <Smartphone className="h-4 w-4" />
-                    <span>Didn't receive a code?</span>
-                </div>
+            {/* Resend section */}
+            <div className="mt-6 space-y-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                    Tidak menerima kode?
+                </p>
 
-                <div className="space-y-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleResend}
-                        disabled={resending || countdown > 0}
-                        className="min-w-50"
-                        size="sm"
-                    >
-                        {resending ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Sending...
-                            </>
-                        ) : countdown > 0 ? (
-                            <>
-                                <Clock className="mr-2 h-4 w-4" />
-                                Resend in {formatCountdown(countdown)}
-                            </>
-                        ) : (
-                            <>
-                                <Send className="mr-2 h-4 w-4" />
-                                Resend Code
-                            </>
-                        )}
-                    </Button>
-
-                    {resendMessage && (
-                        <div className="flex justify-center">
-                            <div className="flex items-center gap-2 text-green-600 bg-green-50 py-2 px-4 rounded-full">
-                                <CheckCircle2 className="h-4 w-4" />
-                                <span className="text-sm font-medium">
-                                    {resendMessage}
-                                </span>
-                            </div>
-                        </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResend}
+                    disabled={resending || countdown > 0}
+                    className="min-w-40"
+                >
+                    {resending ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                            Mengirim...
+                        </>
+                    ) : countdown > 0 ? (
+                        <>
+                            <Clock className="mr-2 h-4 w-4" /> Kirim ulang{" "}
+                            {formatCountdown(countdown)}
+                        </>
+                    ) : (
+                        <>
+                            <RefreshCw className="mr-2 h-4 w-4" /> Kirim Ulang
+                        </>
                     )}
+                </Button>
 
-                    {resendError && (
-                        <div className="flex justify-center">
-                            <div className="flex items-center gap-2 text-red-600 bg-red-50 py-2 px-4 rounded-full">
-                                <AlertCircle className="h-4 w-4" />
-                                <span className="text-sm">{resendError}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {resendMessage && (
+                    <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <span>{resendMessage}</span>
+                    </div>
+                )}
 
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-4">
+                {resendError && (
+                    <div className="flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span>{resendError}</span>
+                    </div>
+                )}
+
+                <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    <span>Code expires in 10 minutes</span>
-                </div>
+                    Kode berlaku 10 menit
+                </p>
             </div>
         </>
     );
@@ -290,5 +241,4 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
 VerifyPhoneContent.layout = (page) => (
     <AuthLayout type="register">{page}</AuthLayout>
 );
-
 export default VerifyPhoneContent;

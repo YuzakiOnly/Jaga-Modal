@@ -11,6 +11,21 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { validateLogin } from "@/lib/validation";
 import { useValidation } from "@/hooks/useAuthValidation";
 
+function Field({ label, htmlFor, error, children }) {
+    return (
+        <div className="space-y-1.5">
+            <Label
+                htmlFor={htmlFor}
+                className="text-sm font-medium text-foreground"
+            >
+                {label}
+            </Label>
+            {children}
+            {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+    );
+}
+
 function LoginContent({ titlePage, showDescription = true }) {
     const [showPassword, setShowPassword] = useState(false);
     const { lang, locale } = useTranslation();
@@ -34,9 +49,15 @@ function LoginContent({ titlePage, showDescription = true }) {
                   password: " ",
               }
             : {};
-    const valueError = useValidation(validateLogin, lang, combinedServerErrors, locale);
 
-    const handleSubmit = (e) => {   
+    const valueError = useValidation(
+        validateLogin,
+        lang,
+        combinedServerErrors,
+        locale,
+    );
+
+    const handleSubmit = (e) => {
         e.preventDefault();
         if (!valueError.onSubmit(["email", "password"], data)) return;
         post("/login");
@@ -52,119 +73,126 @@ function LoginContent({ titlePage, showDescription = true }) {
                 showDescription={showDescription}
             />
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
-                <div className="space-y-4">
-                    {/* Email */}
-                    <div>
-                        <Label htmlFor="email" className="sr-only">
-                            {lang("email_address")}
-                        </Label>
-                        <div className="relative">
-                            <Mail
-                                className={`absolute left-3 top-2.5 h-5 w-5 ${valueError.iconClass("email")}`}
-                            />
-                            <Input
-                                id="email"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                className={valueError.inputClass("email", "pl-10")}
-                                placeholder={lang("email_address")}
-                                value={data.email}
-                                onChange={(e) => {
-                                    setData("email", e.target.value);
-                                    valueError.onChange("email", {
-                                        ...data,
-                                        email: e.target.value,
-                                    });
-                                }}
-                                onBlur={() => valueError.onBlur("email", data)}
-                            />
-                        </div>
-                        {valueError.showError("email") && (
-                            <p className="mt-1 text-xs text-destructive">
-                                {valueError.errors.email}
-                            </p>
-                        )}
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
+                {/* Email */}
+                <Field
+                    label={lang("email_address")}
+                    htmlFor="email"
+                    error={
+                        valueError.showError("email")
+                            ? valueError.errors.email
+                            : null
+                    }
+                >
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            <Mail className="h-4 w-4" />
+                        </span>
+                        <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
+                            className={valueError.inputClass("email", "pl-9")}
+                            placeholder={lang("email_address")}
+                            value={data.email}
+                            onChange={(e) => {
+                                setData("email", e.target.value);
+                                valueError.onChange("email", {
+                                    ...data,
+                                    email: e.target.value,
+                                });
+                            }}
+                            onBlur={() => valueError.onBlur("email", data)}
+                        />
                     </div>
+                </Field>
 
-                    {/* Password */}
-                    <div>
-                        <Label htmlFor="password" className="sr-only">
-                            {lang("password")}
-                        </Label>
-                        <div className="relative">
-                            <Lock
-                                className={`absolute left-3 top-2.5 h-5 w-5 ${valueError.iconClass("password")}`}
-                            />
-                            <Input
-                                id="password"
-                                name="password"
-                                type={showPassword ? "text" : "password"}
-                                autoComplete="current-password"
-                                className={valueError.inputClass(
-                                    "password",
-                                    "pl-10 pr-10",
-                                )}
-                                placeholder={lang("password")}
-                                value={data.password}
-                                onChange={(e) => {
-                                    setData("password", e.target.value);
-                                    valueError.onChange("password", {
-                                        ...data,
-                                        password: e.target.value,
-                                    });
-                                }}
-                                onBlur={() => valueError.onBlur("password", data)}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 transform focus:outline-none cursor-pointer"
-                            >
-                                {showPassword ? (
-                                    <Eye className="h-5 w-5 text-red-500" />
-                                ) : (
-                                    <EyeOff className="h-5 w-5 text-green-500" />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Forgot Password */}
-                    <div className="text-end">
-                        <Link
-                            href="/forgot-password"
-                            className="ml-auto inline-block text-sm underline"
+                {/* Password */}
+                <Field
+                    label={lang("password")}
+                    htmlFor="password"
+                    error={
+                        valueError.showError("password") &&
+                        valueError.errors.password?.trim()
+                            ? valueError.errors.password
+                            : null
+                    }
+                >
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            <Lock className="h-4 w-4" />
+                        </span>
+                        <Input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            className={valueError.inputClass(
+                                "password",
+                                "pl-9 pr-10",
+                            )}
+                            placeholder={lang("password")}
+                            value={data.password}
+                            onChange={(e) => {
+                                setData("password", e.target.value);
+                                valueError.onChange("password", {
+                                    ...data,
+                                    password: e.target.value,
+                                });
+                            }}
+                            onBlur={() => valueError.onBlur("password", data)}
+                        />
+                        <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
                         >
-                            {lang("forgot_password")}
-                        </Link>
+                            {showPassword ? (
+                                <Eye className="h-4 w-4" />
+                            ) : (
+                                <EyeOff className="h-4 w-4" />
+                            )}
+                        </button>
                     </div>
+                </Field>
+
+                {/* Forgot password */}
+                <div className="flex justify-end">
+                    <Link
+                        href="/forgot-password"
+                        className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline transition-colors"
+                    >
+                        {lang("forgot_password")}
+                    </Link>
                 </div>
 
-                <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
-                    {processing
-                        ? lang("signing_in")
-                        : lang("sign_in")}
+                <Button
+                    type="submit"
+                    className="w-full"
+                    size="lg"
+                    disabled={processing}
+                >
+                    {processing ? lang("signing_in") : lang("sign_in")}
                 </Button>
             </form>
 
-            <div className="mt-6">
+            <div className="mt-6 space-y-4">
                 <GoogleAccount />
-                <div className="mt-6 text-center text-sm">
+                <p className="text-center text-sm text-muted-foreground">
                     {lang("dont_have_account")}{" "}
                     <Link
                         href="/register"
-                        className="underline text-blue-500 hover:text-blue-600"
+                        className="font-medium text-primary underline-offset-4 hover:underline"
                     >
                         {lang("sign_up")}
                     </Link>
-                </div>
+                </p>
             </div>
         </>
     );
 }
 
 LoginContent.layout = (page) => <AuthLayout type="login">{page}</AuthLayout>;
-
 export default LoginContent;

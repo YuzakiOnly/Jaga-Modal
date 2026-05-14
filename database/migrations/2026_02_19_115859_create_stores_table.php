@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->decimal('longitude', 10, 7)->nullable();
             $table->string('logo')->nullable();
             $table->string('thumbnail')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->enum('is_active', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }

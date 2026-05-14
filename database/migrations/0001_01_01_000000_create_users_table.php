@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('avatar')->nullable();
             $table->string('thumbnail')->nullable();
             $table->string('locale', 10)->default('en');
-            $table->enum('role', ['admin', 'owner', 'cashier'])->default('owner');
+            $table->enum('role', ['super_admin', 'owner', 'cashier'])->default('owner');
             $table->rememberToken();
             $table->timestamps();
         });

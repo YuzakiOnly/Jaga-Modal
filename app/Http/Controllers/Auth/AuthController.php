@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\InviteCode;
 use App\Models\PhoneVerificationCode;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -10,7 +11,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -27,8 +27,15 @@ class AuthController extends Controller
 
     public function showRegister()
     {
+        $waNumber = config('app.invite_wa_number');
+        $waMessage = config('app.invite_wa_message', 'Halo! Saya ingin mendaftar dan meminta kode invite.');
+        $waLink = $waNumber
+            ? 'https://wa.me/' . $waNumber . '?text=' . rawurlencode($waMessage)
+            : null;
+
         return Inertia::render('auth/Register', [
             'titlePage' => 'Register',
+            'waLink' => $waLink,
         ]);
     }
 
@@ -40,7 +47,6 @@ class AuthController extends Controller
 
         $phone = Session::get('pending_registration.phone');
         $countryCode = Session::get('pending_registration.country_code');
-
         $maskedPhone = $countryCode . ' ' . $this->maskPhone($phone);
 
         return Inertia::render('auth/VerifyPhone', [
@@ -66,8 +72,7 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
-
-        $availableLocales = config('app.available_locales', ['id', 'en', 'ja']);
+        $availableLocales = config('app.available_locales', ['id', 'en']);
 
         if ($guestLocale && in_array($guestLocale, $availableLocales)) {
             $locale = $guestLocale;
@@ -99,9 +104,21 @@ class AuthController extends Controller
             'country_code' => ['required', 'string', 'max:10'],
             'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', Password::defaults()],
+            'invite_code' => ['required', 'string'],
         ], [
             'username.regex' => 'Username may only contain lowercase letters, numbers, and underscores.',
+            'invite_code.required' => 'Kode invite wajib diisi.',
         ]);
+
+        $inviteCode = InviteCode::where('code', strtoupper($request->invite_code))
+            ->where('is_used', false)
+            ->first();
+
+        if (!$inviteCode) {
+            return back()->withErrors([
+                'invite_code' => 'Kode invite tidak valid atau sudah digunakan. Hubungi admin untuk mendapatkan kode baru.',
+            ])->onlyInput('name', 'username', 'email', 'country_code', 'invite_code');
+        }
 
         $locale = Session::get('locale', config('app.locale', 'en'));
         $countryCode = ltrim($request->country_code, '+');
@@ -111,7 +128,7 @@ class AuthController extends Controller
         if (User::where('phone', $fullPhone)->exists()) {
             return back()->withErrors([
                 'phone' => 'This phone number is already registered.',
-            ])->onlyInput('name', 'username', 'email', 'country_code');
+            ])->onlyInput('name', 'username', 'email', 'country_code', 'invite_code');
         }
 
         Session::put('pending_registration', [
@@ -122,6 +139,7 @@ class AuthController extends Controller
             'phone' => $fullPhone,
             'password' => Hash::make($request->password),
             'locale' => $locale,
+            'invite_code_id' => $inviteCode->id,
         ]);
         Session::save();
 
@@ -176,8 +194,11 @@ class AuthController extends Controller
             'phone_verified_at' => now(),
         ]);
 
-        Session::forget('pending_registration');
+        if (!empty($pending['invite_code_id'])) {
+            InviteCode::find($pending['invite_code_id'])?->markAsUsed($user->id);
+        }
 
+        Session::forget('pending_registration');
         Session::put('pending_user_id', $user->id);
         Session::put('locale', $user->locale);
         Session::save();
@@ -245,8 +266,6 @@ class AuthController extends Controller
     {
         $sid = config('services.twilio.sid');
         $token = config('services.twilio.token');
-        $verifySid = config('services.twilio.verify_sid');
-
         $message = "Hi {$name}, your verification code is: *{$code}*\n\nThis code expires in 10 minutes. Do not share this code with anyone.";
 
         Http::withBasicAuth($sid, $token)
@@ -263,25 +282,23 @@ class AuthController extends Controller
         $message = "Halo {$name}, kode verifikasi Anda adalah: *{$code}*\n\nKode ini berlaku 10 menit. Jangan bagikan kode ini kepada siapapun.";
 
         Http::withoutVerifying()
-            ->withHeaders([
-                'Authorization' => config('services.fonnte.token'),
-            ])->post('https://api.fonnte.com/send', [
-                    'target' => $phone,
-                    'message' => $message,
-                    'countryCode' => '62',
-                ]);
+            ->withHeaders(['Authorization' => config('services.fonnte.token')])
+            ->post('https://api.fonnte.com/send', [
+                'target' => $phone,
+                'message' => $message,
+                'countryCode' => '62',
+            ]);
     }
 
     private function sendViaWablas(string $phone, string $code, string $name): void
     {
         $message = "Halo {$name}, kode verifikasi Anda adalah: *{$code}*\n\nKode ini berlaku 10 menit. Jangan bagikan kode ini kepada siapapun.";
 
-        Http::withHeaders([
-            'Authorization' => config('services.wablas.token'),
-        ])->post(config('services.wablas.domain') . '/api/send-message', [
-                    'phone' => $phone,
-                    'message' => $message,
-                ]);
+        Http::withHeaders(['Authorization' => config('services.wablas.token')])
+            ->post(config('services.wablas.domain') . '/api/send-message', [
+                'phone' => $phone,
+                'message' => $message,
+            ]);
     }
 
     private function maskPhone(string $fullPhone): string

@@ -1,6 +1,6 @@
 export const roleLabel = (role) => {
     const map = {
-        admin: "Admin",
+        super_admin: "Super Admin",
         owner: "Owner",
         cashier: "Cashier"
     };

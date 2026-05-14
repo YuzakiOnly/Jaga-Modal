@@ -13,19 +13,17 @@ import ReactCountryFlag from "react-country-flag";
 const languageFlags = {
     id: "ID",
     en: "US",
-    ja: "JP",
 };
 
 const languageNames = {
     id: "Indonesia",
     en: "English",
-    ja: "日本語",
 };
 
 export default function LanguageSelector() {
     const { props } = usePage();
     const currentLocale = props.locale || "en";
-    const availableLocales = props.available_locales || ["id", "en", "ja"];
+    const availableLocales = props.available_locales || ["id", "en"];
     const [isChanging, setIsChanging] = useState(false);
 
     const switchLanguage = (locale) => {

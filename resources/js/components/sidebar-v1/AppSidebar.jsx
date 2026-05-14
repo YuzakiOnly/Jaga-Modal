@@ -53,7 +53,7 @@ export function AppSidebar({
 
     return (
         <Sidebar collapsible="icon" className="border-none" {...props}>
-            <SidebarHeader>
+            <SidebarHeader className="px-4 group-data-[collapsible=icon]:px-2.5">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <DropdownMenu>
