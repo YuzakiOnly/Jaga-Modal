@@ -39,11 +39,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function store()
-    {
-        return $this->hasOne(Store::class);
-    }
-
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
@@ -61,5 +56,15 @@ class User extends Authenticatable
     public function isPrimary(): bool
     {
         return (bool) $this->is_primary;
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function stores()
+    {
+        return $this->hasMany(Store::class);
     }
 }

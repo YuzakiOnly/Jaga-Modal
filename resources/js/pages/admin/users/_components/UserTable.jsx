@@ -17,6 +17,7 @@ import {
     X,
     Check,
     ChevronDown,
+    SearchIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ import {
 } from "@/components/ui/popover";
 
 import { columns } from "./Usercolumns";
-import { roleOptions, roleColorMap } from "@/lib/users/Userconstants";
+import { roleOptions, roleColorMap } from "@/lib/users/userConstants";
 
 export function UserTable({
     users,
@@ -100,12 +101,26 @@ export function UserTable({
         <div className="w-full space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-                    <Input
-                        placeholder="Search users..."
-                        value={filters?.search || ""}
-                        onChange={(e) => onSearch(e.target.value)}
-                        className="w-full sm:max-w-sm shadow-none! ring-0!"
-                    />
+                    <div className="relative w-full sm:max-w-sm">
+                        <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+
+                        <Input
+                            placeholder="Search users..."
+                            value={filters?.search || ""}
+                            onChange={(e) => onSearch(e.target.value)}
+                            className="pr-10 pl-9 shadow-none! ring-0!"
+                        />
+
+                        {filters?.search && (
+                            <button
+                                type="button"
+                                onClick={() => onSearch("")}
+                                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
 
                     <Popover
                         className="shadow-none!"
@@ -185,7 +200,7 @@ export function UserTable({
                                     (column) =>
                                         column.getCanHide() ||
                                         column.id === "name",
-                                ) 
+                                )
                                 .map((column) => (
                                     <DropdownMenuCheckboxItem
                                         key={column.id}

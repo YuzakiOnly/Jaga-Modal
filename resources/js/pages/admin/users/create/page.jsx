@@ -1,15 +1,13 @@
 import { Head } from "@inertiajs/react";
 import AppLayout from "@/layouts/dashboard/AppLayout";
-import CreateUserForm from "./_components/CreateUserForm";
+import UserForm from "../_components/UserForm";
 
 export default function CreateUserPage() {
     return (
         <>
-            <Head title="Admin — Create User" />
-            <div className="mx-auto max-w-screen-lg pt-8">
-                <div className="space-y-4">
-                    <CreateUserForm />
-                </div>
+            <Head title="Users — Create User" />
+            <div className="mx-auto max-w-5xl py-8">
+                <UserForm isEdit={false} />
             </div>
         </>
     );

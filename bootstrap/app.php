@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\Auth\PendingStoreSetup;
+use App\Http\Middleware\EnsureUserHasStore;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\Language\EnsureLocaleIsConsistent;
 use App\Http\Middleware\Language\SetLocale;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'pending.store' => PendingStoreSetup::class,
+            'ensure.store' => EnsureUserHasStore::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

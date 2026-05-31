@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
 use App\Helpers\Languages\Languages;
 
@@ -23,9 +22,22 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'auth' => ['user' => $request->user()?->load('store')],
+
+            'auth' => [
+                'user' => $request->user()
+                    ? $request->user()->load('store:id,name,business_type,logo')
+                    : null,
+            ],
+
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
+
             'locale' => $locale,
+
             'available_locales' => config('app.available_locales', ['id', 'en']),
+
             'translations' => Languages::getAll(),
         ];
     }

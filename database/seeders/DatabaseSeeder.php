@@ -8,9 +8,18 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->command->info('');
+        $this->command->info('🚀 Starting Database Seeder...');
+        $this->command->info('');
+
         $this->call([
-            UserSeeder::class,
-            InviteCodeSeeder::class,
+            UserSeeder::class,      
+            InviteCodeSeeder::class, 
+            CategorySeeder::class,  
         ]);
+
+        $this->command->info('');
+        $this->command->info('🎉 Database seeding completed successfully!');
+        $this->command->info('');
     }
 }

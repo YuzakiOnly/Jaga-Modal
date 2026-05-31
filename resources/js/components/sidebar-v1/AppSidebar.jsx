@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { useEffect } from "react";
-import { ChevronsUpDown } from "lucide-react";
-import { Plus } from "lucide-react";
+import { ChevronsUpDown, Plus } from "lucide-react";
 import { Link, usePage } from "@inertiajs/react";
 
 import {
@@ -53,12 +52,12 @@ export function AppSidebar({
 
     return (
         <Sidebar collapsible="icon" className="border-none" {...props}>
-            <SidebarHeader className="px-4 group-data-[collapsible=icon]:px-2.5">
+            <SidebarHeader className="px-3.5 pt-4 group-data-[collapsible=icon]:px-2.5">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-(--primary)/5">
+                                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-primary/5">
                                     <Logo />
                                     <span className="font-semibold">
                                         {appName}

@@ -36,4 +36,21 @@ class Store extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function getCashBalanceAttribute(): float
+    {
+        $totalIncome = Transaction::forStore($this->id)
+            ->completed()
+            ->sum('total');
+
+        $totalExpense = Expense::forStore($this->id)
+            ->where('type', '!=', 'store_transfer_in')
+            ->sum('amount');
+
+        $totalTransferIn = Expense::forStore($this->id)
+            ->where('type', 'store_transfer_in')
+            ->sum('amount');
+
+        return (float) $totalIncome - (float) $totalExpense + abs((float) $totalTransferIn);
+    }
 }

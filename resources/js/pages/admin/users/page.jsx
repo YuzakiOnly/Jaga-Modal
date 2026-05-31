@@ -38,7 +38,6 @@ export default function UsersPage({ users, filters }) {
 
     const totalUsers = users.total ?? users.data?.length ?? 0;
 
-    // Handle search dengan debounce
     const handleSearch = (value) => {
         setLoading(true);
         router.get(
@@ -53,7 +52,6 @@ export default function UsersPage({ users, filters }) {
         );
     };
 
-    // Handle filter role
     const handleRoleChange = (value) => {
         setLoading(true);
         router.get(
@@ -73,7 +71,6 @@ export default function UsersPage({ users, filters }) {
             <Head title="Admin — Users" />
 
             <div className="space-y-4 p-4">
-                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-bold tracking-tight">
@@ -93,7 +90,6 @@ export default function UsersPage({ users, filters }) {
                     </Button>
                 </div>
 
-                {/* Stat Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 ">
                     <Card className="shadow-none!">
                         <CardHeader>
@@ -149,18 +145,7 @@ export default function UsersPage({ users, filters }) {
                     </Card>
                 </div>
 
-                {/* Table */}
                 <div className="pt-4">
-                    <UserTable
-                        users={users}
-                        filters={filters}
-                        onDelete={setDeleteUser}
-                        onEdit={(user) =>
-                            router.visit(route("admin.users.edit", user.id))
-                        }
-                        onSearch={handleSearch}
-                        onFilterChange={handleRoleChange}
-                    />
                     <UserTable
                         users={users}
                         filters={filters}

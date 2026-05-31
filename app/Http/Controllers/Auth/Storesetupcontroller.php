@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 
@@ -42,30 +43,44 @@ class StoreSetupController extends Controller
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
-        $user = User::findOrFail($userId);
+        DB::beginTransaction();
 
-        Store::create([
-            'user_id' => $user->id,
-            'name' => $request->name,
-            'business_type' => $request->business_type,
-            'country' => $request->country,
-            'province' => $request->province,
-            'address' => $request->address,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-        ]);
+        try {
+            $user = User::findOrFail($userId);
 
-        Session::forget('pending_user_id');
+            // Create store
+            $store = Store::create([
+                'user_id' => $user->id,
+                'name' => $request->name,
+                'business_type' => $request->business_type,
+                'country' => $request->country,
+                'province' => $request->province,
+                'address' => $request->address,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+            ]);
 
-        Auth::login($user);
+            // Update user with store_id
+            $user->store_id = $store->id;
+            $user->save();
 
-        $locale = $user->locale ?? config('app.locale', 'en');
-        App::setLocale($locale);
-        Session::put('locale', $locale);
-        Session::save();
+            DB::commit();
 
-        $request->session()->regenerate();
+            Session::forget('pending_user_id');
 
-        return Inertia::location('/');
+            Auth::login($user);
+
+            $locale = $user->locale ?? config('app.locale', 'en');
+            App::setLocale($locale);
+            Session::put('locale', $locale);
+            Session::save();
+
+            $request->session()->regenerate();
+
+            return Inertia::location('/');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to setup store. Please try again.'])->withInput();
+        }
     }
 }

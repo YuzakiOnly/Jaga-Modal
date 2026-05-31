@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar-v1/AppSidebar";
-import { AppHeader } from "@/components/navbar/header/AppHeader";
+import { AppHeader } from "@/layouts/dashboard/AppHeader";
 
 export default function SidebarLayout({
     children,
@@ -18,9 +18,9 @@ export default function SidebarLayout({
                 user={user}
             />
             <SidebarInset className="bg-sidebar">
-                <div className="flex flex-col h-full md:mt-2.5 md:mr-2.5 md:rounded-tl-xl md:rounded-tr-xl bg-background overflow-hidden">
+                <div className="flex min-h-screen flex-col md:mt-2.5 md:mr-2.5 md:rounded-tl-xl md:rounded-tr-xl bg-background">
                     <AppHeader />
-                    <main className="flex-1 overflow-auto">{children}</main>
+                    <main className="flex-1">{children}</main>
                 </div>
             </SidebarInset>
         </SidebarProvider>

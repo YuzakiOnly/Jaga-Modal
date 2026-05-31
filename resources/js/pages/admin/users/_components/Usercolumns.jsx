@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Avatar } from "./Useravatar";
-import { roleConfig } from "@/lib/users/Userconstants";
+import { roleConfig } from "@/lib/users/userConstants";
 
-// ─── Column definitions ───────────────────────────────────────────────────────
 export const columns = (currentUserId, currentUserRole, onEdit, onDelete) => [
     {
         id: "select",
@@ -177,13 +176,16 @@ export const columns = (currentUserId, currentUserRole, onEdit, onDelete) => [
             const user = row.original;
             const isCurrentUser = user.id === currentUserId;
             const isSuperAdmin = user.role === "super_admin";
+            const isPrimary = !!user.is_primary;
             const isSelfSuperAdmin =
                 isCurrentUser && user.role === "super_admin";
             const canEdit =
+                !isPrimary &&
                 !isSelfSuperAdmin &&
                 (currentUserRole === "super_admin" ||
                     (!isSuperAdmin && !isCurrentUser));
             const canDelete =
+                !isPrimary &&
                 !isCurrentUser &&
                 !isSuperAdmin &&
                 currentUserRole === "super_admin";
@@ -192,7 +194,10 @@ export const columns = (currentUserId, currentUserRole, onEdit, onDelete) => [
                 <div className="flex justify-center">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0 ring-0! hover:bg-transparent!">
+                            <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 ring-0! hover:bg-transparent!"
+                            >
                                 <span className="sr-only">Open menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>

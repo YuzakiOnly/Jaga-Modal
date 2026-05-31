@@ -9,14 +9,14 @@ return new class extends Migration {
     {
         Schema::create('stores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->string('business_type');
-            $table->string('country', 10)->default('ID');
+            $table->string('business_type')->nullable();
+            $table->string('country')->nullable();
             $table->string('province')->nullable();
             $table->text('address')->nullable();
-            $table->decimal('latitude', 10, 7)->nullable();
-            $table->decimal('longitude', 10, 7)->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
             $table->string('logo')->nullable();
             $table->string('thumbnail')->nullable();
             $table->enum('is_active', ['active', 'inactive'])->default('active');

@@ -29,20 +29,11 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 
-// Helper function to check if URL matches the menu item
 function isUrlActive(currentUrl, itemUrl) {
     if (!itemUrl) return false;
 
-    // Exact match
     if (currentUrl === itemUrl) return true;
 
-    // Check if current URL starts with item URL (for nested routes like /admin/users/create)
-    // But make sure we don't match /admin/users when on /admin/users/roles
-    if (itemUrl !== "/admin/users" && currentUrl.startsWith(itemUrl + "/")) {
-        return true;
-    }
-
-    // Special handling for /admin/users to match /admin/users, /admin/users/create, /admin/users/1/edit
     if (
         itemUrl === "/admin/users" &&
         currentUrl.match(/^\/admin\/users(\/create|\/\d+\/edit)?$/)
@@ -53,7 +44,6 @@ function isUrlActive(currentUrl, itemUrl) {
     return false;
 }
 
-// Helper function to check if any submenu item is active
 function isAnySubItemActive(items, currentUrl) {
     if (!items) return false;
 
@@ -65,7 +55,6 @@ function isAnySubItemActive(items, currentUrl) {
     return false;
 }
 
-// ─── Helper: render badge setiap item / sub ────────────────────────────
 function ItemBadge({ item, className = "" }) {
     if (item.isComing) {
         return (
@@ -97,7 +86,6 @@ function ItemBadge({ item, className = "" }) {
     return null;
 }
 
-// ─── Helper: render badge inline ────────────────────────────
 function InlineBadge({ item }) {
     if (item.isComing) {
         return (
@@ -166,7 +154,6 @@ export function NavMain({ navItems = [] }) {
                                                                     item.title
                                                                 }
                                                                 isActive={
-                                                                    isActive ||
                                                                     hasActiveChild
                                                                 }
                                                             >
@@ -201,7 +188,7 @@ export function NavMain({ navItems = [] }) {
                                                                     subIdx,
                                                                 ) => (
                                                                     <DropdownMenuItem
-                                                                        className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10! active:bg-(--primary)/10!"
+                                                                        className="hover:text-foreground active:text-foreground hover:bg-primary/10! active:bg-primary/10!"
                                                                         asChild
                                                                         key={`${item.title}-${sub.title}-${subIdx}`}
                                                                     >
@@ -236,9 +223,8 @@ export function NavMain({ navItems = [] }) {
                                                 >
                                                     <CollapsibleTrigger asChild>
                                                         <SidebarMenuButton
-                                                            className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
+                                                            className="hover:text-foreground active:text-foreground hover:bg-primary/10 active:bg-primary/10"
                                                             isActive={
-                                                                isActive ||
                                                                 hasActiveChild
                                                             }
                                                             tooltip={item.title}
@@ -278,7 +264,7 @@ export function NavMain({ navItems = [] }) {
                                                                             className="relative"
                                                                         >
                                                                             <SidebarMenuSubButton
-                                                                                className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
+                                                                                className="hover:text-foreground active:text-foreground hover:bg-primary/10 active:bg-primary/10"
                                                                                 isActive={
                                                                                     isSubActive
                                                                                 }
@@ -319,7 +305,7 @@ export function NavMain({ navItems = [] }) {
                                             </>
                                         ) : (
                                             <SidebarMenuButton
-                                                className="hover:text-foreground active:text-foreground hover:bg-(--primary)/10 active:bg-(--primary)/10"
+                                                className="hover:text-foreground active:text-foreground hover:bg-primary/10 active:bg-primary/10"
                                                 isActive={isActive}
                                                 tooltip={item.title}
                                                 onClick={() =>

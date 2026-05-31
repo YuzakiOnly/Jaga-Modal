@@ -273,7 +273,7 @@ function RegisterContent({
                             value={data.country_code}
                             onValueChange={(val) => update("country_code", val)}
                         >
-                            <SelectTrigger className="w-[5.5rem] shrink-0 px-2 gap-1">
+                            <SelectTrigger className="w-22 shrink-0 px-2 gap-1">
                                 <SelectValue>
                                     <div className="flex items-center gap-1.5">
                                         <ReactCountryFlag

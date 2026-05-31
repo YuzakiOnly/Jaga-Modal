@@ -1,0 +1,190 @@
+import { useState, useEffect } from "react";
+import { route } from "ziggy-js";
+import { Head, router, usePage } from "@inertiajs/react";
+import AppLayout from "@/layouts/dashboard/AppLayout";
+import { CategoryTable } from "./_components/CategoryTable";
+import { CategoryList } from "./_components/CategoryList";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardAction,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+    FolderPlus,
+    Layers,
+    CheckCircle2,
+    CircleDashed,
+    Loader2,
+} from "lucide-react";
+import { Toaster, toast } from "sonner";
+import { DeleteDialog } from "@/components/shared/DeleteDialog";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+
+export default function CategoriesPage({ categories, filters, counts }) {
+    const [deleteCategory, setDeleteCategory] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const { flash } = usePage().props;
+    const isMobile = useMediaQuery("(max-width: 768px)");
+
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
+
+    const totalCount = counts?.total ?? 0;
+    const activeCount = counts?.active ?? 0;
+    const inactiveCount = counts?.inactive ?? 0;
+
+    const handleSearch = (value) => {
+        setLoading(true);
+        router.get(
+            route("owner.categories"),
+            { search: value, status: filters?.status || "all" },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onFinish: () => setLoading(false),
+            },
+        );
+    };
+
+    const handleStatusChange = (value) => {
+        setLoading(true);
+        router.get(
+            route("owner.categories"),
+            { search: filters?.search || "", status: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onFinish: () => setLoading(false),
+            },
+        );
+    };
+
+    return (
+        <>
+            <Head title="Owner — Categories" />
+            <div className="space-y-6 p-4 md:p-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Categories
+                        </h1>
+                        {loading && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                    </div>
+                    <Button
+                        onClick={() =>
+                            router.visit(route("owner.categories.create"))
+                        }
+                        className="h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-4"
+                    >
+                        <FolderPlus className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Add Category</span>
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                    <Card className="shadow-none">
+                        <CardHeader className="p-4 sm:p-6">
+                            <CardDescription>Total</CardDescription>
+                            <CardTitle className="font-display text-2xl">
+                                {totalCount}
+                            </CardTitle>
+                            <CardAction>
+                                <Badge variant="outline" className="p-2">
+                                    <Layers className="h-3.5 w-3.5" />
+                                </Badge>
+                            </CardAction>
+                        </CardHeader>
+                    </Card>
+
+                    <Card className="shadow-none">
+                        <CardHeader className="p-4 sm:p-6">
+                            <CardDescription>Active</CardDescription>
+                            <CardTitle className="font-display text-2xl">
+                                {activeCount}
+                            </CardTitle>
+                            <CardAction>
+                                <Badge variant="outline" className="p-2">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                </Badge>
+                            </CardAction>
+                        </CardHeader>
+                    </Card>
+
+                    <Card className="shadow-none">
+                        <CardHeader className="p-4 sm:p-6">
+                            <CardDescription>Inactive</CardDescription>
+                            <CardTitle className="font-display text-2xl">
+                                {inactiveCount}
+                            </CardTitle>
+                            <CardAction>
+                                <Badge variant="outline" className="p-2">
+                                    <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Badge>
+                            </CardAction>
+                        </CardHeader>
+                    </Card>
+                </div>
+
+                {isMobile ? (
+                    <CategoryList
+                        categories={categories}
+                        filters={filters}
+                        onDelete={setDeleteCategory}
+                        onSearch={handleSearch}
+                        onFilterChange={handleStatusChange}
+                    />
+                ) : (
+                    <CategoryTable
+                        categories={categories}
+                        filters={filters}
+                        onDelete={setDeleteCategory}
+                        onSearch={handleSearch}
+                        onFilterChange={handleStatusChange}
+                    />
+                )}
+            </div>
+
+            <DeleteDialog
+                item={deleteCategory}
+                open={!!deleteCategory}
+                onOpenChange={(open) => !open && setDeleteCategory(null)}
+                routeName="owner.categories.destroy"
+                title="Delete Category"
+                label="Delete Category"
+                meta={
+                    <>
+                        <p className="text-sm font-medium text-destructive">
+                            Category to delete:{" "}
+                            <span className="font-bold wrap-break-word">
+                                {deleteCategory?.name}
+                            </span>
+                        </p>
+                        {deleteCategory?.products_count > 0 && (
+                            <p className="text-xs text-destructive/70">
+                                ⚠️ This category has{" "}
+                                {deleteCategory.products_count} product
+                                {deleteCategory.products_count !== 1
+                                    ? "s"
+                                    : ""}{" "}
+                                linked to it.
+                            </p>
+                        )}
+                    </>
+                }
+            />
+            <Toaster position="top-right" richColors />
+        </>
+    );
+}
+
+CategoriesPage.layout = (page) => <AppLayout>{page}</AppLayout>;
