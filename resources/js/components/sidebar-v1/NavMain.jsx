@@ -143,7 +143,6 @@ export function NavMain({ navItems = [] }) {
                                         {Array.isArray(item.items) &&
                                         item.items.length > 0 ? (
                                             <>
-                                                {/* ── Collapsed icon mode ── */}
                                                 <div className="hidden group-data-[collapsible=icon]:block">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger

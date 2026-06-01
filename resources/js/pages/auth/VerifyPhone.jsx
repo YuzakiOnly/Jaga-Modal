@@ -125,7 +125,6 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
             />
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
-                {/* OTP inputs */}
                 <div className="space-y-3">
                     <div
                         className="flex justify-center gap-2"
@@ -156,7 +155,6 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                         ))}
                     </div>
 
-                    {/* Error */}
                     {(hasError || localError) && (
                         <div className="flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
                             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -184,7 +182,6 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                 </Button>
             </form>
 
-            {/* Resend section */}
             <div className="mt-6 space-y-3 text-center">
                 <p className="text-sm text-muted-foreground">
                     Tidak menerima kode?

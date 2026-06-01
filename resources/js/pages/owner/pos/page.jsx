@@ -1,7 +1,5 @@
-// pages/owner/pos/page.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Head, usePage } from "@inertiajs/react";
-import { useEffect } from "react";
 import { toast, Toaster } from "sonner";
 import { ShoppingCart } from "lucide-react";
 import AppLayout from "@/layouts/dashboard/AppLayout";
@@ -11,34 +9,72 @@ import { Cart } from "./_components/Cart";
 import { PaymentDialog } from "./_components/PaymentDialog";
 import { Badge } from "@/components/ui/badge";
 
+// Channel online yang harganya +20% dan saldo terpisah
+export const ONLINE_CHANNELS = ["grabfood", "shopeefood", "gobiz"];
+export const ONLINE_PRICE_MARKUP = 0.2; // 20%
+
 export default function PosPage({ products, categories }) {
     const { flash } = usePage().props;
 
     const [cartItems, setCartItems] = useState([]);
     const [paymentOpen, setPaymentOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
+    const [globalDiscount, setGlobalDiscount] = useState(0);
+
+    // "dine_in" | "grabfood" | "shopeefood" | "gobiz"
+    const [orderChannel, setOrderChannel] = useState("dine_in");
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
+    // Saat channel berubah, recalculate harga semua item di cart
+    // (hanya item dari produk, bukan custom)
+    useEffect(() => {
+        const isOnline = ONLINE_CHANNELS.includes(orderChannel);
+        setCartItems((prev) =>
+            prev.map((item) => {
+                if (item.is_custom) return item;
+                // Kembalikan ke base price, lalu terapkan markup jika perlu
+                const basePrice = item.base_unit_price ?? item.unit_price;
+                const newPrice = isOnline
+                    ? Math.round(basePrice * (1 + ONLINE_PRICE_MARKUP))
+                    : basePrice;
+                return {
+                    ...item,
+                    base_unit_price: basePrice,
+                    unit_price: newPrice,
+                };
+            }),
+        );
+    }, [orderChannel]);
+
+    const handleChannelChange = (channel) => {
+        setOrderChannel(channel);
+        // Reset diskon saat ganti channel untuk menghindari diskon melebihi harga baru
+        setGlobalDiscount(0);
+    };
+
     const handleAddProduct = (product) => {
         if (product.stock_type === "limited" && product.stock <= 0) return;
+
+        const isOnline = ONLINE_CHANNELS.includes(orderChannel);
+        const basePrice = parseFloat(product.selling_price);
+        const effectivePrice = isOnline
+            ? Math.round(basePrice * (1 + ONLINE_PRICE_MARKUP))
+            : basePrice;
 
         setCartItems((prev) => {
             const existing = prev.find(
                 (item) => item.product_id === product.id && !item.is_custom,
             );
-
             if (
                 existing &&
                 product.stock_type === "limited" &&
                 existing.qty >= product.stock
-            ) {
+            )
                 return prev;
-            }
-
             if (existing) {
                 return prev.map((item) =>
                     item.product_id === product.id && !item.is_custom
@@ -52,7 +88,8 @@ export default function PosPage({ products, categories }) {
                     _key: crypto.randomUUID(),
                     product_id: product.id,
                     name: product.name,
-                    unit_price: parseFloat(product.selling_price),
+                    base_unit_price: basePrice,
+                    unit_price: effectivePrice,
                     capital_price: parseFloat(product.capital_price ?? 0),
                     qty: 1,
                     discount: 0,
@@ -65,14 +102,16 @@ export default function PosPage({ products, categories }) {
     };
 
     const handleAddCustom = ({ name, selling_price, capital_price }) => {
+        // Item custom tidak kena markup online
         setCartItems((prev) => [
             ...prev,
             {
                 _key: crypto.randomUUID(),
                 product_id: null,
                 name,
+                base_unit_price: selling_price,
                 unit_price: selling_price,
-                capital_price: capital_price,
+                capital_price,
                 qty: 1,
                 discount: 0,
                 is_custom: true,
@@ -112,33 +151,52 @@ export default function PosPage({ products, categories }) {
         setPaymentOpen(false);
         setCartItems([]);
         setCartOpen(false);
+        setGlobalDiscount(0);
     };
 
+    const subtotalAfterItemDiscount = cartItems.reduce(
+        (sum, item) => sum + (item.unit_price - item.discount) * item.qty,
+        0,
+    );
+
+    const finalTotal = Math.max(0, subtotalAfterItemDiscount - globalDiscount);
     const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
+
+    const cartProps = {
+        items: cartItems,
+        onUpdateQty: handleUpdateQty,
+        onUpdateDiscount: handleUpdateDiscount,
+        onRemoveItem: handleRemoveItem,
+        onClearCart: handleClearCart,
+        globalDiscount,
+        onGlobalDiscountChange: setGlobalDiscount,
+        subtotalAfterItemDiscount,
+        finalTotal,
+        orderChannel,
+        onChannelChange: handleChannelChange,
+    };
 
     return (
         <>
             <Head title="POS — Transaksi" />
 
-            <div className="flex h-[calc(100dvh-4rem)] overflow-hidden w-full max-w-full">
-                <div className="flex-1 overflow-hidden w-full min-w-0">
-                    <ProductGrid
-                        products={products}
-                        categories={categories}
-                        onAddProduct={handleAddProduct}
-                        onAddCustom={handleAddCustom}
-                    />
-                </div>
+            <div className="h-[calc(100dvh-4rem)] overflow-hidden w-full">
+                <div className="flex h-full w-full overflow-hidden">
+                    <div className="flex-1 min-w-0 overflow-hidden flex flex-col p-3 sm:p-4">
+                        <ProductGrid
+                            products={products}
+                            categories={categories}
+                            onAddProduct={handleAddProduct}
+                            onAddCustom={handleAddCustom}
+                        />
+                    </div>
 
-                <div className="hidden lg:flex w-90 shrink-0 flex-col overflow-hidden">
-                    <Cart
-                        items={cartItems}
-                        onUpdateQty={handleUpdateQty}
-                        onUpdateDiscount={handleUpdateDiscount}
-                        onRemoveItem={handleRemoveItem}
-                        onClearCart={handleClearCart}
-                        onCheckout={() => setPaymentOpen(true)}
-                    />
+                    <div className="hidden lg:flex flex-col overflow-hidden shrink-0 w-90 xl:w-100 border-l">
+                        <Cart
+                            {...cartProps}
+                            onCheckout={() => setPaymentOpen(true)}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -164,11 +222,7 @@ export default function PosPage({ products, categories }) {
                     </div>
                     <div className="flex-1 overflow-hidden">
                         <Cart
-                            items={cartItems}
-                            onUpdateQty={handleUpdateQty}
-                            onUpdateDiscount={handleUpdateDiscount}
-                            onRemoveItem={handleRemoveItem}
-                            onClearCart={handleClearCart}
+                            {...cartProps}
                             onCheckout={() => {
                                 setCartOpen(false);
                                 setPaymentOpen(true);
@@ -196,6 +250,10 @@ export default function PosPage({ products, categories }) {
                 onOpenChange={setPaymentOpen}
                 cartItems={cartItems}
                 onSuccess={handlePaymentSuccess}
+                globalDiscount={globalDiscount}
+                finalTotal={finalTotal}
+                subtotalAfterItemDiscount={subtotalAfterItemDiscount}
+                orderChannel={orderChannel}
             />
 
             <Toaster position="top-right" richColors />

@@ -16,6 +16,7 @@ class Expense extends Model
         'store_id',
         'user_id',
         'type',
+        'payment_source',
         'description',
         'amount',
         'quantity',
@@ -35,7 +36,6 @@ class Expense extends Model
         'metadata' => 'array',
     ];
 
-    // Accessor untuk total_amount
     public function getTotalAmountAttribute(): float
     {
         if ($this->type === 'raw_material' && $this->quantity && $this->unit_price) {
@@ -44,7 +44,32 @@ class Expense extends Model
         return (float) ($this->amount ?? 0);
     }
 
-    // Relationships
+    public function getPaymentSourceLabelAttribute(): string
+    {
+        return $this->payment_source === 'online' ? 'Saldo Online' : 'Kas Toko';
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (Expense $expense) {
+            if ($expense->payment_source === 'online') {
+                OnlineBalance::deductBalance($expense->store_id, $expense->total_amount);
+            }
+        });
+
+        static::deleted(function (Expense $expense) {
+            if ($expense->payment_source === 'online') {
+                // Refund balance when expense is deleted
+                $currentBalance = OnlineBalance::getBalance($expense->store_id);
+                OnlineBalance::addRevenue(
+                    $expense->store_id,
+                    'refund',
+                    $expense->total_amount
+                );
+            }
+        });
+    }
+
     public function store()
     {
         return $this->belongsTo(Store::class);
@@ -60,11 +85,15 @@ class Expense extends Model
         return $this->hasOne(OwnerWalletTransaction::class, 'expense_id');
     }
 
-    // Scopes
     public function scopeForStore($query, $storeId = null)
     {
         $storeId = $storeId ?? auth()->user()?->store_id;
         return $query->where('store_id', $storeId);
+    }
+
+    public function scopeForPaymentSource($query, $source)
+    {
+        return $query->where('payment_source', $source);
     }
 
     public function scopeOfType($query, $type)

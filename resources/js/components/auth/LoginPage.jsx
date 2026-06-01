@@ -62,10 +62,6 @@ export const BgImage = ({ type = "login" }) => {
                 <span className="text-white">Jaga Modal</span>
             </div>
 
-            {/* <div className="relative z-20 mt-8">
-                <h1 className="text-3xl font-bold text-white">{getTitle()}</h1>
-            </div> */}
-
             <div className="relative z-20 mt-auto">
                 <blockquote className="space-y-2">
                     <p className="text-lg text-white/90">

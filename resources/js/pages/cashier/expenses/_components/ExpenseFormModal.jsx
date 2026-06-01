@@ -253,7 +253,6 @@ export default function ExpenseFormModal({
                 </DialogHeader>
 
                 <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
-                    {/* Peringatan saldo rendah (hanya untuk mode tambah) */}
                     {!isEdit &&
                         currentBalance < 100000 &&
                         currentBalance > 0 && (
@@ -276,7 +275,6 @@ export default function ExpenseFormModal({
                         </Alert>
                     )}
 
-                    {/* Peringatan saat nominal melebihi saldo (hanya untuk mode tambah) */}
                     {balanceWarning && !isEdit && (
                         <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />

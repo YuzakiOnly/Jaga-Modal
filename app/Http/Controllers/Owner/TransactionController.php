@@ -60,11 +60,13 @@ class TransactionController extends Controller
         }
 
         $validated = $request->validate([
-            'payment_method' => ['required', 'in:cash,qris'],
+            'payment_method' => ['required', 'in:cash,qris,grabfood,shopeefood,gobiz'],
+            'order_channel' => ['required', 'in:dine_in,grabfood,shopeefood,gobiz'],
             'amount_paid' => ['required', 'numeric', 'min:0'],
             'change_amount' => ['required', 'numeric', 'min:0'],
             'subtotal' => ['required', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
+            'platform_fee' => ['nullable', 'numeric', 'min:0'],
             'total' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],
             'transacted_at' => ['nullable', 'date', 'before_or_equal:now'],
@@ -73,25 +75,45 @@ class TransactionController extends Controller
             'items.*.name' => ['required', 'string', 'max:200'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.capital_price' => ['required', 'numeric', 'min:0'],
+            'items.*.original_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'items.*.is_custom' => ['required', 'boolean'],
         ]);
 
+        $onlineChannels = Transaction::ONLINE_CHANNELS;
+        if (
+            in_array($validated['order_channel'], $onlineChannels) &&
+            $validated['payment_method'] !== $validated['order_channel']
+        ) {
+            return back()->withErrors([
+                'payment_method' => 'Metode pembayaran harus sesuai dengan channel pesanan.',
+            ])->withInput();
+        }
+
         DB::transaction(function () use ($validated, $storeId) {
             $transactedAt = !empty($validated['transacted_at'])
                 ? Carbon::parse($validated['transacted_at'])
                 : now();
 
+            $isOnline = in_array($validated['order_channel'], Transaction::ONLINE_CHANNELS);
+
+            $platformFee = $validated['platform_fee'] ?? 0;
+
+            $netRevenue = $validated['total'] - $platformFee;
+
             $transaction = Transaction::create([
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
                 'payment_method' => $validated['payment_method'],
+                'order_channel' => $validated['order_channel'],
                 'amount_paid' => $validated['amount_paid'],
                 'change_amount' => $validated['change_amount'],
                 'subtotal' => $validated['subtotal'],
                 'discount' => $validated['discount'] ?? 0,
+                'platform_fee' => $platformFee,
+                'net_revenue' => $netRevenue,
                 'total' => $validated['total'],
                 'notes' => $validated['notes'] ?? null,
                 'status' => 'completed',
@@ -128,6 +150,7 @@ class TransactionController extends Controller
 
         $period = $request->input('period', 'daily');
         $date = $request->input('date', today()->toDateString());
+        $channel = $request->input('channel');
 
         $summaryQuery = Transaction::forStore($storeId)->completed();
 
@@ -142,11 +165,30 @@ class TransactionController extends Controller
             default => $summaryQuery->whereDate('transacted_at', $date),
         };
 
+        if ($channel) {
+            $summaryQuery->where('order_channel', $channel);
+        }
+
         $summary = [
             'total_revenue' => (clone $summaryQuery)->sum('total'),
+            'total_net_revenue' => (clone $summaryQuery)->sum('net_revenue'),
+            'total_platform_fee' => (clone $summaryQuery)->sum('platform_fee'),
             'total_count' => (clone $summaryQuery)->count(),
             'cash_count' => (clone $summaryQuery)->where('payment_method', 'cash')->count(),
             'qris_count' => (clone $summaryQuery)->where('payment_method', 'qris')->count(),
+            'grabfood_count' => (clone $summaryQuery)->where('order_channel', 'grabfood')->count(),
+            'shopeefood_count' => (clone $summaryQuery)->where('order_channel', 'shopeefood')->count(),
+            'gobiz_count' => (clone $summaryQuery)->where('order_channel', 'gobiz')->count(),
+            'revenue_by_channel' => (clone $summaryQuery)
+                ->select('order_channel', DB::raw('SUM(total) as total_revenue'), DB::raw('SUM(net_revenue) as net_revenue'))
+                ->groupBy('order_channel')
+                ->get()
+                ->mapWithKeys(fn($item) => [
+                    $item->order_channel => [
+                        'gross' => (float) $item->total_revenue,
+                        'net' => (float) $item->net_revenue,
+                    ]
+                ]),
         ];
 
         $transactions = (clone $summaryQuery)
@@ -158,7 +200,8 @@ class TransactionController extends Controller
         return Inertia::render('owner/pos/history/page', [
             'transactions' => $transactions,
             'summary' => $summary,
-            'filters' => $request->only(['period', 'date']),
+            'filters' => $request->only(['period', 'date', 'channel']),
+            'online_channels' => Transaction::ONLINE_CHANNELS,
         ]);
     }
 }

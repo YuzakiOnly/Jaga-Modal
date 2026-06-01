@@ -1,4 +1,3 @@
-// pages/owner/pos/_components/ProductGrid.jsx
 import { useState, useRef, useEffect } from "react";
 import {
     Search,
@@ -7,6 +6,7 @@ import {
     X,
     ChevronLeft,
     ChevronRight,
+    Package,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -77,9 +77,8 @@ export function ProductGrid({
 
     const scroll = (direction) => {
         if (scrollRef.current) {
-            const scrollAmount = direction === "left" ? -200 : 200;
             scrollRef.current.scrollBy({
-                left: scrollAmount,
+                left: direction === "left" ? -200 : 200,
                 behavior: "smooth",
             });
         }
@@ -87,15 +86,14 @@ export function ProductGrid({
 
     useEffect(() => {
         checkScroll();
-        const handleResize = () => checkScroll();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
+        window.addEventListener("resize", checkScroll);
+        return () => window.removeEventListener("resize", checkScroll);
     }, [categories]);
 
     return (
-        <div className="flex flex-col gap-4 h-full overflow-hidden">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
-                <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col gap-3 h-full overflow-hidden">
+            <div className="flex items-center gap-2 shrink-0">
+                <div className="relative flex-1 min-w-0">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari produk..."
@@ -114,11 +112,11 @@ export function ProductGrid({
                 </div>
                 <Button
                     variant="outline"
-                    className="gap-2 shrink-0"
+                    className="gap-1.5 shrink-0 px-3 sm:px-4"
                     onClick={() => setCustomOpen(true)}
                 >
                     <PackagePlus className="h-4 w-4" />
-                    Item Custom
+                    <span className="hidden sm:inline">Item Custom</span>
                 </Button>
             </div>
 
@@ -135,15 +133,12 @@ export function ProductGrid({
                 <div
                     ref={scrollRef}
                     onScroll={checkScroll}
-                    className="flex gap-2 pb-2 overflow-x-auto"
-                    style={{
-                        scrollbarWidth: "thin",
-                        msOverflowStyle: "auto",
-                    }}
+                    className="flex gap-2 pb-1 overflow-x-auto scrollbar-none"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     <button
                         onClick={() => setActiveCategory("all")}
-                        className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border whitespace-nowrap ${
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs sm:text-sm font-medium transition-colors border whitespace-nowrap ${
                             activeCategory === "all"
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "bg-background text-muted-foreground border-border hover:bg-accent"
@@ -155,7 +150,7 @@ export function ProductGrid({
                         <button
                             key={cat.id}
                             onClick={() => setActiveCategory(String(cat.id))}
-                            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border whitespace-nowrap ${
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs sm:text-sm font-medium transition-colors border whitespace-nowrap ${
                                 activeCategory === String(cat.id)
                                     ? "bg-primary text-primary-foreground border-primary"
                                     : "bg-background text-muted-foreground border-border hover:bg-accent"
@@ -181,94 +176,91 @@ export function ProductGrid({
                     Tidak ada produk ditemukan.
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 overflow-y-auto pb-2">
-                    {filtered.map((product) => {
-                        const isOutOfStock =
-                            product.stock_type === "limited" &&
-                            product.stock <= 0;
+                <div className="flex-1 overflow-y-auto min-h-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 pb-2">
+                        {filtered.map((product) => {
+                            const isOutOfStock =
+                                product.stock_type === "limited" &&
+                                product.stock <= 0;
 
-                        return (
-                            <button
-                                key={product.id}
-                                onClick={() =>
-                                    !isOutOfStock && onAddProduct(product)
-                                }
-                                disabled={isOutOfStock}
-                                className={`group relative flex flex-col rounded-xl border bg-card text-left transition-all overflow-hidden
-                                    ${
+                            return (
+                                <button
+                                    key={product.id}
+                                    onClick={() =>
+                                        !isOutOfStock && onAddProduct(product)
+                                    }
+                                    disabled={isOutOfStock}
+                                    className={`group relative flex flex-col rounded-xl border bg-card text-left transition-all overflow-hidden ${
                                         isOutOfStock
                                             ? "opacity-50 cursor-not-allowed"
                                             : "hover:border-primary/50 hover:shadow-md active:scale-[0.98] cursor-pointer"
                                     }`}
-                            >
-                                <div className="relative h-28 w-full bg-muted flex items-center justify-center overflow-hidden">
-                                    {product.image ? (
-                                        <img
-                                            src={`/storage/${product.image}`}
-                                            alt={product.name}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <span className="text-3xl font-medium text-muted-foreground group-hover:text-primary transition-colors">
-                                            {product.name
-                                                .charAt(0)
-                                                .toUpperCase()}
-                                        </span>
-                                    )}
-
-                                    {!isOutOfStock && (
-                                        <>
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-primary opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                                                <Plus className="h-3.5 w-3.5" />
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {isOutOfStock && (
-                                        <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                                            <span className="text-xs font-semibold text-destructive bg-background/90 px-2 py-0.5 rounded-full border border-destructive/30">
-                                                Habis
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex flex-col gap-1 p-3">
-                                    <p className="text-sm font-medium line-clamp-2 leading-tight">
-                                        {product.name}
-                                    </p>
-                                    <p className="text-xs font-semibold text-primary">
-                                        {formatPrice(product.selling_price)}
-                                    </p>
-                                    {product.capital_price > 0 &&
-                                        product.selling_price > 0 && (
-                                            <p className="text-[10px] text-emerald-600">
-                                                Laba:{" "}
-                                                {formatPrice(
-                                                    product.selling_price -
-                                                        product.capital_price,
-                                                )}
-                                            </p>
+                                >
+                                    <div className="relative h-24 sm:h-28 w-full bg-muted flex items-center justify-center overflow-hidden">
+                                        {product.image ? (
+                                            <img
+                                                src={`/storage/${product.image}`}
+                                                alt={product.name}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <Package className="h-10 w-10 text-gray-300 group-hover:text-primary transition-colors" />
                                         )}
-                                    {product.stock_type === "unlimited" ? (
-                                        <span className="mt-1 w-fit text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border">
-                                            Unlimited
-                                        </span>
-                                    ) : product.stock > 0 ? (
-                                        <span className="mt-1 w-fit text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border">
-                                            Stok: {product.stock}
-                                        </span>
-                                    ) : null}
-                                </div>
-                            </button>
-                        );
-                    })}
+
+                                        {!isOutOfStock && (
+                                            <>
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-primary opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {isOutOfStock && (
+                                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                                                <span className="text-xs font-semibold text-destructive bg-background/90 px-2 py-0.5 rounded-full border border-destructive/30">
+                                                    Habis
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col gap-0.5 p-2 sm:p-3">
+                                        <p className="text-xs sm:text-sm font-medium line-clamp-2 leading-tight">
+                                            {product.name}
+                                        </p>
+                                        <p className="text-xs font-semibold text-primary">
+                                            {formatPrice(product.selling_price)}
+                                        </p>
+                                        {product.capital_price > 0 &&
+                                            product.selling_price > 0 && (
+                                                <p className="text-[10px] text-emerald-600">
+                                                    Laba:{" "}
+                                                    {formatPrice(
+                                                        product.selling_price -
+                                                            product.capital_price,
+                                                    )}
+                                                </p>
+                                            )}
+                                        {product.stock_type === "unlimited" ? (
+                                            <span className="mt-0.5 w-fit text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground border">
+                                                Unlimited
+                                            </span>
+                                        ) : product.stock > 0 ? (
+                                            <span className="mt-0.5 w-fit text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground border">
+                                                Stok: {product.stock}
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
             <Dialog open={customOpen} onOpenChange={setCustomOpen}>
-                <DialogContent className="max-w-sm">
+                <DialogContent className="w-[calc(100vw-1rem)] max-w-sm rounded-xl sm:rounded-lg">
                     <DialogHeader>
                         <DialogTitle>Tambah Item Custom</DialogTitle>
                         <DialogDescription>
@@ -292,9 +284,8 @@ export function ProductGrid({
                         <div className="space-y-1.5">
                             <Label>Harga Jual</Label>
                             <Input
-                                type="number"
-                                min={0}
-                                step={1000}
+                                type="text"
+                                inputMode="numeric"
                                 placeholder="0"
                                 value={customSellingPrice}
                                 onChange={(e) =>
@@ -308,9 +299,8 @@ export function ProductGrid({
                         <div className="space-y-1.5">
                             <Label>Harga Modal (HPP)</Label>
                             <Input
-                                type="number"
-                                min={0}
-                                step={1000}
+                                type="text"
+                                inputMode="numeric"
                                 placeholder="0 (isi jika ada modal)"
                                 value={customCapitalPrice}
                                 onChange={(e) =>
@@ -326,16 +316,18 @@ export function ProductGrid({
                             </p>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
                         <Button
                             variant="outline"
                             onClick={() => setCustomOpen(false)}
+                            className="w-full sm:w-auto"
                         >
                             Batal
                         </Button>
                         <Button
                             onClick={handleAddCustom}
                             disabled={!customName.trim() || !customSellingPrice}
+                            className="w-full sm:w-auto"
                         >
                             Tambah ke Keranjang
                         </Button>

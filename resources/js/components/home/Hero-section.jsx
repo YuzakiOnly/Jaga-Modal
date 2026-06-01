@@ -15,7 +15,6 @@ const DAY_LABELS = ["S", "M", "S", "R", "K", "J", "S"];
 export default function HeroSection() {
     return (
         <section className="relative overflow-hidden bg-warm-50 py-20 lg:py-28">
-            {/* Ambient blobs */}
             <div className="pointer-events-none absolute inset-0">
                 <div className="absolute -top-32 -right-32 size-[600px] rounded-full bg-brand-500/8" />
                 <div className="absolute -bottom-20 -left-20 size-[400px] rounded-full bg-blue-400/6" />
@@ -23,29 +22,24 @@ export default function HeroSection() {
 
             <div className="relative mx-auto max-w-6xl px-6">
                 <div className="grid items-center gap-16 lg:grid-cols-2">
-                    {/* ── Left copy ─────────────────────────────────────── */}
                     <div>
-                        {/* Badge */}
                         <div className="animate-fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700">
                             <span className="size-2 animate-pulse rounded-full bg-brand-500" />
                             Khusus untuk UMKM Indonesia
                         </div>
 
-                        {/* Heading */}
                         <h1 className="animate-fade-up delay-100 font-serif text-[clamp(2.4rem,4.5vw,3.6rem)] font-bold leading-[1.12] tracking-tight text-warm-950 mb-5">
                             Jaga modal,{" "}
                             <em className="italic text-brand-600">tumbuhkan</em>{" "}
                             bisnis Anda
                         </h1>
 
-                        {/* Sub */}
                         <p className="animate-fade-up delay-200 text-lg leading-relaxed text-warm-500 mb-9 max-w-[460px]">
                             Platform manajemen bisnis lengkap untuk UMKM. Kasir,
                             stok, keuangan, dan laporan — semua dalam satu
                             aplikasi yang mudah digunakan.
                         </p>
 
-                        {/* CTA buttons */}
                         <div className="animate-fade-up delay-300 flex flex-wrap gap-3 mb-8">
                             <Link
                                 href="/register"
@@ -61,7 +55,6 @@ export default function HeroSection() {
                             </a>
                         </div>
 
-                        {/* Trust badges */}
                         <div className="animate-fade-up delay-400 flex flex-wrap gap-5">
                             {TRUST_BADGES.map((t) => (
                                 <span
@@ -78,11 +71,8 @@ export default function HeroSection() {
                         </div>
                     </div>
 
-                    {/* ── Right — Dashboard mockup ───────────────────────── */}
                     <div className="animate-fade-in delay-200 relative">
-                        {/* Main card */}
                         <div className="rounded-3xl border border-warm-100 bg-white p-6 shadow-2xl shadow-warm-900/10">
-                            {/* KPI header */}
                             <div className="mb-5 flex items-start justify-between">
                                 <div>
                                     <p className="mb-1 text-xs text-warm-400">
@@ -97,7 +87,6 @@ export default function HeroSection() {
                                 </span>
                             </div>
 
-                            {/* Bar chart */}
                             <div className="flex items-end gap-1.5 h-16 mb-3">
                                 {BAR_HEIGHTS.map((h, i) => (
                                     <div
@@ -126,7 +115,6 @@ export default function HeroSection() {
 
                             <hr className="border-warm-100 mb-5" />
 
-                            {/* Top products */}
                             <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-wider text-warm-500">
                                 Produk Terlaris
                             </p>
@@ -152,7 +140,6 @@ export default function HeroSection() {
                             </div>
                         </div>
 
-                        {/* Floating: stock warning */}
                         <div className="animate-float absolute -bottom-4 -left-5 flex items-center gap-3 rounded-2xl border border-warm-100 bg-white px-4 py-3 shadow-xl shadow-warm-900/10">
                             <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 shrink-0">
                                 <Package size={16} className="text-amber-600" />
@@ -167,7 +154,6 @@ export default function HeroSection() {
                             </div>
                         </div>
 
-                        {/* Floating: profit */}
                         <div className="animate-float-delayed absolute -top-3 -right-3 rounded-2xl bg-gradient-to-br from-brand-600 to-teal-500 px-4 py-3 shadow-xl shadow-brand-600/30">
                             <p className="text-[0.65rem] text-white/75 mb-0.5">
                                 Laba hari ini

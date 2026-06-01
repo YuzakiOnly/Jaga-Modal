@@ -51,7 +51,6 @@ export default function PricingSection() {
     return (
         <section id="harga" className="bg-white py-24 px-6">
             <div className="mx-auto max-w-4xl">
-                {/* Header */}
                 <div className="mb-14 text-center">
                     <p className="text-xs font-bold tracking-widest uppercase text-brand-600 mb-3">
                         Harga
@@ -65,7 +64,6 @@ export default function PricingSection() {
                     </p>
                 </div>
 
-                {/* Cards */}
                 <div className="grid gap-5 sm:grid-cols-3">
                     {PLANS.map((plan) => (
                         <div

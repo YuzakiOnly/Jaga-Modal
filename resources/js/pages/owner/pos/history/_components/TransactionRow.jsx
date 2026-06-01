@@ -5,6 +5,9 @@ import {
     ChevronDown,
     ChevronRight,
     Receipt,
+    Bike,
+    Zap,
+    Store,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +16,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 const formatPrice = (price) =>
     new Intl.NumberFormat("id-ID", {
@@ -30,16 +34,69 @@ const formatDate = (dateStr) =>
         minute: "2-digit",
     });
 
+// Config per channel
+const CHANNEL_CONFIG = {
+    dine_in: {
+        label: "Dine In",
+        icon: Store,
+        badgeClass: "border-slate-200 bg-slate-50 text-slate-600",
+    },
+    grabfood: {
+        label: "GrabFood",
+        icon: Bike,
+        badgeClass: "border-green-200 bg-green-50 text-green-700",
+    },
+    shopeefood: {
+        label: "ShopeFood",
+        icon: Bike,
+        badgeClass: "border-orange-200 bg-orange-50 text-orange-600",
+    },
+    gobiz: {
+        label: "GoBiz",
+        icon: Zap,
+        badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    },
+};
+
+// Badge metode pembayaran (untuk dine_in)
+const PAYMENT_METHOD_CONFIG = {
+    cash: { label: "Cash", icon: Banknote, variant: "secondary" },
+    qris: { label: "QRIS", icon: QrCode, variant: "outline" },
+    // online channel — tidak tampil payment method badge terpisah
+    grabfood: null,
+    shopeefood: null,
+    gobiz: null,
+};
+
 export function TransactionRow({ transaction }) {
     const [open, setOpen] = useState(false);
+
+    const orderChannel = transaction.order_channel ?? "dine_in";
+    const channelCfg = CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
+    const ChannelIcon = channelCfg.icon;
+    const isOnline = orderChannel !== "dine_in";
+
+    const paymentCfg = PAYMENT_METHOD_CONFIG[transaction.payment_method];
 
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
             <CollapsibleTrigger className="w-full text-left">
                 <div className="flex items-center justify-between px-3 sm:px-4 py-3 hover:bg-muted/40 transition-colors rounded-lg cursor-pointer gap-2">
+                    {/* Left: icon + info */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            <Receipt className="h-4 w-4" />
+                        <div
+                            className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                                isOnline
+                                    ? "bg-orange-100 text-orange-600"
+                                    : "bg-primary/10 text-primary",
+                            )}
+                        >
+                            {isOnline ? (
+                                <ChannelIcon className="h-4 w-4" />
+                            ) : (
+                                <Receipt className="h-4 w-4" />
+                            )}
                         </div>
                         <div className="min-w-0">
                             <p className="text-sm font-semibold truncate">
@@ -50,22 +107,32 @@ export function TransactionRow({ transaction }) {
                             </p>
                         </div>
                     </div>
+
+                    {/* Right: badges + total */}
                     <div className="flex items-center gap-2 shrink-0">
+                        {/* Channel badge — selalu tampil */}
                         <Badge
-                            variant={
-                                transaction.payment_method === "cash"
-                                    ? "secondary"
-                                    : "outline"
-                            }
-                            className="text-xs gap-1 hidden sm:flex"
-                        >
-                            {transaction.payment_method === "cash" ? (
-                                <Banknote className="h-3 w-3" />
-                            ) : (
-                                <QrCode className="h-3 w-3" />
+                            variant="outline"
+                            className={cn(
+                                "text-xs gap-1 hidden sm:flex",
+                                channelCfg.badgeClass,
                             )}
-                            {transaction.payment_method.toUpperCase()}
+                        >
+                            <ChannelIcon className="h-3 w-3" />
+                            {channelCfg.label}
                         </Badge>
+
+                        {/* Payment method badge — hanya untuk dine_in cash/qris */}
+                        {!isOnline && paymentCfg && (
+                            <Badge
+                                variant={paymentCfg.variant}
+                                className="text-xs gap-1 hidden sm:flex"
+                            >
+                                <paymentCfg.icon className="h-3 w-3" />
+                                {paymentCfg.label}
+                            </Badge>
+                        )}
+
                         <span className="text-sm font-bold tabular-nums text-primary">
                             {formatPrice(transaction.total)}
                         </span>
@@ -80,24 +147,44 @@ export function TransactionRow({ transaction }) {
 
             <CollapsibleContent>
                 <div className="mx-3 sm:mx-4 mb-3 rounded-lg border bg-muted/30 p-3 space-y-2">
-                    <div className="flex items-center gap-1 sm:hidden mb-2">
+                    {/* Badges mobile */}
+                    <div className="flex items-center gap-1.5 sm:hidden mb-2 flex-wrap">
                         <Badge
-                            variant={
-                                transaction.payment_method === "cash"
-                                    ? "secondary"
-                                    : "outline"
-                            }
-                            className="text-xs gap-1"
-                        >
-                            {transaction.payment_method === "cash" ? (
-                                <Banknote className="h-3 w-3" />
-                            ) : (
-                                <QrCode className="h-3 w-3" />
+                            variant="outline"
+                            className={cn(
+                                "text-xs gap-1",
+                                channelCfg.badgeClass,
                             )}
-                            {transaction.payment_method.toUpperCase()}
+                        >
+                            <ChannelIcon className="h-3 w-3" />
+                            {channelCfg.label}
                         </Badge>
+                        {!isOnline && paymentCfg && (
+                            <Badge
+                                variant={paymentCfg.variant}
+                                className="text-xs gap-1"
+                            >
+                                <paymentCfg.icon className="h-3 w-3" />
+                                {paymentCfg.label}
+                            </Badge>
+                        )}
                     </div>
 
+                    {/* Info online channel */}
+                    {isOnline && (
+                        <div
+                            className={cn(
+                                "text-xs rounded-md px-2.5 py-1.5 mb-2",
+                                channelCfg.badgeClass,
+                                "border",
+                            )}
+                        >
+                            Pendapatan masuk ke saldo{" "}
+                            <strong>{channelCfg.label}</strong> (harga +20%)
+                        </div>
+                    )}
+
+                    {/* Item list */}
                     <div className="space-y-1.5">
                         {transaction.items?.map((item) => (
                             <div
@@ -152,6 +239,7 @@ export function TransactionRow({ transaction }) {
                         </span>
                     </div>
 
+                    {/* Cash detail — hanya untuk dine_in cash */}
                     {transaction.payment_method === "cash" && (
                         <>
                             <Separator />

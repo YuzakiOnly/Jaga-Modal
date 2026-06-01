@@ -20,15 +20,20 @@ export default function MiniStatCard({
     value,
     subValue,
     isCurrency = true,
+    icon: Icon,
+    iconColor = "text-muted-foreground",
 }) {
     const displayValue = isCurrency ? formatRp(value) : formatNum(value);
 
     return (
         <Card>
             <CardContent className="p-3 sm:p-4">
-                <p className="text-xs text-muted-foreground truncate">
-                    {label}
-                </p>
+                <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground truncate">
+                        {label}
+                    </p>
+                    {Icon && <Icon className={`h-4 w-4 ${iconColor}`} />}
+                </div>
                 <p className="text-base sm:text-lg font-bold mt-0.5 truncate">
                     {displayValue}
                 </p>

@@ -273,7 +273,6 @@ export default function PaymentModal({
                                             : amount}
                                     </button>
                                 ))}
-                                {/* Tombol Uang Pas */}
                                 <button
                                     onClick={handleExactAmount}
                                     className="py-1.5 px-3 text-xs font-medium rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all"

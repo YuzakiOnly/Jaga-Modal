@@ -1,4 +1,3 @@
-// pages/owner/products/_components/ProductList.jsx
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { route } from "ziggy-js";
@@ -249,9 +248,9 @@ export function ProductList({
                 )}
             </div>
 
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
                 {data.length === 0 ? (
-                    <div className="flex items-center justify-center py-12 text-center">
+                    <div className="col-span-2 flex items-center justify-center py-12 text-center">
                         <div className="space-y-2">
                             <Package className="mx-auto h-8 w-8 text-muted-foreground/50" />
                             <p className="text-sm text-muted-foreground">
@@ -267,30 +266,30 @@ export function ProductList({
                                 key={product.id}
                                 className="overflow-hidden shadow-sm"
                             >
-                                <CardContent className="p-3">
-                                    <div className="flex gap-3">
+                                <CardContent className="p-2">
+                                    <div className="flex flex-col gap-2">
                                         {product.image ? (
                                             <img
                                                 src={`/storage/${product.image}`}
                                                 alt={product.name}
-                                                className="h-14 w-14 rounded-lg object-cover border shrink-0"
+                                                className="h-24 w-full rounded-lg object-cover border"
                                             />
                                         ) : (
-                                            <span className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center text-sm font-bold border shrink-0 text-muted-foreground">
+                                            <div className="h-24 w-full rounded-lg bg-muted flex items-center justify-center text-2xl font-bold border text-muted-foreground">
                                                 {product.name
                                                     .charAt(0)
                                                     .toUpperCase()}
-                                            </span>
+                                            </div>
                                         )}
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-1">
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="text-sm font-medium truncate">
+                                                    <h3 className="text-xs font-medium truncate">
                                                         {product.name}
                                                     </h3>
                                                     {product.sku && (
-                                                        <p className="text-[10px] text-muted-foreground font-mono">
+                                                        <p className="text-[9px] text-muted-foreground font-mono truncate">
                                                             SKU: {product.sku}
                                                         </p>
                                                     )}
@@ -302,9 +301,9 @@ export function ProductList({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-7 w-7 shrink-0 -mt-1 -mr-1"
+                                                            className="h-6 w-6 shrink-0 -mt-1 -mr-1"
                                                         >
-                                                            <MoreVertical className="h-3.5 w-3.5" />
+                                                            <MoreVertical className="h-3 w-3" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
@@ -337,74 +336,47 @@ export function ProductList({
                                                 </DropdownMenu>
                                             </div>
 
-                                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                            <p className="text-xs font-semibold text-primary mt-1">
+                                                {formatPrice(
+                                                    product.selling_price,
+                                                )}
+                                            </p>
+
+                                            <div className="flex flex-wrap items-center gap-1 mt-1">
                                                 {product.category && (
                                                     <Badge
                                                         variant="outline"
-                                                        className="text-[10px] px-1.5 py-0"
+                                                        className="text-[8px] px-1 py-0"
                                                     >
                                                         {product.category.name}
                                                     </Badge>
                                                 )}
-                                                <Badge
-                                                    variant={
-                                                        product.is_active
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                    className={`text-[10px] px-1.5 py-0 ${
-                                                        product.is_active
-                                                            ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10"
-                                                            : ""
-                                                    }`}
-                                                >
-                                                    {product.is_active
-                                                        ? "Active"
-                                                        : "Inactive"}
-                                                </Badge>
                                                 {lowStock && (
                                                     <Badge
                                                         variant="destructive"
-                                                        className="text-[10px] px-1.5 py-0 gap-0.5"
+                                                        className="text-[8px] px-1 py-0 gap-0.5"
                                                     >
                                                         <AlertTriangle className="h-2 w-2" />
-                                                        Low Stock
+                                                        Low
                                                     </Badge>
                                                 )}
                                             </div>
 
                                             <div className="flex items-center justify-between mt-2 pt-1 border-t">
                                                 <div>
-                                                    <p className="text-[10px] text-muted-foreground">
-                                                        Harga
-                                                    </p>
-                                                    <p className="text-sm font-semibold tabular-nums">
-                                                        {formatPrice(
-                                                            product.selling_price,
-                                                        )}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-[10px] text-muted-foreground">
+                                                    <p className="text-[8px] text-muted-foreground">
                                                         Stok
                                                     </p>
                                                     <p
-                                                        className={`text-sm font-medium tabular-nums ${
-                                                            lowStock
-                                                                ? "text-destructive"
-                                                                : ""
-                                                        }`}
+                                                        className={`text-[10px] font-medium tabular-nums ${lowStock ? "text-destructive" : ""}`}
                                                     >
                                                         {product.stock_type ===
                                                         "limited"
                                                             ? `${product.stock ?? 0} ${product.unit}`
-                                                            : "∞ Unlimited"}
+                                                            : "∞"}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-[10px] text-muted-foreground mr-1">
-                                                        Aktif
-                                                    </span>
                                                     <Switch
                                                         checked={
                                                             product.is_active

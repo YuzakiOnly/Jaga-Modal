@@ -56,7 +56,6 @@ export default function FeaturesSection() {
     return (
         <section id="fitur" className="bg-white py-24 px-6">
             <div className="mx-auto max-w-6xl">
-                {/* Header */}
                 <div className="mb-14 text-center">
                     <p className="text-xs font-bold tracking-widest uppercase text-brand-600 mb-3">
                         Fitur Unggulan
@@ -72,7 +71,6 @@ export default function FeaturesSection() {
                     </p>
                 </div>
 
-                {/* Grid */}
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {FEATURES.map((f) => {
                         const Icon = f.icon;

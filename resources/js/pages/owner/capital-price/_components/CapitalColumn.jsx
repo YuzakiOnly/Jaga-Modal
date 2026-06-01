@@ -183,7 +183,6 @@ export const columns = (onDelete) => [
                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                             <DropdownMenuSeparator />
 
-                            {/* Edit */}
                             <DropdownMenuItem
                                 onClick={() =>
                                     router.visit(
@@ -199,7 +198,6 @@ export const columns = (onDelete) => [
                                 Edit
                             </DropdownMenuItem>
 
-                            {/* Delete */}
                             <DropdownMenuItem
                                 onClick={() => onDelete(template)}
                                 className="gap-2 text-sm text-destructive focus:text-destructive"

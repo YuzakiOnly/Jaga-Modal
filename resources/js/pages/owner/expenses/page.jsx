@@ -22,12 +22,7 @@ import { Button } from "@/components/ui/button";
 
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
-export default function ExpensesPage({
-    expenses,
-    summary,
-    filters,
-    storeCashBalance,
-}) {
+export default function ExpensesPage({ expenses, summary, filters, balances }) {
     const { flash } = usePage().props;
     const [formOpen, setFormOpen] = useState(false);
     const [editTarget, setEditTarget] = useState(null);
@@ -77,7 +72,7 @@ export default function ExpensesPage({
         <>
             <Head title="Pengeluaran" />
 
-            <div className="p-3 py-6 md:py-0 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 max-w-6xl mx-auto">
+            <div className="p-3 py-6 md:py-6 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 max-w-6xl mx-auto">
                 <div className="flex items-start sm:items-center justify-between gap-3">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
@@ -114,7 +109,8 @@ export default function ExpensesPage({
                 open={formOpen}
                 onOpenChange={handleFormClose}
                 editTarget={editTarget}
-                storeCashBalance={storeCashBalance}
+                storeCashBalance={balances?.cash ?? 0}
+                onlineBalance={balances?.online ?? 0}
             />
 
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

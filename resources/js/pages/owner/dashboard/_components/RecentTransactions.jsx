@@ -34,6 +34,26 @@ function formatRp(value) {
     }).format(value);
 }
 
+const PAYMENT_METHOD_CONFIG = {
+    cash: { label: "Tunai", variant: "success" },
+    qris: { label: "QRIS", variant: "info" },
+    grabfood: { label: "GrabFood", variant: "warning" },
+    shopeefood: { label: "ShopeeFood", variant: "destructive" },
+    gobiz: { label: "GoBiz", variant: "secondary" },
+};
+
+function PaymentBadge({ method }) {
+    const config = PAYMENT_METHOD_CONFIG[method] ?? {
+        label: method,
+        variant: "outline",
+    };
+    return (
+        <Badge variant={config.variant} className="text-xs whitespace-nowrap">
+            {config.label}
+        </Badge>
+    );
+}
+
 export default function RecentTransactions({ transactions }) {
     if (transactions.length === 0) {
         return (
@@ -90,6 +110,9 @@ export default function RecentTransactions({ transactions }) {
                                 <TableHead>Waktu</TableHead>
                                 <TableHead>Metode</TableHead>
                                 <TableHead className="hidden md:table-cell">
+                                    Channel
+                                </TableHead>
+                                <TableHead className="hidden md:table-cell">
                                     Item
                                 </TableHead>
                                 <TableHead className="text-right">
@@ -115,18 +138,21 @@ export default function RecentTransactions({ transactions }) {
                                         })}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge
-                                            variant={
-                                                trx.payment_method === "cash"
-                                                    ? "success"
-                                                    : "info"
-                                            }
-                                            className="text-xs"
-                                        >
-                                            {trx.payment_method === "cash"
-                                                ? "Tunai"
-                                                : "QRIS"}
-                                        </Badge>
+                                        <PaymentBadge
+                                            method={trx.payment_method}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        {trx.order_channel &&
+                                        trx.order_channel !== "dine_in" ? (
+                                            <PaymentBadge
+                                                method={trx.order_channel}
+                                            />
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">
+                                                Dine In
+                                            </span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[180px] truncate">
                                         {trx.items

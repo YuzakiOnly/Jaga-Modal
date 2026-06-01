@@ -106,7 +106,7 @@ export function CategoryList({
                         placeholder="Search categories..."
                         value={filters?.search || ""}
                         onChange={(e) => onSearch(e.target.value)}
-                        className="h-9 pl-9 pr-9"
+                        className="h-9 pl-9 pr-9 text-sm"
                     />
                     {filters?.search && (
                         <button
@@ -126,13 +126,9 @@ export function CategoryList({
                     <PopoverTrigger asChild>
                         <Button
                             variant="outline"
-                            className="h-9 shrink-0 justify-between gap-1 px-3"
+                            className="h-9 w-9 shrink-0 p-0"
                         >
                             <FilterIcon className="h-4 w-4" />
-                            <span className="text-sm">
-                                {getSelectedStatusLabel()}
-                            </span>
-                            <ChevronDown className="h-4 w-4 opacity-50" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-40 p-0" align="end">
@@ -174,21 +170,21 @@ export function CategoryList({
                 </div>
             )}
 
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
                 {data.length === 0 ? (
-                    <div className="flex items-center justify-center h-24 text-sm text-muted-foreground rounded-md border">
+                    <div className="col-span-2 flex items-center justify-center h-24 text-sm text-muted-foreground rounded-md border">
                         No categories found.
                     </div>
                 ) : (
                     data.map((category) => (
-                        <Card key={category.id} className="shadow-none">
-                            <CardContent className="p-4">
-                                <div className="flex items-start justify-between gap-3">
+                        <Card key={category.id} className="shadow-sm">
+                            <CardContent className="p-2">
+                                <div className="flex items-start justify-between gap-1">
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium truncate">
+                                        <p className="text-xs font-medium truncate">
                                             {category.name}
                                         </p>
-                                        <p className="text-xs text-muted-foreground font-mono truncate">
+                                        <p className="text-[9px] text-muted-foreground font-mono truncate">
                                             {category.slug}
                                         </p>
                                     </div>
@@ -197,9 +193,9 @@ export function CategoryList({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 shrink-0"
+                                                className="h-6 w-6 shrink-0"
                                             >
-                                                <MoreVertical className="h-4 w-4" />
+                                                <MoreVertical className="h-3 w-3" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
@@ -212,9 +208,9 @@ export function CategoryList({
                                                         ),
                                                     )
                                                 }
-                                                className="gap-2 text-sm"
+                                                className="gap-2 text-xs"
                                             >
-                                                <Pencil className="h-4 w-4" />
+                                                <Pencil className="h-3 w-3" />
                                                 Edit
                                             </DropdownMenuItem>
 
@@ -223,16 +219,16 @@ export function CategoryList({
                                                     onClick={() =>
                                                         onDelete(category)
                                                     }
-                                                    className="gap-2 text-sm text-destructive focus:text-destructive"
+                                                    className="gap-2 text-xs text-destructive focus:text-destructive"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-3 w-3" />
                                                     Delete
                                                 </DropdownMenuItem>
                                             ) : (
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <div className="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground opacity-50">
-                                                            <Trash2 className="h-4 w-4" />
+                                                        <div className="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground opacity-50">
+                                                            <Trash2 className="h-3 w-3" />
                                                             Delete
                                                         </div>
                                                     </TooltipTrigger>
@@ -257,38 +253,27 @@ export function CategoryList({
                                 </div>
 
                                 {category.description && (
-                                    <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
+                                    <p className="mt-1 text-[9px] text-muted-foreground line-clamp-2">
                                         {category.description}
                                     </p>
                                 )}
 
-                                <div className="mt-3 flex items-center justify-between border-t pt-3">
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            variant="secondary"
-                                            className="gap-1 text-xs"
-                                        >
-                                            <Package className="h-3 w-3" />
-                                            {category.products_count ?? 0}{" "}
-                                            products
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground tabular-nums">
-                                            #{category.sort_order}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-muted-foreground">
-                                            {category.is_active
-                                                ? "Active"
-                                                : "Inactive"}
-                                        </span>
+                                <div className="mt-2 flex items-center justify-between border-t pt-2">
+                                    <Badge
+                                        variant="secondary"
+                                        className="gap-0.5 text-[8px] px-1 py-0"
+                                    >
+                                        <Package className="h-2 w-2" />
+                                        {category.products_count ?? 0}
+                                    </Badge>
+                                    <div className="flex items-center gap-1">
                                         <Switch
                                             checked={category.is_active}
                                             onCheckedChange={() =>
                                                 handleToggleStatus(category.id)
                                             }
                                             disabled={loadingId === category.id}
-                                            className="data-[state=checked]:bg-emerald-500"
+                                            className="data-[state=checked]:bg-emerald-500 scale-75"
                                         />
                                     </div>
                                 </div>
@@ -309,6 +294,7 @@ export function CategoryList({
                         size="sm"
                         onClick={() => goToPage(categories?.prev_page_url)}
                         disabled={!categories?.prev_page_url}
+                        className="h-7 text-xs"
                     >
                         Previous
                     </Button>
@@ -317,6 +303,7 @@ export function CategoryList({
                         size="sm"
                         onClick={() => goToPage(categories?.next_page_url)}
                         disabled={!categories?.next_page_url}
+                        className="h-7 text-xs"
                     >
                         Next
                     </Button>

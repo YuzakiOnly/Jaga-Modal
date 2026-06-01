@@ -147,9 +147,7 @@ function RegisterContent({
             />
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-                {/* Row: Name & Email - 2 columns side by side */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {/* Name */}
                     <Field
                         label={lang("name")}
                         htmlFor="name"
@@ -179,7 +177,6 @@ function RegisterContent({
                         </div>
                     </Field>
 
-                    {/* Email */}
                     <Field
                         label={lang("email_address")}
                         htmlFor="email"
@@ -213,7 +210,6 @@ function RegisterContent({
                     </Field>
                 </div>
 
-                {/* Username - full width */}
                 <Field
                     label={lang("username")}
                     htmlFor="username"
@@ -253,7 +249,6 @@ function RegisterContent({
                     </div>
                 </Field>
 
-                {/* Phone - full width */}
                 <Field
                     label={lang("phone_number")}
                     htmlFor="phone"
@@ -338,7 +333,6 @@ function RegisterContent({
                     </div>
                 </Field>
 
-                    {/* Password */}
                     <Field
                         label={lang("password")}
                         htmlFor="password"
@@ -385,7 +379,6 @@ function RegisterContent({
                         </div>
                     </Field>
 
-                    {/* Invite Code */}
                     <Field
                         label={lang("invite_code") ?? "Kode Invite"}
                         htmlFor="invite_code"

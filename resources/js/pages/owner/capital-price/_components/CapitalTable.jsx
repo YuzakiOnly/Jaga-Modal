@@ -100,14 +100,12 @@ export function CapitalTable({
             <div className="flex items-center justify-between gap-2">
                 <div className="relative flex-1 max-w-sm">
                     <SearchIcon className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
                     <Input
                         placeholder="Cari template HPP..."
                         value={filters?.search || ""}
                         onChange={(e) => onSearch(e.target.value)}
                         className="pl-9 pr-10 shadow-none! ring-0!"
                     />
-
                     {filters?.search && (
                         <button
                             type="button"
@@ -127,17 +125,15 @@ export function CapitalTable({
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
-                                className="h-10 w-10 justify-center sm:w-44 sm:justify-between"
+                                className="h-10 w-44 justify-between"
                             >
                                 <span className="flex items-center gap-2">
                                     <FilterIcon className="h-4 w-4" />
-
-                                    <span className="hidden truncate sm:inline">
+                                    <span className="truncate">
                                         {getSelectedStatusLabel()}
                                     </span>
                                 </span>
-
-                                <ChevronDown className="hidden h-4 w-4 opacity-50 sm:block" />
+                                <ChevronDown className="h-4 w-4 opacity-50" />
                             </Button>
                         </PopoverTrigger>
 
@@ -157,7 +153,6 @@ export function CapitalTable({
                                         }`}
                                     >
                                         {opt.label}
-
                                         {(filters?.status || "all") ===
                                             opt.value &&
                                             opt.value !== "all" && (
@@ -173,10 +168,9 @@ export function CapitalTable({
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="outline"
-                                className="h-10 w-10 shrink-0 shadow-none! ring-0! sm:w-auto"
+                                className="h-10 w-10 shrink-0 shadow-none! ring-0! sm:w-auto sm:px-3"
                             >
                                 <ColumnsIcon className="h-4 w-4 sm:mr-2" />
-
                                 <span className="hidden sm:inline">Kolom</span>
                             </Button>
                         </DropdownMenuTrigger>
@@ -206,7 +200,7 @@ export function CapitalTable({
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-            </div>  
+            </div>
 
             {filters?.status && filters.status !== "all" && (
                 <div className="flex flex-wrap gap-2">

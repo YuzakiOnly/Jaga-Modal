@@ -29,7 +29,6 @@ export default function TeamSection() {
     return (
         <section id="tim" className="bg-warm-50 py-24 px-6">
             <div className="mx-auto max-w-6xl">
-                {/* Header */}
                 <div className="mb-14 text-center">
                     <p className="text-xs font-bold tracking-widest uppercase text-brand-600 mb-3">
                         Tim Kami
@@ -40,14 +39,12 @@ export default function TeamSection() {
                     </h2>
                 </div>
 
-                {/* Cards */}
                 <div className="grid gap-5 sm:grid-cols-3">
                     {TEAM.map((m) => (
                         <div
                             key={m.name}
                             className="rounded-2xl border border-warm-100 bg-white p-8 text-center transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-warm-900/10"
                         >
-                            {/* Avatar */}
                             <div
                                 className={`mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-gradient-to-br ${m.avatarBg} text-lg font-extrabold text-white`}
                             >
@@ -64,7 +61,6 @@ export default function TeamSection() {
                                 {m.bio}
                             </p>
 
-                            {/* Tags */}
                             <div className="flex flex-wrap justify-center gap-1.5">
                                 {m.tags.map((tag) => (
                                     <span

@@ -9,9 +9,7 @@ import {
     FilterIcon,
     SearchIcon,
     X,
-    ChevronDown,
     Check,
-    Wallet,
     Package,
     Calculator,
 } from "lucide-react";
@@ -87,11 +85,11 @@ export function CapitalList({
 
     return (
         <div className="space-y-3">
-            <div className="space-y-2">
-                <div className="relative">
+            <div className="flex gap-2">
+                <div className="relative flex-1">
                     <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                        placeholder="Cari template HPP..."
+                        placeholder="Cari template..."
                         value={filters?.search || ""}
                         onChange={(e) => onSearch(e.target.value)}
                         className="h-10 pl-9 pr-9 text-sm"
@@ -114,19 +112,13 @@ export function CapitalList({
                     <PopoverTrigger asChild>
                         <Button
                             variant="outline"
-                            className="h-10 w-full justify-between text-sm"
+                            className="h-10 w-10 shrink-0 p-0"
                         >
-                            <span className="flex items-center gap-2">
-                                <FilterIcon className="h-3.5 w-3.5" />
-                                <span className="truncate">
-                                    {getSelectedStatusLabel()}
-                                </span>
-                            </span>
-                            <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                            <FilterIcon className="h-4 w-4" />
                         </Button>
                     </PopoverTrigger>
 
-                    <PopoverContent className="w-44 p-0" align="start">
+                    <PopoverContent className="w-44 p-0" align="end">
                         <div className="py-1">
                             {statusOptions.map((opt) => (
                                 <button
@@ -150,24 +142,24 @@ export function CapitalList({
                         </div>
                     </PopoverContent>
                 </Popover>
-
-                {filters?.status && filters.status !== "all" && (
-                    <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="gap-1 text-xs">
-                            <FilterIcon className="h-3 w-3" />
-                            Status: {getSelectedStatusLabel()}
-                            <X
-                                className="h-3 w-3 cursor-pointer hover:text-destructive"
-                                onClick={clearStatusFilter}
-                            />
-                        </Badge>
-                    </div>
-                )}
             </div>
 
-            <div className="space-y-2">
+            {filters?.status && filters.status !== "all" && (
+                <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="gap-1 text-xs">
+                        <FilterIcon className="h-3 w-3" />
+                        Status: {getSelectedStatusLabel()}
+                        <X
+                            className="h-3 w-3 cursor-pointer hover:text-destructive"
+                            onClick={clearStatusFilter}
+                        />
+                    </Badge>
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
                 {data.length === 0 ? (
-                    <div className="flex items-center justify-center py-12 text-center">
+                    <div className="col-span-2 flex items-center justify-center py-12 text-center">
                         <div className="space-y-2">
                             <Tags className="mx-auto h-8 w-8 text-muted-foreground/50" />
                             <p className="text-sm text-muted-foreground">
@@ -181,117 +173,97 @@ export function CapitalList({
                             key={template.id}
                             className="overflow-hidden shadow-sm"
                         >
-                            <CardContent className="p-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                                        <Calculator className="h-5 w-5 text-emerald-600" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-1">
+                            <CardContent className="p-2">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-start justify-between gap-1">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                                                <Calculator className="h-3.5 w-3.5 text-emerald-600" />
+                                            </div>
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="text-sm font-medium truncate">
+                                                <h3 className="text-xs font-medium truncate">
                                                     {template.name}
                                                 </h3>
                                                 {template.product_name && (
-                                                    <p className="text-[10px] text-muted-foreground truncate">
-                                                        Produk:{" "}
+                                                    <p className="text-[9px] text-muted-foreground truncate">
                                                         {template.product_name}
                                                     </p>
                                                 )}
                                             </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7 shrink-0 -mt-1 -mr-1"
-                                                    >
-                                                        <MoreVertical className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            router.visit(
-                                                                route(
-                                                                    "owner.capital-prices.edit",
-                                                                    template.id,
-                                                                ),
-                                                            )
-                                                        }
-                                                        className="gap-2 text-xs"
-                                                    >
-                                                        <Pencil className="h-3 w-3" />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            onDelete(template)
-                                                        }
-                                                        className="gap-2 text-xs text-destructive focus:text-destructive"
-                                                    >
-                                                        <Trash2 className="h-3 w-3" />
-                                                        Hapus
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                         </div>
-
-                                        <div className="mt-1">
-                                            <p className="text-sm font-semibold text-emerald-600 tabular-nums">
-                                                {formatRupiah(template.amount)}
-                                            </p>
-                                        </div>
-
-                                        {template.description && (
-                                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                                {template.description}
-                                            </p>
-                                        )}
-
-                                        <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                                            <div className="flex items-center gap-2">
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="text-[10px] px-1.5 py-0"
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 shrink-0"
                                                 >
-                                                    <Package className="h-2.5 w-2.5 mr-0.5" />
-                                                    {template.ingredients
-                                                        ?.length || 0}{" "}
-                                                    bahan
-                                                </Badge>
-                                                <span className="text-[10px] text-muted-foreground">
-                                                    {new Date(
-                                                        template.created_at,
-                                                    ).toLocaleDateString(
-                                                        "id-ID",
-                                                        {
-                                                            day: "numeric",
-                                                            month: "short",
-                                                            year: "numeric",
-                                                        },
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-[10px] text-muted-foreground">
-                                                    Aktif
-                                                </span>
-                                                <Switch
-                                                    checked={template.is_active}
-                                                    onCheckedChange={() =>
-                                                        handleToggleStatus(
-                                                            template.id,
+                                                    <MoreVertical className="h-3 w-3" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        router.visit(
+                                                            route(
+                                                                "owner.capital-prices.edit",
+                                                                template.id,
+                                                            ),
                                                         )
                                                     }
-                                                    disabled={
-                                                        loadingId ===
-                                                        template.id
+                                                    className="gap-2 text-xs"
+                                                >
+                                                    <Pencil className="h-3 w-3" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        onDelete(template)
                                                     }
-                                                    className="data-[state=checked]:bg-emerald-500 scale-75"
-                                                />
-                                            </div>
+                                                    className="gap-2 text-xs text-destructive focus:text-destructive"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Hapus
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold text-emerald-600 tabular-nums">
+                                            {formatRupiah(template.amount)}
+                                        </p>
+                                    </div>
+
+                                    {template.description && (
+                                        <p className="text-[9px] text-muted-foreground line-clamp-2">
+                                            {template.description}
+                                        </p>
+                                    )}
+
+                                    <div className="flex items-center justify-between mt-1 pt-1 border-t">
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[8px] px-1 py-0 gap-0.5"
+                                        >
+                                            <Package className="h-2 w-2" />
+                                            {template.ingredients?.length ||
+                                                0}{" "}
+                                            bahan
+                                        </Badge>
+                                        <div className="flex items-center gap-1">
+                                            <Switch
+                                                checked={template.is_active}
+                                                onCheckedChange={() =>
+                                                    handleToggleStatus(
+                                                        template.id,
+                                                    )
+                                                }
+                                                disabled={
+                                                    loadingId === template.id
+                                                }
+                                                className="data-[state=checked]:bg-emerald-500 scale-75"
+                                            />
                                         </div>
                                     </div>
                                 </div>

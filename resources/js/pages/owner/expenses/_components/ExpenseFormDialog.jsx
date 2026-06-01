@@ -9,6 +9,8 @@ import {
     Wallet,
     Calendar as CalendarIcon,
     AlertTriangle,
+    Landmark,
+    Bike,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -38,6 +40,21 @@ const EXPENSE_TYPES = [
     { value: "owner_withdrawal", label: "Penarikan Owner", icon: Wallet },
 ];
 
+const PAYMENT_SOURCES = [
+    {
+        value: "cash",
+        label: "Kas Toko",
+        icon: Landmark,
+        color: "text-slate-600",
+    },
+    {
+        value: "online",
+        label: "Saldo Online",
+        icon: Bike,
+        color: "text-orange-500",
+    },
+];
+
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 export function ExpenseFormDialog({
@@ -45,9 +62,11 @@ export function ExpenseFormDialog({
     onOpenChange,
     editTarget,
     storeCashBalance,
+    onlineBalance,
 }) {
     const isEdit = !!editTarget;
     const [type, setType] = useState("simple");
+    const [paymentSource, setPaymentSource] = useState("cash");
     const [form, setForm] = useState({
         description: "",
         amount: "",
@@ -62,10 +81,15 @@ export function ExpenseFormDialog({
     const [processing, setProcessing] = useState(false);
     const [balanceWarning, setBalanceWarning] = useState(null);
 
+    const getCurrentBalance = () => {
+        return paymentSource === "cash" ? storeCashBalance : onlineBalance;
+    };
+
     useEffect(() => {
         if (open) {
             if (editTarget) {
                 setType(editTarget.type || "simple");
+                setPaymentSource(editTarget.payment_source || "cash");
                 setForm({
                     description: editTarget.description || "",
                     amount: editTarget.amount?.toString() || "",
@@ -80,6 +104,7 @@ export function ExpenseFormDialog({
                 });
             } else {
                 setType("simple");
+                setPaymentSource("cash");
                 setForm({
                     description: "",
                     amount: "",
@@ -110,11 +135,14 @@ export function ExpenseFormDialog({
         ) {
             amountToCheck = parseFloat(form.amount) || 0;
         }
-        if (amountToCheck > 0 && !isEdit && amountToCheck > storeCashBalance) {
+
+        const currentBalance = getCurrentBalance();
+
+        if (amountToCheck > 0 && !isEdit && amountToCheck > currentBalance) {
             setBalanceWarning({
                 amount: amountToCheck,
-                balance: storeCashBalance,
-                deficit: amountToCheck - storeCashBalance,
+                balance: currentBalance,
+                deficit: amountToCheck - currentBalance,
             });
         } else {
             setBalanceWarning(null);
@@ -124,7 +152,15 @@ export function ExpenseFormDialog({
 
     useEffect(() => {
         if (!isEdit && open) checkBalance();
-    }, [form.amount, form.quantity, form.unit_price, type, open, isEdit]);
+    }, [
+        form.amount,
+        form.quantity,
+        form.unit_price,
+        type,
+        paymentSource,
+        open,
+        isEdit,
+    ]);
 
     const calculateTotal = () => {
         if (type === "raw_material" && form.quantity && form.unit_price) {
@@ -140,34 +176,44 @@ export function ExpenseFormDialog({
         const newErrors = {};
         const amountNum = parseFloat(form.amount) || 0;
         let expenseAmount = 0;
+        const currentBalance = getCurrentBalance();
 
-        if (!form.description.trim())
+        if (!form.description.trim()) {
             newErrors.description = "Deskripsi wajib diisi";
+        }
 
         if (type === "raw_material") {
             const qty = parseFloat(form.quantity);
             const price = parseFloat(form.unit_price);
-            if (!form.quantity || qty <= 0)
+            if (!form.quantity || qty <= 0) {
                 newErrors.quantity = "Jumlah harus lebih dari 0";
-            if (!form.unit_price || price <= 0)
+            }
+            if (!form.unit_price || price <= 0) {
                 newErrors.unit_price = "Harga satuan harus lebih dari 0";
+            }
             if (qty > 0 && price > 0) expenseAmount = qty * price;
         } else if (type === "salary") {
-            if (!form.employee_name.trim())
+            if (!form.employee_name.trim()) {
                 newErrors.employee_name = "Nama karyawan wajib diisi";
-            if (!form.salary_period.trim())
+            }
+            if (!form.salary_period.trim()) {
                 newErrors.salary_period = "Periode wajib diisi";
-            if (!form.amount || amountNum <= 0)
+            }
+            if (!form.amount || amountNum <= 0) {
                 newErrors.amount = "Jumlah gaji harus lebih dari 0";
+            }
             expenseAmount = amountNum;
         } else {
-            if (!form.amount || amountNum <= 0)
+            if (!form.amount || amountNum <= 0) {
                 newErrors.amount = "Jumlah harus lebih dari 0";
+            }
             expenseAmount = amountNum;
         }
 
-        if (!isEdit && expenseAmount > storeCashBalance) {
-            newErrors.amount = `Saldo kas toko tidak mencukupi! Saldo saat ini: ${fmt(storeCashBalance)}`;
+        if (!isEdit && expenseAmount > currentBalance) {
+            const sourceLabel =
+                paymentSource === "cash" ? "Kas Toko" : "Saldo Online";
+            newErrors.amount = `Saldo ${sourceLabel} tidak mencukupi! Saldo saat ini: ${fmt(currentBalance)}`;
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -178,6 +224,7 @@ export function ExpenseFormDialog({
 
         const payload = {
             type,
+            payment_source: paymentSource,
             description: form.description,
             expensed_at: format(form.expensed_at, "yyyy-MM-dd"),
             notes: form.notes,
@@ -217,6 +264,7 @@ export function ExpenseFormDialog({
     const showAmountField = type === "simple" || type === "owner_withdrawal";
     const showDetailLabel =
         type === "owner_withdrawal" ? "Jumlah Penarikan" : "Jumlah";
+    const currentBalance = getCurrentBalance();
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -242,29 +290,19 @@ export function ExpenseFormDialog({
 
                 <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
                     {!isEdit &&
-                        storeCashBalance < 100000 &&
-                        storeCashBalance > 0 && (
+                        currentBalance <= 0 &&
+                        paymentSource === "online" && (
                             <Alert
-                                variant="warning"
-                                className="bg-yellow-50 border-yellow-200 py-2.5 sm:py-3"
+                                variant="destructive"
+                                className="py-2.5 sm:py-3"
                             >
-                                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-600" />
-                                <AlertDescription className="text-yellow-700 text-xs sm:text-sm">
-                                    Saldo kas toko menipis:{" "}
-                                    {fmt(storeCashBalance)}
+                                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <AlertDescription className="text-xs sm:text-sm">
+                                    Saldo online habis! Tidak dapat mencatat
+                                    pengeluaran dari saldo online.
                                 </AlertDescription>
                             </Alert>
                         )}
-
-                    {!isEdit && storeCashBalance <= 0 && (
-                        <Alert variant="destructive" className="py-2.5 sm:py-3">
-                            <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            <AlertDescription className="text-xs sm:text-sm">
-                                Saldo kas toko habis! Tidak dapat mencatat
-                                pengeluaran baru.
-                            </AlertDescription>
-                        </Alert>
-                    )}
 
                     {balanceWarning && !isEdit && (
                         <Alert variant="destructive" className="py-2.5 sm:py-3">
@@ -303,16 +341,11 @@ export function ExpenseFormDialog({
                                             setErrors({});
                                             setBalanceWarning(null);
                                         }}
-                                        disabled={
-                                            !isEdit &&
-                                            storeCashBalance <= 0 &&
-                                            value !== "owner_withdrawal"
-                                        }
                                         className={`flex flex-col items-center justify-center gap-1 sm:gap-1.5 p-2 sm:p-3 rounded-lg border transition-all ${
                                             type === value
                                                 ? "border-primary bg-primary/10 text-primary"
                                                 : "border-border hover:border-primary/50 hover:bg-accent"
-                                        } ${!isEdit && storeCashBalance <= 0 && value !== "owner_withdrawal" ? "opacity-50 cursor-not-allowed" : ""}`}
+                                        }`}
                                     >
                                         <Icon className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
                                         <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">
@@ -321,6 +354,50 @@ export function ExpenseFormDialog({
                                     </button>
                                 ),
                             )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-xs sm:text-sm">
+                            Sumber Dana
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {PAYMENT_SOURCES.map((source) => {
+                                const Icon = source.icon;
+                                const sourceBalance =
+                                    source.value === "cash"
+                                        ? storeCashBalance
+                                        : onlineBalance;
+                                const isDisabled =
+                                    !isEdit &&
+                                    sourceBalance <= 0 &&
+                                    source.value === "online";
+
+                                return (
+                                    <button
+                                        key={source.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setPaymentSource(source.value);
+                                            setBalanceWarning(null);
+                                        }}
+                                        disabled={isDisabled}
+                                        className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${
+                                            paymentSource === source.value
+                                                ? `border-primary bg-primary/10 ${source.color}`
+                                                : "border-border hover:border-primary/50 hover:bg-accent text-muted-foreground"
+                                        } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    >
+                                        <Icon className="h-4 w-4" />
+                                        <span className="text-sm font-medium">
+                                            {source.label}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground ml-auto">
+                                            {fmt(sourceBalance)}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -408,14 +485,13 @@ export function ExpenseFormDialog({
                             {form.quantity && form.unit_price && (
                                 <div
                                     className={`col-span-2 text-sm p-2 rounded-lg text-center ${
-                                        totalAmount > storeCashBalance &&
-                                        !isEdit
+                                        totalAmount > currentBalance && !isEdit
                                             ? "bg-red-50 text-red-700"
                                             : "bg-primary/10 text-primary"
                                     }`}
                                 >
                                     Total: {fmt(totalAmount)}
-                                    {totalAmount > storeCashBalance &&
+                                    {totalAmount > currentBalance &&
                                         !isEdit && (
                                             <span className="block text-xs text-red-600 mt-1">
                                                 Melebihi saldo!
@@ -590,21 +666,26 @@ export function ExpenseFormDialog({
 
                     <div className="bg-slate-50 border rounded-lg p-2.5 sm:p-3">
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                            Saldo kas toko saat ini:{" "}
+                            Saldo{" "}
+                            {paymentSource === "cash" ? "Kas Toko" : "Online"}{" "}
+                            saat ini:{" "}
                             <strong
                                 className={
-                                    storeCashBalance <= 0
+                                    currentBalance <= 0
                                         ? "text-red-600"
                                         : "text-green-600"
                                 }
                             >
-                                {fmt(storeCashBalance)}
+                                {fmt(currentBalance)}
                             </strong>
                         </p>
                         {type === "owner_withdrawal" && (
                             <p className="text-xs text-amber-600 mt-1">
-                                Penarikan akan mengurangi saldo kas toko dan
-                                menambah saldo dompet owner.
+                                Penarikan akan mengurangi saldo{" "}
+                                {paymentSource === "cash"
+                                    ? "kas toko"
+                                    : "online"}{" "}
+                                dan menambah saldo dompet owner.
                             </p>
                         )}
                     </div>
@@ -614,7 +695,7 @@ export function ExpenseFormDialog({
                         type !== "owner_withdrawal" && (
                             <div
                                 className={`text-xs sm:text-sm font-semibold text-right ${
-                                    totalAmount > storeCashBalance && !isEdit
+                                    totalAmount > currentBalance && !isEdit
                                         ? "text-red-600"
                                         : "text-primary"
                                 }`}
@@ -636,10 +717,7 @@ export function ExpenseFormDialog({
                     <Button
                         onClick={handleSubmit}
                         disabled={
-                            processing ||
-                            (!isEdit &&
-                                (storeCashBalance <= 0 ||
-                                    (balanceWarning && !isEdit)))
+                            processing || (!isEdit && currentBalance <= 0)
                         }
                         className="w-full sm:w-auto h-9 sm:h-10 text-sm"
                     >

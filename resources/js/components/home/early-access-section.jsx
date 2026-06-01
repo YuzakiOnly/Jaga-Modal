@@ -22,7 +22,6 @@ export default function EarlyAccessSection() {
     return (
         <section className="bg-white py-24 px-6">
             <div className="mx-auto max-w-6xl">
-                {/* Header */}
                 <div className="mb-14 text-center">
                     <p className="text-xs font-bold tracking-widest uppercase text-brand-600 mb-3">
                         Early Access
@@ -34,7 +33,6 @@ export default function EarlyAccessSection() {
                     </h2>
                 </div>
 
-                {/* Cards */}
                 <div className="grid gap-5 sm:grid-cols-3">
                     {PERKS.map((p) => {
                         const Icon = p.icon;

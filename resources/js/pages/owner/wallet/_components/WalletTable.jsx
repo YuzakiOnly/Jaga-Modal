@@ -53,9 +53,10 @@ const formatDate = (date) =>
     });
 
 const SOURCE_LABELS = {
-    withdrawal: "Penarikan Toko",
+    withdrawal: "Penarikan dari Toko",
     manual_topup: "Topup Manual",
     personal_out: "Pengeluaran Pribadi",
+    store_transfer: "Transfer ke Toko",
 };
 
 const FlowBadge = ({ flow }) => {
@@ -95,7 +96,10 @@ const ActionMenu = ({ transaction, onEdit, onDelete }) => (
             <DropdownMenuItem
                 onClick={() => onEdit(transaction)}
                 className="cursor-pointer"
-                disabled={transaction.source === "withdrawal"}
+                disabled={
+                    transaction.source === "withdrawal" ||
+                    transaction.source === "store_transfer"
+                }
             >
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
@@ -103,7 +107,10 @@ const ActionMenu = ({ transaction, onEdit, onDelete }) => (
             <DropdownMenuItem
                 onClick={() => onDelete(transaction)}
                 className="cursor-pointer text-destructive focus:text-destructive"
-                disabled={transaction.source === "withdrawal"}
+                disabled={
+                    transaction.source === "withdrawal" ||
+                    transaction.source === "store_transfer"
+                }
             >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Hapus
@@ -126,6 +133,10 @@ export function WalletTable({ transactions }) {
             toast.error("Transaksi dari penarikan toko tidak bisa diedit.");
             return;
         }
+        if (transaction.source === "store_transfer") {
+            toast.error("Transaksi transfer ke toko tidak bisa diedit.");
+            return;
+        }
         setEditItem(transaction);
         setEditOpen(true);
     };
@@ -135,6 +146,10 @@ export function WalletTable({ transactions }) {
             toast.error(
                 "Transaksi dari penarikan toko hanya bisa dihapus dari halaman Pengeluaran.",
             );
+            return;
+        }
+        if (transaction.source === "store_transfer") {
+            toast.error("Transaksi transfer ke toko tidak bisa dihapus.");
             return;
         }
         setDeleteItem(transaction);

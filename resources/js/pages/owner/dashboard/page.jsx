@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Head, router } from "@inertiajs/react";
 import AppLayout from "@/layouts/dashboard/AppLayout";
-import { DollarSign, TrendingUp, Package, ReceiptText } from "lucide-react";
+import {
+    DollarSign,
+    TrendingUp,
+    Package,
+    ReceiptText,
+    Bike,
+    ShoppingBag,
+    Zap,
+    Landmark,
+} from "lucide-react";
 
 import StatCard from "./_components/StatCard";
 import MiniStatCard from "./_components/MiniStatCard";
@@ -32,15 +41,15 @@ export default function Dashboard({
     );
 
     const revenueTrend =
-        stats.monthly_revenue > 0 && comparison_data?.revenue > 0
+        stats.monthly_net_revenue > 0 && comparison_data?.revenue > 0
             ? Math.round(
-                  ((stats.monthly_revenue - comparison_data.revenue) /
+                  ((stats.monthly_net_revenue - comparison_data.revenue) /
                       comparison_data.revenue) *
                       100,
               )
-            : stats.monthly_revenue > 0 && comparison_data?.revenue === 0
+            : stats.monthly_net_revenue > 0 && comparison_data?.revenue === 0
               ? 100
-              : stats.monthly_revenue === 0 && comparison_data?.revenue > 0
+              : stats.monthly_net_revenue === 0 && comparison_data?.revenue > 0
                 ? -100
                 : 0;
 
@@ -110,8 +119,8 @@ export default function Dashboard({
 
     const summaryCards = [
         {
-            title: "Omset",
-            value: stats.monthly_revenue,
+            title: "Omzet",
+            value: stats.monthly_net_revenue,
             trend: revenueTrend,
             comparisonValue: comparison_data?.revenue,
             comparisonLabel: comparison_data?.label,
@@ -160,12 +169,16 @@ export default function Dashboard({
             value: stats.cash_balance,
             subValue: "Uang tunai di toko",
             isCurrency: true,
+            icon: Landmark,
+            iconColor: "text-slate-600",
         },
         {
-            label: "Saldo Dompet Owner",
-            value: stats.wallet_balance,
-            subValue: "Penarikan dari toko",
+            label: "Saldo Online",
+            value: stats.online_balance_total,
+            subValue: "Grab + Shopee + Gojek",
             isCurrency: true,
+            icon: Bike,
+            iconColor: "text-orange-500",
         },
         {
             label: "Total Pengeluaran",
@@ -178,6 +191,33 @@ export default function Dashboard({
             value: stats.total_withdrawal,
             subValue: "Bulan ini",
             isCurrency: true,
+        },
+    ];
+
+    const onlineStats = [
+        {
+            label: "Pendapatan GrabFood",
+            value: stats.online_channel_balances?.grabfood?.net_revenue || 0,
+            subValue: "Bulan ini (setelah fee)",
+            isCurrency: true,
+            icon: Bike,
+            iconColor: "text-green-600",
+        },
+        {
+            label: "Pendapatan ShopeeFood",
+            value: stats.online_channel_balances?.shopeefood?.net_revenue || 0,
+            subValue: "Bulan ini (setelah fee)",
+            isCurrency: true,
+            icon: ShoppingBag,
+            iconColor: "text-orange-500",
+        },
+        {
+            label: "Pendapatan GoBiz",
+            value: stats.online_channel_balances?.gobiz?.net_revenue || 0,
+            subValue: "Bulan ini (setelah fee)",
+            isCurrency: true,
+            icon: Zap,
+            iconColor: "text-blue-500",
         },
     ];
 
@@ -210,6 +250,12 @@ export default function Dashboard({
 
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                     {miniStats.map((s, i) => (
+                        <MiniStatCard key={i} {...s} />
+                    ))}
+                </div>
+
+                <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+                    {onlineStats.map((s, i) => (
                         <MiniStatCard key={i} {...s} />
                     ))}
                 </div>

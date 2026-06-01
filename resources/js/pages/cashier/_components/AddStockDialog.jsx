@@ -81,7 +81,7 @@ export default function AddStockDialog({ isOpen, onClose, products = [] }) {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
-            <div className="bg-white w-[500px] max-w-[90vw] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="bg-white w-125 max-w-[90vw] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="flex items-center justify-between p-5 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-emerald-100">

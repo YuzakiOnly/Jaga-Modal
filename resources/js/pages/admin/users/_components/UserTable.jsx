@@ -286,7 +286,6 @@ export function UserTable({
                 </Table>
             </div>
 
-            {/* Pagination Info */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
                     Showing {users?.from ?? 0} to {users?.to ?? 0} of{" "}

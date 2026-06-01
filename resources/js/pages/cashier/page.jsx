@@ -64,7 +64,10 @@ export default function CashierPage({ products, categories }) {
         return result;
     }, [products, activeCategory, searchQuery]);
 
-    const subtotalAmount = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const subtotalAmount = cart.reduce(
+        (sum, item) => sum + (item.subtotal - (item.discount || 0) * item.qty),
+        0,
+    );
     const totalAmount = Math.max(0, subtotalAmount - discountAmount);
 
     const handleAddToCart = useCallback((product) => {
@@ -89,7 +92,9 @@ export default function CashierPage({ products, categories }) {
                         ? {
                               ...item,
                               qty: item.qty + 1,
-                              subtotal: (item.qty + 1) * item.unit_price,
+                              subtotal:
+                                  (item.qty + 1) *
+                                  (item.unit_price - (item.discount || 0)),
                           }
                         : item,
                 );
@@ -130,11 +135,31 @@ export default function CashierPage({ products, categories }) {
                     return {
                         ...item,
                         qty: newQuantity,
-                        subtotal: newQuantity * item.unit_price,
+                        subtotal:
+                            newQuantity *
+                            (item.unit_price - (item.discount || 0)),
                     };
                 })
                 .filter(Boolean);
         });
+    }, []);
+
+    const handleUpdateDiscount = useCallback((itemKey, discount) => {
+        setCart((prev) =>
+            prev.map((item) => {
+                const key = item.is_custom ? item._customKey : item.product_id;
+                if (key !== itemKey) return item;
+
+                const newDiscount = Math.min(discount, item.unit_price);
+                const newSubtotal = (item.unit_price - newDiscount) * item.qty;
+
+                return {
+                    ...item,
+                    discount: newDiscount,
+                    subtotal: newSubtotal,
+                };
+            }),
+        );
     }, []);
 
     const handleRemoveItem = useCallback((itemKey) => {
@@ -159,7 +184,10 @@ export default function CashierPage({ products, categories }) {
                 total: totalAmount,
                 notes: null,
                 transacted_at: transactedAt,
-                items: cart.map(({ _customKey, ...rest }) => rest),
+                items: cart.map(({ _customKey, ...rest }) => ({
+                    ...rest,
+                    discount: rest.discount || 0,
+                })),
             };
 
             router.post(route("cashier.transactions.store"), payload, {
@@ -235,6 +263,7 @@ export default function CashierPage({ products, categories }) {
                             onDiscountChange={setDiscountAmount}
                             onPaymentMethodChange={setPaymentMethod}
                             onUpdateQuantity={handleUpdateQuantity}
+                            onUpdateDiscount={handleUpdateDiscount}
                             onRemoveItem={handleRemoveItem}
                             onCheckout={() => {
                                 setMobileCartOpen(false);
@@ -262,7 +291,7 @@ export default function CashierPage({ products, categories }) {
                                     className="shrink-0 flex items-center justify-center gap-1 px-2 sm:px-4 py-2 sm:py-2.5 bg-gray-50 hover:bg-emerald-50 border border-gray-200 rounded-xl transition-all duration-200 cursor-pointer"
                                 >
                                     <Package className="h-4 w-4 text-gray-600" />
-                                    <span className="text-xs sm:text-sm font-medium text-gray-700 hidden xs:inline">
+                                    <span className="text-xs sm:text-sm font-medium text-gray-700 hidden md:inline">
                                         Tambah Stok
                                     </span>
                                 </button>
@@ -293,6 +322,7 @@ export default function CashierPage({ products, categories }) {
                         onDiscountChange={setDiscountAmount}
                         onPaymentMethodChange={setPaymentMethod}
                         onUpdateQuantity={handleUpdateQuantity}
+                        onUpdateDiscount={handleUpdateDiscount}
                         onRemoveItem={handleRemoveItem}
                         onCheckout={() => setIsPaymentModalOpen(true)}
                         onAddCustomItem={handleAddCustomItem}

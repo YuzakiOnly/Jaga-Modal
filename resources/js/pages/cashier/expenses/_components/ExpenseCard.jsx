@@ -144,7 +144,6 @@ export default function ExpenseCard({ expense, onEdit }) {
                         − {fmtPrice(expense.amount)}
                     </p>
 
-                    {/* Tombol Edit */}
                     <button
                         onClick={() => onEdit(expense)}
                         className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"

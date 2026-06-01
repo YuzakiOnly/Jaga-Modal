@@ -1,11 +1,52 @@
+import { useRef, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 export default function CategoryFilter({
     categories,
     activeCategory,
     onSelectCategory,
 }) {
+    const scrollRef = useRef(null);
+    const [showLeft, setShowLeft] = useState(false);
+    const [showRight, setShowRight] = useState(false);
+
+    const checkScroll = () => {
+        if (!scrollRef.current) return;
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        setShowLeft(scrollLeft > 5);
+        setShowRight(scrollLeft + clientWidth < scrollWidth - 5);
+    };
+
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener("resize", checkScroll);
+        return () => window.removeEventListener("resize", checkScroll);
+    }, [categories]);
+
+    const scroll = (dir) => {
+        scrollRef.current?.scrollBy({
+            left: dir === "left" ? -200 : 200,
+            behavior: "smooth",
+        });
+    };
+
     return (
-        <div className="px-4 pb-3 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2">
+        <div className="relative px-4 pb-3">
+            {showLeft && (
+                <button
+                    onClick={() => scroll("left")}
+                    className="absolute left-1 top-1/2 -translate-y-1/2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md hover:bg-gray-50 transition-all"
+                >
+                    <ChevronLeft className="h-4 w-4 text-gray-600" />
+                </button>
+            )}
+
+            <div
+                ref={scrollRef}
+                onScroll={checkScroll}
+                className="flex gap-2 overflow-x-auto"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
                 {categories.map((cat) => (
                     <button
                         key={cat.id ?? "all"}
@@ -20,6 +61,15 @@ export default function CategoryFilter({
                     </button>
                 ))}
             </div>
+
+            {showRight && (
+                <button
+                    onClick={() => scroll("right")}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md hover:bg-gray-50 transition-all"
+                >
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                </button>
+            )}
         </div>
     );
 }

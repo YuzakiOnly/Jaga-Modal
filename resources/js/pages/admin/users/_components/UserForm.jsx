@@ -200,7 +200,6 @@ export default function UserForm({ user = null, isEdit = false }) {
     return (
         <Form {...form}>
             <form onSubmit={onSubmit}>
-                {/* Header */}
                 <div className="mb-4 flex flex-col justify-between space-y-4 lg:flex-row lg:items-center lg:space-y-0">
                     <div className="flex items-center gap-4">
                         <Button
@@ -237,7 +236,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                     </div>
                 </div>
 
-                {/* Warning Banners (Edit mode only) */}
                 {isEdit && isEditingSuperAdmin && (
                     <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -259,9 +257,7 @@ export default function UserForm({ user = null, isEdit = false }) {
                     </div>
                 )}
 
-                {/* Form Body */}
                 <div className="grid gap-4 lg:grid-cols-6">
-                    {/* Left col */}
                     <div className="space-y-4 lg:col-span-4">
                         <Card>
                             <CardHeader>
@@ -389,7 +385,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                             </CardContent>
                         </Card>
 
-                        {/* Password Section */}
                         {showPasswordField && (
                             <Card>
                                 <CardHeader>
@@ -462,7 +457,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                             </Card>
                         )}
 
-                        {/* Password Info for Super Admin Edit */}
                         {isEdit && !showPasswordField && (
                             <Card>
                                 <CardHeader>
@@ -483,7 +477,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                         )}
                     </div>
 
-                    {/* Right col */}
                     <div className="space-y-4 lg:col-span-2">
                         <Card>
                             <CardHeader>
@@ -577,7 +570,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                             </CardContent>
                         </Card>
 
-                        {/* Danger Zone - Edit mode only */}
                         {isEdit && !isDeleteDisabled && (
                             <Card className="border-destructive/40">
                                 <CardHeader>
@@ -703,7 +695,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                             </Card>
                         )}
 
-                        {/* Protected Account Info - Edit mode only */}
                         {isEdit && isDeleteDisabled && (
                             <Card className="border-muted">
                                 <CardHeader>

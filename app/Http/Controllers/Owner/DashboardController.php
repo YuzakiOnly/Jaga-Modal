@@ -33,10 +33,8 @@ class DashboardController extends Controller
         $isCurrentMonth = $selectedDate->isSameMonth(now());
         $effectiveEnd = $isCurrentMonth ? now()->endOfDay() : $endOfMonth;
 
-        // Data periode saat ini
         $currentData = $this->getPeriodData($storeId, $startOfMonth, $effectiveEnd);
 
-        // Data perbandingan
         $comparisonPeriod = $request->input('comparison', 'last_month');
         $comparisonData = $this->getComparisonData($storeId, $comparisonPeriod, $selectedDate, $startOfMonth, $effectiveEnd);
 
@@ -45,18 +43,17 @@ class DashboardController extends Controller
             ->whereBetween('transacted_at', [$startOfMonth, $effectiveEnd])
             ->count();
 
-        $avgTransaction = $monthlyTransactions > 0 ? $currentData['revenue'] / $monthlyTransactions : 0;
+        $avgTransaction = $monthlyTransactions > 0 ? $currentData['net_revenue'] / $monthlyTransactions : 0;
 
-        // Data perbandingan untuk rata-rata transaksi
         $comparisonAvgTransaction = null;
         if ($comparisonData['transaction_count'] > 0) {
-            $comparisonAvgTransaction = $comparisonData['revenue'] / $comparisonData['transaction_count'];
+            $comparisonAvgTransaction = $comparisonData['net_revenue'] / $comparisonData['transaction_count'];
         }
 
         $todayRevenue = Transaction::forStore($storeId)
             ->completed()
             ->whereDate('transacted_at', today())
-            ->sum('total');
+            ->sum('net_revenue');
 
         $todayTransactions = Transaction::forStore($storeId)
             ->completed()
@@ -127,9 +124,37 @@ class DashboardController extends Controller
             'total_low_stock' => $lowStockProducts->count(),
         ];
 
-        $totalRevenueAll = Transaction::forStore($storeId)->completed()->sum('total');
+        $totalStoreCashRevenue = Transaction::forStore($storeId)
+            ->completed()
+            ->storeCashOnly()
+            ->sum('net_revenue');
+
+        $cashExpenses = Expense::forStore($storeId)
+            ->where('payment_source', 'cash')
+            ->sum('amount');
+
         $totalExpenseAll = Expense::forStore($storeId)->get()->sum(fn($e) => $e->total_amount);
-        $cashBalance = $totalRevenueAll - $totalExpenseAll;
+        $cashBalance = $totalStoreCashRevenue - $totalExpenseAll;
+
+        $onlineChannelBalances = collect(Transaction::ONLINE_CHANNELS)
+            ->mapWithKeys(function ($channel) use ($storeId, $startOfMonth, $effectiveEnd) {
+                $netRevenue = Transaction::forStore($storeId)
+                    ->completed()
+                    ->forChannel($channel)
+                    ->whereBetween('transacted_at', [$startOfMonth, $effectiveEnd])
+                    ->sum('net_revenue');
+                $platformFee = Transaction::forStore($storeId)
+                    ->completed()
+                    ->forChannel($channel)
+                    ->whereBetween('transacted_at', [$startOfMonth, $effectiveEnd])
+                    ->sum('platform_fee');
+                return [
+                    $channel => [
+                        'net_revenue' => (float) $netRevenue,
+                        'platform_fee' => (float) $platformFee,
+                    ]
+                ];
+            });
 
         $walletBalance = OwnerWalletTransaction::balanceForStore($storeId);
 
@@ -138,8 +163,10 @@ class DashboardController extends Controller
         return Inertia::render('owner/dashboard/page', [
             'store' => auth()->user()->store,
             'stats' => [
-                'monthly_revenue' => (float) $currentData['revenue'],
+                'monthly_revenue' => (float) $currentData['gross_revenue'],
+                'monthly_net_revenue' => (float) $currentData['net_revenue'],
                 'total_hpp' => (float) $currentData['hpp'],
+                'total_platform_fee' => (float) $currentData['platform_fee'],
                 'monthly_expense' => (float) $currentData['expense'],
                 'total_withdrawal' => (float) $currentData['withdrawal'],
                 'gross_profit' => (float) $currentData['gross_profit'],
@@ -147,15 +174,18 @@ class DashboardController extends Controller
                 'monthly_transactions' => $monthlyTransactions,
                 'total_products_sold' => (int) $currentData['products_sold'],
                 'avg_transaction' => (float) $avgTransaction,
-                'average_margin' => $currentData['revenue'] > 0 ? round(($currentData['gross_profit'] / $currentData['revenue']) * 100, 1) : 0,
+                'average_margin' => $currentData['net_revenue'] > 0
+                    ? round(($currentData['net_profit'] / $currentData['net_revenue']) * 100, 1)
+                    : 0,
                 'today_revenue' => (float) $todayRevenue,
                 'today_transactions' => $todayTransactions,
                 'revenue_trend' => 0,
                 'cash_balance' => (float) $cashBalance,
                 'wallet_balance' => (float) $walletBalance,
+                'online_channel_balances' => $onlineChannelBalances,
             ],
             'comparison_data' => [
-                'revenue' => $comparisonData['revenue'],
+                'revenue' => $comparisonData['net_revenue'],
                 'net_profit' => $comparisonData['net_profit'],
                 'products_sold' => $comparisonData['products_sold'],
                 'avg_transaction' => $comparisonAvgTransaction !== null ? (float) $comparisonAvgTransaction : 0,
@@ -171,18 +201,26 @@ class DashboardController extends Controller
             'product_stats' => $productStats,
             'selected_month' => $selectedMonth,
             'available_months' => $availableMonths,
+            'online_channels' => Transaction::ONLINE_CHANNELS,
         ]);
     }
 
-    /**
-     * Get data untuk periode tertentu
-     */
     private function getPeriodData($storeId, $startDate, $endDate): array
     {
-        $revenue = Transaction::forStore($storeId)
+        $grossRevenue = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$startDate, $endDate])
             ->sum('total');
+
+        $netRevenue = Transaction::forStore($storeId)
+            ->completed()
+            ->whereBetween('transacted_at', [$startDate, $endDate])
+            ->sum('net_revenue');
+
+        $platformFee = Transaction::forStore($storeId)
+            ->completed()
+            ->whereBetween('transacted_at', [$startDate, $endDate])
+            ->sum('platform_fee');
 
         $hpp = TransactionItem::whereHas('transaction', function ($q) use ($storeId, $startDate, $endDate) {
             $q->forStore($storeId)->completed()->whereBetween('transacted_at', [$startDate, $endDate]);
@@ -205,20 +243,19 @@ class DashboardController extends Controller
             ->count();
 
         return [
-            'revenue' => (float) $revenue,
+            'gross_revenue' => (float) $grossRevenue,
+            'net_revenue' => (float) $netRevenue,
+            'platform_fee' => (float) $platformFee,
             'hpp' => (float) $hpp,
             'expense' => (float) $expenseTotal,
             'withdrawal' => (float) $withdrawalTotal,
-            'gross_profit' => (float) ($revenue - $hpp),
-            'net_profit' => (float) ($revenue - $hpp - $expenseTotal),
+            'gross_profit' => (float) ($netRevenue - $hpp),
+            'net_profit' => (float) ($netRevenue - $hpp - $expenseTotal),
             'products_sold' => (int) $productsSold,
             'transaction_count' => (int) $transactionCount,
         ];
     }
 
-    /**
-     * Get data perbandingan berdasarkan periode
-     */
     private function getComparisonData($storeId, string $comparisonPeriod, Carbon $selectedDate, $currentStartDate, $currentEndDate): array
     {
         $now = Carbon::now();
@@ -236,10 +273,6 @@ class DashboardController extends Controller
                 $label = '1 Minggu Lalu';
                 break;
             case 'last_month':
-                $startDate = $selectedDate->copy()->subMonth()->startOfMonth();
-                $endDate = $selectedDate->copy()->subMonth()->endOfMonth();
-                $label = 'Bulan Lalu';
-                break;
             default:
                 $startDate = $selectedDate->copy()->subMonth()->startOfMonth();
                 $endDate = $selectedDate->copy()->subMonth()->endOfMonth();
@@ -263,7 +296,7 @@ class DashboardController extends Controller
         $rows = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$startDate, $effectiveEnd])
-            ->selectRaw('DAY(transacted_at) as day, SUM(total) as revenue, COUNT(*) as count')
+            ->selectRaw('DAY(transacted_at) as day, SUM(net_revenue) as revenue, COUNT(*) as count')
             ->groupBy('day')
             ->orderBy('day')
             ->get()

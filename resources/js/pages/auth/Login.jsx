@@ -74,7 +74,6 @@ function LoginContent({ titlePage, showDescription = true }) {
             />
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
-                {/* Email */}
                 <Field
                     label={lang("email_address")}
                     htmlFor="email"
@@ -108,7 +107,6 @@ function LoginContent({ titlePage, showDescription = true }) {
                     </div>
                 </Field>
 
-                {/* Password */}
                 <Field
                     label={lang("password")}
                     htmlFor="password"
@@ -158,7 +156,6 @@ function LoginContent({ titlePage, showDescription = true }) {
                     </div>
                 </Field>
 
-                {/* Forgot password */}
                 <div className="flex justify-end">
                     <Link
                         href="/forgot-password"

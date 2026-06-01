@@ -47,7 +47,6 @@ export default function WhyUsSection() {
         <section id="kenapa-kami" className="bg-warm-50 py-24 px-6">
             <div className="mx-auto max-w-6xl">
                 <div className="grid items-center gap-16 lg:grid-cols-2">
-                    {/* Left text */}
                     <div>
                         <p className="text-xs font-bold tracking-widest uppercase text-brand-600 mb-3">
                             Kenapa Kami
@@ -71,7 +70,6 @@ export default function WhyUsSection() {
                         </Link>
                     </div>
 
-                    {/* Right grid */}
                     <div className="grid grid-cols-2 gap-3.5">
                         {WHY_US.map((w) => {
                             const Icon = w.icon;
