@@ -32,7 +32,7 @@
     --color-brand-300: oklch(0.82 0.14 162);
     --color-brand-400: oklch(0.72 0.17 162);
     --color-brand-500: oklch(0.63 0.19 162);
-    --color-brand-600: oklch(0.54 0.19 162); /* primary CTA: #059669 */
+    --color-brand-600: oklch(0.54 0.19 162); 
     --color-brand-700: oklch(0.44 0.16 162);
     --color-brand-800: oklch(0.34 0.12 162);
     --color-brand-900: oklch(0.25 0.08 162);

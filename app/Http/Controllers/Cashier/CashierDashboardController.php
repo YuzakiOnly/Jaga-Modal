@@ -21,14 +21,18 @@ class CashierDashboardController extends Controller
         $selectedMonth = $request->input('month', now()->format('Y-m'));
         $selectedDate = Carbon::parse($selectedMonth . '-01');
 
-        $totalRevenueAll = Transaction::forStore($storeId)->completed()->sum('total');
+        $totalStoreCashRevenue = Transaction::forStore($storeId)
+            ->completed()
+            ->storeCashOnly()
+            ->sum('net_revenue');
+
         $totalExpenseAll = Expense::forStore($storeId)->get()->sum(fn($e) => $e->total_amount);
-        $cashBalance = $totalRevenueAll - $totalExpenseAll;
+        $cashBalance = $totalStoreCashRevenue - $totalExpenseAll;
 
         $todayStats = Transaction::forStore($storeId)
             ->completed()
             ->whereDate('transacted_at', today())
-            ->selectRaw('SUM(total) as today_revenue, COUNT(*) as today_transactions, AVG(total) as avg_transaction')
+            ->selectRaw('SUM(net_revenue) as today_revenue, COUNT(*) as today_transactions, AVG(net_revenue) as avg_transaction')
             ->first();
 
         $todayProductsSold = TransactionItem::whereHas(
@@ -47,7 +51,7 @@ class CashierDashboardController extends Controller
         $weeklyStats = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$weekStart, $weekEnd])
-            ->selectRaw('SUM(total) as weekly_revenue, COUNT(*) as weekly_transactions')
+            ->selectRaw('SUM(net_revenue) as weekly_revenue, COUNT(*) as weekly_transactions')
             ->first();
 
         $weeklyProductsSold = TransactionItem::whereHas(
@@ -64,7 +68,7 @@ class CashierDashboardController extends Controller
             ->completed()
             ->whereMonth('transacted_at', now()->month)
             ->whereYear('transacted_at', now()->year)
-            ->selectRaw('SUM(total) as monthly_revenue, COUNT(*) as monthly_transactions')
+            ->selectRaw('SUM(net_revenue) as monthly_revenue, COUNT(*) as monthly_transactions')
             ->first();
 
         $monthlyProductsSold = TransactionItem::whereHas(
@@ -93,51 +97,101 @@ class CashierDashboardController extends Controller
             ->whereBetween('transacted_at', [$periodStart, $periodEnd])
             ->latest('transacted_at')
             ->limit(20)
-            ->get(['id', 'total', 'payment_method', 'transacted_at']);
+            ->get(['id', 'total', 'net_revenue', 'platform_fee', 'payment_method', 'order_channel', 'transacted_at']);
+
+        $todayRevenue = (float) ($todayStats->today_revenue ?? 0);
+        $weeklyRevenue = (float) ($weeklyStats->weekly_revenue ?? 0);
+        $monthlyRevenue = (float) ($monthlyStats->monthly_revenue ?? 0);
 
         $yesterdayRevenue = Transaction::forStore($storeId)
             ->completed()
             ->whereDate('transacted_at', today()->subDay())
-            ->sum('total');
+            ->sum('net_revenue');
 
-        $todayRevenue = (float) ($todayStats->today_revenue ?? 0);
-        $revenueTrend = 0;
-        if ($yesterdayRevenue > 0) {
-            $revenueTrend = round((($todayRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100, 1);
-        } elseif ($todayRevenue > 0) {
-            $revenueTrend = 100;
-        }
+        $trendHariIni = $this->calcTrend($todayRevenue, (float) $yesterdayRevenue);
+
+        $lastWeekStart = now()->startOfWeek()->subWeek();
+        $lastWeekEnd = now()->subWeek()->endOfDay();
+        $lastWeekRevenue = (float) Transaction::forStore($storeId)
+            ->completed()
+            ->whereBetween('transacted_at', [$lastWeekStart, $lastWeekEnd])
+            ->sum('net_revenue');
+
+        $trendMingguIni = $this->calcTrend($weeklyRevenue, $lastWeekRevenue);
+
+        $lastMonthStart = now()->startOfMonth()->subMonth();
+        $lastMonthEnd = now()->subMonth()->endOfMonth();
+        $lastMonthRevenue = (float) Transaction::forStore($storeId)
+            ->completed()
+            ->whereBetween('transacted_at', [$lastMonthStart, $lastMonthEnd])
+            ->sum('net_revenue');
+
+        $trendBulanIni = $this->calcTrend($monthlyRevenue, $lastMonthRevenue);
 
         $avgTransaction = (float) ($todayStats->avg_transaction ?? 0);
         if ($avgTransaction == 0 && ($weeklyStats->weekly_transactions ?? 0) > 0) {
-            $avgTransaction = (float) ($weeklyStats->weekly_revenue / $weeklyStats->weekly_transactions);
+            $avgTransaction = $weeklyRevenue / $weeklyStats->weekly_transactions;
         }
 
         $availableMonths = $this->getAvailableMonths($storeId);
 
+        $todayNet = $todayRevenue - (float) $todayExpense;
+        $weeklyNet = $weeklyRevenue - (float) $weeklyExpense;
+        $monthlyNet = $monthlyRevenue - (float) $monthlyExpense;
+
+        $yesterdayExpense = Expense::forStore($storeId)
+            ->whereDate('expensed_at', today()->subDay())
+            ->get()
+            ->sum(fn($e) => $e->total_amount);
+
+        $lastWeekExpense = Expense::forStore($storeId)
+            ->whereBetween('expensed_at', [$lastWeekStart, $lastWeekEnd])
+            ->get()
+            ->sum(fn($e) => $e->total_amount);
+
+        $lastMonthExpense = Expense::forStore($storeId)
+            ->whereBetween('expensed_at', [$lastMonthStart, $lastMonthEnd])
+            ->get()
+            ->sum(fn($e) => $e->total_amount);
+
         return Inertia::render('cashier/dashboard/page', [
             'stats' => [
                 'cash_balance' => (float) $cashBalance,
+
                 'today_revenue' => $todayRevenue,
                 'today_transactions' => (int) ($todayStats->today_transactions ?? 0),
                 'today_products_sold' => (int) $todayProductsSold,
                 'today_expense' => (float) $todayExpense,
-                'today_net' => $todayRevenue - (float) $todayExpense,
+                'today_net' => $todayNet,
+                'today_previous_revenue' => (float) $yesterdayRevenue,
+                'today_previous_expense' => (float) $yesterdayExpense,
+                'today_previous_label' => 'Kemarin',
 
-                'weekly_revenue' => (float) ($weeklyStats->weekly_revenue ?? 0),
+                'weekly_revenue' => $weeklyRevenue,
                 'weekly_transactions' => (int) ($weeklyStats->weekly_transactions ?? 0),
                 'weekly_products_sold' => (int) $weeklyProductsSold,
                 'weekly_expense' => (float) $weeklyExpense,
-                'weekly_net' => (float) ($weeklyStats->weekly_revenue ?? 0) - (float) $weeklyExpense,
+                'weekly_net' => $weeklyNet,
+                'weekly_previous_revenue' => $lastWeekRevenue,
+                'weekly_previous_expense' => (float) $lastWeekExpense,
+                'weekly_previous_label' => 'Minggu Lalu',
 
-                'monthly_revenue' => (float) ($monthlyStats->monthly_revenue ?? 0),
+                'monthly_revenue' => $monthlyRevenue,
                 'monthly_transactions' => (int) ($monthlyStats->monthly_transactions ?? 0),
                 'monthly_products_sold' => (int) $monthlyProductsSold,
                 'monthly_expense' => (float) $monthlyExpense,
-                'monthly_net' => (float) ($monthlyStats->monthly_revenue ?? 0) - (float) $monthlyExpense,
+                'monthly_net' => $monthlyNet,
+                'monthly_previous_revenue' => $lastMonthRevenue,
+                'monthly_previous_expense' => (float) $lastMonthExpense,
+                'monthly_previous_label' => 'Bulan Lalu',
 
                 'avg_transaction' => $avgTransaction,
-                'revenue_trend' => $revenueTrend,
+
+                'revenue_trend' => [
+                    'hari_ini' => $trendHariIni,
+                    'minggu_ini' => $trendMingguIni,
+                    'bulan_ini' => $trendBulanIni,
+                ],
             ],
             'sales_chart' => $salesChart,
             'recent_transactions' => $recentTransactions,
@@ -146,10 +200,20 @@ class CashierDashboardController extends Controller
                 'month' => $selectedMonth,
             ],
             'available_months' => $availableMonths,
+            'current_month_name' => now()->isoFormat('MMMM YYYY'),
         ]);
     }
 
-    private function getMonthlyChart($storeId, Carbon $date)
+    private function calcTrend(float $current, float $previous): ?int
+    {
+        if ($previous <= 0) {
+            return null;
+        }
+        $result = round((($current - $previous) / $previous) * 100);
+        return $result == 0 ? 0 : (int) $result;
+    }
+
+    private function getMonthlyChart($storeId, Carbon $date): array
     {
         $chart = [];
         $daysInMonth = $date->daysInMonth;
@@ -159,7 +223,7 @@ class CashierDashboardController extends Controller
         $transactions = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$startDate, $endDate])
-            ->selectRaw('DAY(transacted_at) as day, SUM(total) as revenue, COUNT(*) as count')
+            ->selectRaw('DAY(transacted_at) as day, SUM(net_revenue) as revenue, COUNT(*) as count')
             ->groupBy('day')
             ->orderBy('day')
             ->get()
@@ -177,7 +241,7 @@ class CashierDashboardController extends Controller
         return $chart;
     }
 
-    private function getAvailableMonths($storeId)
+    private function getAvailableMonths($storeId): array
     {
         $months = Transaction::forStore($storeId)
             ->completed()

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
@@ -70,6 +71,8 @@ class TransactionController extends Controller
             'total' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],
             'transacted_at' => ['nullable', 'date', 'before_or_equal:now'],
+            'customer_name' => ['nullable', 'string', 'max:100'],
+            'customer_phone' => ['nullable', 'string', 'max:20'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
             'items.*.name' => ['required', 'string', 'max:200'],
@@ -97,15 +100,20 @@ class TransactionController extends Controller
                 ? Carbon::parse($validated['transacted_at'])
                 : now();
 
-            $isOnline = in_array($validated['order_channel'], Transaction::ONLINE_CHANNELS);
-
             $platformFee = $validated['platform_fee'] ?? 0;
-
             $netRevenue = $validated['total'] - $platformFee;
+
+            $customer = Customer::resolveForTransaction(
+                $storeId,
+                $validated['customer_name'] ?? null,
+                $validated['customer_phone'] ?? null,
+                $transactedAt
+            );
 
             $transaction = Transaction::create([
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
+                'customer_id' => $customer->id,
                 'payment_method' => $validated['payment_method'],
                 'order_channel' => $validated['order_channel'],
                 'amount_paid' => $validated['amount_paid'],
@@ -169,37 +177,79 @@ class TransactionController extends Controller
             $summaryQuery->where('order_channel', $channel);
         }
 
+        $revenueByChannel = (clone $summaryQuery)
+            ->select('order_channel', DB::raw('SUM(net_revenue) as net_revenue'))
+            ->groupBy('order_channel')
+            ->get()
+            ->mapWithKeys(fn($item) => [
+                $item->order_channel => (float) $item->net_revenue,
+            ])
+            ->toArray();
+
         $summary = [
-            'total_revenue' => (clone $summaryQuery)->sum('total'),
-            'total_net_revenue' => (clone $summaryQuery)->sum('net_revenue'),
-            'total_platform_fee' => (clone $summaryQuery)->sum('platform_fee'),
-            'total_count' => (clone $summaryQuery)->count(),
-            'cash_count' => (clone $summaryQuery)->where('payment_method', 'cash')->count(),
-            'qris_count' => (clone $summaryQuery)->where('payment_method', 'qris')->count(),
-            'grabfood_count' => (clone $summaryQuery)->where('order_channel', 'grabfood')->count(),
-            'shopeefood_count' => (clone $summaryQuery)->where('order_channel', 'shopeefood')->count(),
-            'gobiz_count' => (clone $summaryQuery)->where('order_channel', 'gobiz')->count(),
-            'revenue_by_channel' => (clone $summaryQuery)
-                ->select('order_channel', DB::raw('SUM(total) as total_revenue'), DB::raw('SUM(net_revenue) as net_revenue'))
-                ->groupBy('order_channel')
-                ->get()
-                ->mapWithKeys(fn($item) => [
-                    $item->order_channel => [
-                        'gross' => (float) $item->total_revenue,
-                        'net' => (float) $item->net_revenue,
-                    ]
-                ]),
+            'total_revenue' => (float) (clone $summaryQuery)->sum('total'),
+            'total_net_revenue' => (float) (clone $summaryQuery)->sum('net_revenue'),
+            'total_platform_fee' => (float) (clone $summaryQuery)->sum('platform_fee'),
+            'total_count' => (int) (clone $summaryQuery)->count(),
+            'cash_count' => (int) (clone $summaryQuery)->where('payment_method', 'cash')->count(),
+            'qris_count' => (int) (clone $summaryQuery)->where('payment_method', 'qris')->count(),
+            'grabfood_count' => (int) (clone $summaryQuery)->where('order_channel', 'grabfood')->count(),
+            'shopeefood_count' => (int) (clone $summaryQuery)->where('order_channel', 'shopeefood')->count(),
+            'gobiz_count' => (int) (clone $summaryQuery)->where('order_channel', 'gobiz')->count(),
+            'revenue_by_channel' => $revenueByChannel,
         ];
 
         $transactions = (clone $summaryQuery)
-            ->with(['items', 'items.product:id,image'])
+            ->with(['items', 'items.product:id,image', 'customer:id,customer_number,name,phone'])
             ->latest('transacted_at')
             ->paginate(20)
             ->withQueryString();
 
+        $customerBaseQuery = Transaction::forStore($storeId)
+            ->completed()
+            ->whereNotNull('customer_id');
+
+        $customerBaseQuery = match ($period) {
+            'weekly' => $customerBaseQuery->whereBetween('transacted_at', [
+                now()->parse($date)->startOfWeek(),
+                now()->parse($date)->endOfWeek(),
+            ]),
+            'monthly' => $customerBaseQuery
+                ->whereMonth('transacted_at', now()->parse($date)->month)
+                ->whereYear('transacted_at', now()->parse($date)->year),
+            default => $customerBaseQuery->whereDate('transacted_at', $date),
+        };
+
+        if ($channel) {
+            $customerBaseQuery->where('order_channel', $channel);
+        }
+
+        $customers = $customerBaseQuery
+            ->select(
+                'customer_id',
+                DB::raw('COUNT(*) as total_transactions'),
+                DB::raw('SUM(total) as total_spent'),
+                DB::raw('MAX(transacted_at) as last_visit'),
+            )
+            ->groupBy('customer_id')
+            ->orderByDesc('total_spent')
+            ->with('customer:id,customer_number,name,phone')
+            ->get()
+            ->map(fn($row) => [
+                'id' => $row->customer->id,
+                'customer_number' => $row->customer->customer_number,
+                'display_name' => $row->customer->display_name,
+                'name' => $row->customer->name,
+                'phone' => $row->customer->phone,
+                'total_transactions' => (int) $row->total_transactions,
+                'total_spent' => (float) $row->total_spent,
+                'last_visit' => $row->last_visit,
+            ]);
+
         return Inertia::render('owner/pos/history/page', [
             'transactions' => $transactions,
             'summary' => $summary,
+            'customers' => $customers,
             'filters' => $request->only(['period', 'date', 'channel']),
             'online_channels' => Transaction::ONLINE_CHANNELS,
         ]);

@@ -14,6 +14,7 @@ use App\Http\Controllers\Owner\DashboardController;
 use App\Http\Controllers\Owner\ExpenseController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\TransactionController;
+use App\Http\Controllers\Owner\MarketDataController;
 use App\Http\Controllers\Owner\WalletController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -64,7 +65,7 @@ Route::middleware(['pending.store'])->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ── Cashier (akses untuk cashier, owner, super_admin) ─────────────────────
-Route::middleware(['auth', 'role:cashier,owner,super_admin', 'ensure.store'])
+Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
     ->prefix('cashier')
     ->group(function () {
         Route::get('/dashboard', [CashierDashboardController::class, 'index'])
@@ -93,7 +94,7 @@ Route::middleware(['auth', 'role:cashier,owner,super_admin', 'ensure.store'])
     });
 
 // ── Owner (akses untuk owner, super_admin) ────────────────────────────────
-Route::middleware(['auth', 'role:owner,super_admin', 'ensure.store'])
+Route::middleware(['auth', 'role:ownerSS', 'ensure.store'])
     ->prefix('owner')
     ->group(function () {
         Route::get('/', function () {

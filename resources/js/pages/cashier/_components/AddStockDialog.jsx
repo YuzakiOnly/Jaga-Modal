@@ -82,7 +82,7 @@ export default function AddStockDialog({ isOpen, onClose, products = [] }) {
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
             <div className="bg-white w-125 max-w-[90vw] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                <div className="flex items-center justify-between p-5 border-b border-slate-100">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-emerald-100">
                             <PackagePlus className="h-5 w-5 text-emerald-600" />
@@ -98,7 +98,7 @@ export default function AddStockDialog({ isOpen, onClose, products = [] }) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
                     >
                         <X className="h-5 w-5 text-gray-500" />
                     </button>

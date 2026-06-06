@@ -2,16 +2,15 @@ import { useState, useEffect } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import { toast, Toaster } from "sonner";
 import { ShoppingCart } from "lucide-react";
-import AppLayout from "@/layouts/dashboard/AppLayout";
+import AppPosLayout from "@/layouts/pos/AppPosLayout";
 
 import { ProductGrid } from "./_components/ProductGrid";
 import { Cart } from "./_components/Cart";
 import { PaymentDialog } from "./_components/PaymentDialog";
 import { Badge } from "@/components/ui/badge";
 
-// Channel online yang harganya +20% dan saldo terpisah
 export const ONLINE_CHANNELS = ["grabfood", "shopeefood", "gobiz"];
-export const ONLINE_PRICE_MARKUP = 0.2; // 20%
+export const ONLINE_PRICE_MARKUP = 0.2;
 
 export default function PosPage({ products, categories }) {
     const { flash } = usePage().props;
@@ -20,8 +19,6 @@ export default function PosPage({ products, categories }) {
     const [paymentOpen, setPaymentOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [globalDiscount, setGlobalDiscount] = useState(0);
-
-    // "dine_in" | "grabfood" | "shopeefood" | "gobiz"
     const [orderChannel, setOrderChannel] = useState("dine_in");
 
     useEffect(() => {
@@ -29,14 +26,11 @@ export default function PosPage({ products, categories }) {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    // Saat channel berubah, recalculate harga semua item di cart
-    // (hanya item dari produk, bukan custom)
     useEffect(() => {
         const isOnline = ONLINE_CHANNELS.includes(orderChannel);
         setCartItems((prev) =>
             prev.map((item) => {
                 if (item.is_custom) return item;
-                // Kembalikan ke base price, lalu terapkan markup jika perlu
                 const basePrice = item.base_unit_price ?? item.unit_price;
                 const newPrice = isOnline
                     ? Math.round(basePrice * (1 + ONLINE_PRICE_MARKUP))
@@ -52,7 +46,6 @@ export default function PosPage({ products, categories }) {
 
     const handleChannelChange = (channel) => {
         setOrderChannel(channel);
-        // Reset diskon saat ganti channel untuk menghindari diskon melebihi harga baru
         setGlobalDiscount(0);
     };
 
@@ -102,7 +95,6 @@ export default function PosPage({ products, categories }) {
     };
 
     const handleAddCustom = ({ name, selling_price, capital_price }) => {
-        // Item custom tidak kena markup online
         setCartItems((prev) => [
             ...prev,
             {
@@ -180,7 +172,7 @@ export default function PosPage({ products, categories }) {
         <>
             <Head title="POS — Transaksi" />
 
-            <div className="h-[calc(100dvh-4rem)] overflow-hidden w-full">
+            <div className="h-full w-full overflow-hidden">
                 <div className="flex h-full w-full overflow-hidden">
                     <div className="flex-1 min-w-0 overflow-hidden flex flex-col p-3 sm:p-4">
                         <ProductGrid
@@ -261,4 +253,4 @@ export default function PosPage({ products, categories }) {
     );
 }
 
-PosPage.layout = (page) => <AppLayout>{page}</AppLayout>;
+PosPage.layout = (page) => <AppPosLayout>{page}</AppPosLayout>;

@@ -6,162 +6,174 @@ import {
     TrendingUp,
     Package,
     ReceiptText,
-    Bike,
-    ShoppingBag,
-    Zap,
     Landmark,
 } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 import StatCard from "./_components/StatCard";
 import MiniStatCard from "./_components/MiniStatCard";
 import SalesChart from "./_components/SalesChart";
+import DailyProductChart from "./_components/DailyProductChart";
+import CustomerTransactionChart from "./_components/CustomerTransactionChart";
 import TopProducts from "./_components/TopProducts";
 import LowStockAlert from "./_components/LowStockAlert";
 import ExpenseBreakdown from "./_components/ExpenseBreakdown";
 import RecentTransactions from "./_components/RecentTransactions";
 import ProductSummaryCards from "./_components/ProductSummaryCards";
-import ComparisonSelector from "./_components/ComparisonSelector";
+import CustomerStatCard from "./_components/CustomerStatCard";
+import CurrencyCards from "./_components/CurrencyCards";
+import OnlineChannelCards from "./_components/OnlineChannelCards";
+
+const PERIODS = [
+    { key: "hari_ini", label: "Hari Ini" },
+    { key: "minggu_ini", label: "Minggu Ini" },
+    { key: "bulan_ini", label: "Bulan Ini" },
+];
+
+const COMPARISONS = [
+    { key: "yesterday", label: "Kemarin" },
+    { key: "last_week", label: "Minggu Lalu" },
+    { key: "last_month", label: "Bulan Lalu" },
+];
+
+const currentMonth = new Date().toISOString().slice(0, 7);
 
 export default function Dashboard({
     store,
     stats,
-    comparison_data,
+    comparisons,
+    period: initialPeriod,
+    customer_stats,
     sales_chart,
+    daily_product_data,
+    customer_transaction_data,
     top_products,
     low_stock_products,
     recent_transactions,
     expense_by_type,
     product_stats,
-    selected_month,
+    sales_month: initialSalesMonth,
+    product_month: initialProductMonth,
+    customer_month: initialCustomerMonth,
     available_months,
 }) {
+    const params = new URLSearchParams(window.location.search);
+
+    const [period, setPeriod] = useState(
+        initialPeriod ?? params.get("period") ?? "hari_ini",
+    );
     const [comparison, setComparison] = useState(
-        new URLSearchParams(window.location.search).get("comparison") ||
-            "last_month",
+        params.get("comparison") ?? "yesterday",
+    );
+    const [salesMonth, setSalesMonth] = useState(
+        initialSalesMonth ?? params.get("sales_month") ?? currentMonth,
+    );
+    const [productMonth, setProductMonth] = useState(
+        initialProductMonth ?? params.get("product_month") ?? currentMonth,
+    );
+    const [customerMonth, setCustomerMonth] = useState(
+        initialCustomerMonth ?? params.get("customer_month") ?? currentMonth,
     );
 
-    const revenueTrend =
-        stats.monthly_net_revenue > 0 && comparison_data?.revenue > 0
-            ? Math.round(
-                  ((stats.monthly_net_revenue - comparison_data.revenue) /
-                      comparison_data.revenue) *
-                      100,
-              )
-            : stats.monthly_net_revenue > 0 && comparison_data?.revenue === 0
-              ? 100
-              : stats.monthly_net_revenue === 0 && comparison_data?.revenue > 0
-                ? -100
-                : 0;
+    const activeComparison =
+        comparisons?.[comparison] ?? comparisons?.last_month;
 
-    const netProfitTrend =
-        stats.net_profit > 0 && comparison_data?.net_profit > 0
-            ? Math.round(
-                  ((stats.net_profit - comparison_data.net_profit) /
-                      comparison_data.net_profit) *
-                      100,
-              )
-            : stats.net_profit > 0 && comparison_data?.net_profit === 0
-              ? 100
-              : stats.net_profit === 0 && comparison_data?.net_profit > 0
-                ? -100
-                : stats.net_profit < 0 && comparison_data?.net_profit < 0
-                  ? (() => {
-                        const diff =
-                            stats.net_profit - comparison_data.net_profit;
-                        if (diff > 0)
-                            return Math.round(
-                                (diff / Math.abs(comparison_data.net_profit)) *
-                                    100,
-                            );
-                        if (diff < 0)
-                            return -Math.round(
-                                (Math.abs(diff) /
-                                    Math.abs(comparison_data.net_profit)) *
-                                    100,
-                            );
-                        return 0;
-                    })()
-                  : stats.net_profit > comparison_data?.net_profit
-                    ? 100
-                    : stats.net_profit < comparison_data?.net_profit
-                      ? -100
-                      : 0;
+    const refreshData = (updates = {}) => {
+        const url = new URL(window.location.href);
+        const current = {
+            period,
+            comparison,
+            sales_month: salesMonth,
+            product_month: productMonth,
+            customer_month: customerMonth,
+            ...updates,
+        };
+        Object.entries(current).forEach(([key, value]) => {
+            url.searchParams.set(key, value);
+        });
+        router.get(
+            url.pathname + url.search,
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    };
 
-    const productsSoldTrend =
-        stats.total_products_sold > 0 && comparison_data?.products_sold > 0
-            ? Math.round(
-                  ((stats.total_products_sold - comparison_data.products_sold) /
-                      comparison_data.products_sold) *
-                      100,
-              )
-            : stats.total_products_sold > 0 &&
-                comparison_data?.products_sold === 0
-              ? 100
-              : stats.total_products_sold === 0 &&
-                  comparison_data?.products_sold > 0
-                ? -100
-                : 0;
+    const handlePeriodChange = (value) => {
+        setPeriod(value);
+        refreshData({ period: value });
+    };
 
-    const avgTransactionTrend =
-        stats.avg_transaction > 0 && comparison_data?.avg_transaction > 0
-            ? Math.round(
-                  ((stats.avg_transaction - comparison_data.avg_transaction) /
-                      comparison_data.avg_transaction) *
-                      100,
-              )
-            : stats.avg_transaction > 0 &&
-                comparison_data?.avg_transaction === 0
-              ? 100
-              : stats.avg_transaction === 0 &&
-                  comparison_data?.avg_transaction > 0
-                ? -100
-                : 0;
+    const handleComparisonChange = (value) => {
+        setComparison(value);
+        refreshData({ comparison: value });
+    };
+
+    const handleSalesMonthChange = (value) => {
+        setSalesMonth(value);
+        refreshData({ sales_month: value });
+    };
+
+    const handleProductMonthChange = (value) => {
+        setProductMonth(value);
+        refreshData({ product_month: value });
+    };
+
+    const handleCustomerMonthChange = (value) => {
+        setCustomerMonth(value);
+        refreshData({ customer_month: value });
+    };
+
+    const periodLabel =
+        {
+            hari_ini: "Hari Ini",
+            minggu_ini: "Minggu Ini",
+            bulan_ini: "Bulan Ini",
+        }[period] ?? "Periode ini";
 
     const summaryCards = [
         {
             title: "Omzet",
-            value: stats.monthly_net_revenue,
-            trend: revenueTrend,
-            comparisonValue: comparison_data?.revenue,
-            comparisonLabel: comparison_data?.label,
+            value: stats.net_revenue,
+            trend: activeComparison?.trends?.revenue ?? null,
+            comparisonValue: activeComparison?.revenue,
+            comparisonLabel: activeComparison?.label,
             icon: DollarSign,
             isCurrency: true,
         },
         {
             title: "Laba Bersih",
             value: stats.net_profit,
-            trend: netProfitTrend,
-            comparisonValue: comparison_data?.net_profit,
-            comparisonLabel: comparison_data?.label,
+            trend: activeComparison?.trends?.net_profit ?? null,
+            comparisonValue: activeComparison?.net_profit,
+            comparisonLabel: activeComparison?.label,
             icon: TrendingUp,
             isCurrency: true,
         },
         {
             title: "Produk Terjual",
-            value: stats.total_products_sold,
-            trend: productsSoldTrend,
-            comparisonValue: comparison_data?.products_sold,
-            comparisonLabel: comparison_data?.label,
+            value: stats.products_sold,
+            trend: activeComparison?.trends?.products_sold ?? null,
+            comparisonValue: activeComparison?.products_sold,
+            comparisonLabel: activeComparison?.label,
             icon: Package,
             isCurrency: false,
         },
         {
             title: "Rata-rata Transaksi",
             value: stats.avg_transaction,
-            trend: avgTransactionTrend,
-            comparisonValue: comparison_data?.avg_transaction,
-            comparisonLabel: comparison_data?.label,
+            trend: activeComparison?.trends?.avg_transaction ?? null,
+            comparisonValue: activeComparison?.avg_transaction,
+            comparisonLabel: activeComparison?.label,
             icon: ReceiptText,
             isCurrency: true,
         },
     ];
-
-    const handleComparisonChange = (value) => {
-        setComparison(value);
-        const url = new URL(window.location.href);
-        url.searchParams.set("comparison", value);
-        router.get(url.pathname + url.search, {}, { preserveState: true });
-    };
 
     const miniStats = [
         {
@@ -170,54 +182,29 @@ export default function Dashboard({
             subValue: "Uang tunai di toko",
             isCurrency: true,
             icon: Landmark,
-            iconColor: "text-slate-600",
+            iconColor: "text-slate-600 dark:text-slate-400",
         },
         {
-            label: "Saldo Online",
+            label: "Saldo Online Total",
             value: stats.online_balance_total,
-            subValue: "Grab + Shopee + Gojek",
+            subValue: "Grab + Shopee + GoBiz",
             isCurrency: true,
-            icon: Bike,
-            iconColor: "text-orange-500",
+            icon: Package,
+            iconColor: "text-orange-500 dark:text-orange-400",
         },
         {
             label: "Total Pengeluaran",
             value: stats.monthly_expense,
             subValue: "Termasuk penarikan owner",
             isCurrency: true,
+            iconColor: "text-red-500 dark:text-red-400",
         },
         {
             label: "Penarikan Owner",
             value: stats.total_withdrawal,
             subValue: "Bulan ini",
             isCurrency: true,
-        },
-    ];
-
-    const onlineStats = [
-        {
-            label: "Pendapatan GrabFood",
-            value: stats.online_channel_balances?.grabfood?.net_revenue || 0,
-            subValue: "Bulan ini (setelah fee)",
-            isCurrency: true,
-            icon: Bike,
-            iconColor: "text-green-600",
-        },
-        {
-            label: "Pendapatan ShopeeFood",
-            value: stats.online_channel_balances?.shopeefood?.net_revenue || 0,
-            subValue: "Bulan ini (setelah fee)",
-            isCurrency: true,
-            icon: ShoppingBag,
-            iconColor: "text-orange-500",
-        },
-        {
-            label: "Pendapatan GoBiz",
-            value: stats.online_channel_balances?.gobiz?.net_revenue || 0,
-            subValue: "Bulan ini (setelah fee)",
-            isCurrency: true,
-            icon: Zap,
-            iconColor: "text-blue-500",
+            iconColor: "text-purple-500 dark:text-purple-400",
         },
     ];
 
@@ -228,18 +215,50 @@ export default function Dashboard({
             <div className="space-y-5 p-4 lg:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight lg:text-2xl">
+                        <h1 className="text-xl font-bold tracking-tight lg:text-2xl text-foreground">
                             Selamat datang, {store?.name ?? "Owner"}!
                         </h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            Ringkasan performa toko bulan ini
+                            Ringkasan performa toko
                         </p>
                     </div>
 
-                    <ComparisonSelector
-                        value={comparison}
-                        onChange={handleComparisonChange}
-                    />
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground hidden sm:block">
+                            Bandingkan:
+                        </span>
+                        <Select
+                            value={comparison}
+                            onValueChange={handleComparisonChange}
+                        >
+                            <SelectTrigger className="w-36 h-8 text-sm font-normal border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {COMPARISONS.map((c) => (
+                                    <SelectItem key={c.key} value={c.key}>
+                                        {c.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="flex gap-1 p-1 bg-muted/30 border border-border rounded-xl w-fit">
+                    {PERIODS.map((p) => (
+                        <button
+                            key={p.key}
+                            onClick={() => handlePeriodChange(p.key)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
+                                period === p.key
+                                    ? "bg-emerald-600 text-white shadow-sm dark:bg-emerald-700"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            }`}
+                        >
+                            {p.label}
+                        </button>
+                    ))}
                 </div>
 
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -254,17 +273,43 @@ export default function Dashboard({
                     ))}
                 </div>
 
-                <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-                    {onlineStats.map((s, i) => (
-                        <MiniStatCard key={i} {...s} />
-                    ))}
+                <OnlineChannelCards
+                    balances={stats.online_channel_balances}
+                    periodRevenues={stats.online_channel_period}
+                    periodLabel={periodLabel}
+                />
+
+                <div className="grid gap-3 grid-cols-1 lg:grid-cols-4">
+                    <CustomerStatCard
+                        customerStats={customer_stats?.[period]}
+                        period={period}
+                    />
+                    <div className="lg:col-span-3">
+                        <CurrencyCards />
+                    </div>
                 </div>
 
                 <SalesChart
                     data={sales_chart}
-                    selectedMonth={selected_month}
+                    selectedMonth={salesMonth}
                     availableMonths={available_months}
+                    onMonthChange={handleSalesMonthChange}
                 />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                    <DailyProductChart
+                        data={daily_product_data}
+                        selectedMonth={productMonth}
+                        availableMonths={available_months}
+                        onMonthChange={handleProductMonthChange}
+                    />
+                    <CustomerTransactionChart
+                        data={customer_transaction_data}
+                        selectedMonth={customerMonth}
+                        availableMonths={available_months}
+                        onMonthChange={handleCustomerMonthChange}
+                    />
+                </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <TopProducts products={top_products} />
@@ -283,7 +328,7 @@ export default function Dashboard({
                 <ProductSummaryCards
                     productStats={product_stats}
                     averageMargin={stats.average_margin}
-                    netProfit={stats.net_profit}
+                    netProfit={stats.net_profit_month}
                 />
             </div>
         </>

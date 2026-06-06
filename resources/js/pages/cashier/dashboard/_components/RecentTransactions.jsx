@@ -1,11 +1,57 @@
-import { ShoppingBag, Receipt } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
-    fmt,
-    paymentIcon,
-    paymentLabel,
-    PERIODS,
-} from "../../../../lib/cashier/dashboard";
+    ShoppingBag,
+    Receipt,
+    Banknote,
+    QrCode,
+    Smartphone,
+    Store,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { fmt, PERIODS } from "../../../../lib/cashier/dashboard";
+
+const CHANNEL_CONFIG = {
+    dine_in: {
+        label: "Dine In",
+        color: "bg-emerald-50",
+        iconColor: "text-emerald-600",
+        Icon: Store,
+    },
+    grabfood: {
+        label: "GrabFood",
+        color: "bg-green-50",
+        iconColor: "text-green-600",
+        Icon: Smartphone,
+    },
+    shopeefood: {
+        label: "ShopeeFood",
+        color: "bg-orange-50",
+        iconColor: "text-orange-500",
+        Icon: Smartphone,
+    },
+    gobiz: {
+        label: "GoBiz",
+        color: "bg-sky-50",
+        iconColor: "text-sky-600",
+        Icon: Smartphone,
+    },
+};
+
+const PAYMENT_LABEL = {
+    cash: "Tunai",
+    qris: "QRIS",
+    grabfood: "GrabFood",
+    shopeefood: "ShopeeFood",
+    gobiz: "GoBiz",
+};
+
+function getChannelConfig(orderChannel) {
+    return CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
+}
+
+function formatPlatformFee(fee) {
+    if (!fee || fee <= 0) return null;
+    return `−${fmt(fee)} fee`;
+}
 
 export default function RecentTransactions({
     transactions,
@@ -46,15 +92,29 @@ export default function RecentTransactions({
                 ))}
             </div>
 
-            {!transactions?.length ? (
+            {!transactions?.data?.length && !transactions?.length ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-2">
                     <ShoppingBag className="w-8 h-8 text-gray-200" />
                     <p className="text-sm text-gray-400">Belum ada transaksi</p>
                 </div>
             ) : (
                 <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto -mx-1 px-1">
-                    {transactions.map((trx) => {
-                        const Icon = paymentIcon(trx.payment_method);
+                    {(transactions?.data ?? transactions).map((trx) => {
+                        const channel = trx.order_channel ?? "dine_in";
+                        const {
+                            label: channelLabel,
+                            color,
+                            iconColor,
+                            Icon,
+                        } = getChannelConfig(channel);
+                        const isOnline = channel !== "dine_in";
+                        const paymentMethodLabel =
+                            PAYMENT_LABEL[trx.payment_method] ??
+                            trx.payment_method;
+                        const platformFeeLabel = formatPlatformFee(
+                            trx.platform_fee,
+                        );
+
                         const time = new Date(trx.transacted_at).toLocaleString(
                             "id-ID",
                             {
@@ -65,26 +125,67 @@ export default function RecentTransactions({
                                 hour12: false,
                             },
                         );
+
                         return (
                             <div
                                 key={trx.id}
                                 className="flex items-center gap-3 py-2.5"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
-                                    <Icon className="w-4 h-4 text-gray-500" />
+                                <div
+                                    className={cn(
+                                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                                        color,
+                                    )}
+                                >
+                                    <Icon
+                                        className={cn("w-4 h-4", iconColor)}
+                                    />
                                 </div>
+
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold text-gray-800 truncate">
-                                        #{trx.id}
-                                    </p>
-                                    <p className="text-[10px] text-gray-400">
-                                        {paymentLabel(trx.payment_method)} ·{" "}
-                                        {time}
+                                    <div className="flex items-center gap-1.5">
+                                        <p className="text-xs font-semibold text-gray-800 truncate">
+                                            #{trx.id}
+                                        </p>
+                                        {isOnline && (
+                                            <span
+                                                className={cn(
+                                                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0",
+                                                    channel === "grabfood" &&
+                                                        "bg-green-100 text-green-700",
+                                                    channel === "shopeefood" &&
+                                                        "bg-orange-100 text-orange-600",
+                                                    channel === "gobiz" &&
+                                                        "bg-sky-100 text-sky-700",
+                                                )}
+                                            >
+                                                {channelLabel}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 truncate">
+                                        {isOnline
+                                            ? channelLabel
+                                            : paymentMethodLabel}{" "}
+                                        · {time}
+                                        {platformFeeLabel && (
+                                            <span className="text-red-400 ml-1">
+                                                {platformFeeLabel}
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
-                                <p className="text-xs sm:text-sm font-bold text-gray-800 shrink-0">
-                                    {fmt(trx.total)}
-                                </p>
+
+                                <div className="text-right shrink-0">
+                                    <p className="text-xs sm:text-sm font-bold text-gray-800">
+                                        {fmt(trx.net_revenue ?? trx.total)}
+                                    </p>
+                                    {trx.platform_fee > 0 && (
+                                        <p className="text-[10px] text-gray-400 line-through">
+                                            {fmt(trx.total)}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}

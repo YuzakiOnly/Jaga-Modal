@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { TrendingUp, Wallet } from "lucide-react";
 
 function formatRp(value) {
     if (!value && value !== 0) return "Rp 0";
@@ -19,11 +20,14 @@ export default function MiniStatCard({
     label,
     value,
     subValue,
+    subValue2,
     isCurrency = true,
     icon: Icon,
     iconColor = "text-muted-foreground",
 }) {
     const displayValue = isCurrency ? formatRp(value) : formatNum(value);
+
+    const DefaultIcon = label.includes("Pengeluaran") ? TrendingUp : Wallet;
 
     return (
         <Card>
@@ -32,14 +36,27 @@ export default function MiniStatCard({
                     <p className="text-xs text-muted-foreground truncate">
                         {label}
                     </p>
-                    {Icon && <Icon className={`h-4 w-4 ${iconColor}`} />}
+                    {Icon ? (
+                        <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+                    ) : (
+                        <DefaultIcon
+                            className={`h-4 w-4 shrink-0 ${iconColor}`}
+                        />
+                    )}
                 </div>
                 <p className="text-base sm:text-lg font-bold mt-0.5 truncate">
                     {displayValue}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {subValue}
-                </p>
+                {subValue && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {subValue}
+                    </p>
+                )}
+                {subValue2 && (
+                    <p className="text-xs text-muted-foreground truncate">
+                        {subValue2}
+                    </p>
+                )}
             </CardContent>
         </Card>
     );

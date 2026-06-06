@@ -35,20 +35,55 @@ function formatRp(value) {
 }
 
 const PAYMENT_METHOD_CONFIG = {
-    cash: { label: "Tunai", variant: "success" },
-    qris: { label: "QRIS", variant: "info" },
-    grabfood: { label: "GrabFood", variant: "warning" },
-    shopeefood: { label: "ShopeeFood", variant: "destructive" },
-    gobiz: { label: "GoBiz", variant: "secondary" },
+    cash: {
+        label: "Tunai",
+        color: "#3b82f6",
+        bg: "bg-blue-50",
+        text: "text-blue-600",
+    },
+    qris: {
+        label: "QRIS",
+        color: "#a855f7",
+        bg: "bg-purple-50",
+        text: "text-purple-600",
+    },
+    grabfood: {
+        label: "GrabFood",
+        color: "#00b14f",
+        bg: "bg-green-50",
+        text: "text-green-600",
+    },
+    shopeefood: {
+        label: "ShopeeFood",
+        color: "#ee4d2d",
+        bg: "bg-orange-50",
+        text: "text-orange-600",
+    },
+    gobiz: {
+        label: "GoBiz",
+        color: "#00aed6",
+        bg: "bg-cyan-50",
+        text: "text-cyan-600",
+    },
+    dine_in: {
+        label: "Dine In",
+        color: "#6b7280",
+        bg: "bg-gray-100",
+        text: "text-gray-600",
+    },
 };
 
 function PaymentBadge({ method }) {
     const config = PAYMENT_METHOD_CONFIG[method] ?? {
         label: method,
-        variant: "outline",
+        bg: "bg-gray-50",
+        text: "text-gray-600",
     };
     return (
-        <Badge variant={config.variant} className="text-xs whitespace-nowrap">
+        <Badge
+            variant="outline"
+            className={`${config.bg} ${config.text} border-none text-xs whitespace-nowrap`}
+        >
             {config.label}
         </Badge>
     );
@@ -149,9 +184,7 @@ export default function RecentTransactions({ transactions }) {
                                                 method={trx.order_channel}
                                             />
                                         ) : (
-                                            <span className="text-xs text-muted-foreground">
-                                                Dine In
-                                            </span>
+                                            <PaymentBadge method="dine_in" />
                                         )}
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[180px] truncate">

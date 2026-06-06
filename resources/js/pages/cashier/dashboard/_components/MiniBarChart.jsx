@@ -14,6 +14,7 @@ export default function MiniBarChart({
     selectedMonth,
     onMonthChange,
     availableMonths,
+    currentMonthName,
 }) {
     if (!data?.length) return null;
 
@@ -41,7 +42,7 @@ export default function MiniBarChart({
         });
     };
 
-    const currentMonthName = formatBulanIndonesia(selectedMonth);
+    const displayMonthName = currentMonthName || formatBulanIndonesia(selectedMonth);
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
@@ -65,7 +66,7 @@ export default function MiniBarChart({
 
                     <Select value={selectedMonth} onValueChange={onMonthChange}>
                         <SelectTrigger className="w-32 sm:w-40 h-7.5! text-xs sm:text-sm ring-0! focus:ring-0! border-gray-200! bg-white! hover:bg-gray-50! cursor-pointer">
-                            <SelectValue>{currentMonthName}</SelectValue>
+                            <SelectValue>{displayMonthName}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                             {availableMonths
@@ -100,13 +101,17 @@ export default function MiniBarChart({
 
             <div className="flex gap-3 sm:gap-4 mb-4 pb-3 border-b border-gray-100">
                 <div>
-                    <p className="text-[10px] text-gray-400">Total Omzet</p>
+                    <p className="text-[10px] text-gray-400">
+                        Total Omzet {displayMonthName}
+                    </p>
                     <p className="text-base sm:text-lg font-bold text-emerald-600">
                         {fmt(totalRevenue)}
                     </p>
                 </div>
                 <div>
-                    <p className="text-[10px] text-gray-400">Total Transaksi</p>
+                    <p className="text-[10px] text-gray-400">
+                        Total Transaksi {displayMonthName}
+                    </p>
                     <p className="text-base sm:text-lg font-bold text-gray-800">
                         {fmtNum(totalTransactions)}
                     </p>

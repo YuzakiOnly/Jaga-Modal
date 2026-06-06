@@ -16,18 +16,10 @@ return new class extends Migration {
 
             $table->unique('store_id');
         });
-
-        Schema::table('expenses', function (Blueprint $table) {
-            $table->enum('payment_source', ['cash', 'online'])->default('cash')->after('type');
-        });
     }
 
     public function down()
     {
         Schema::dropIfExists('online_balances');
-
-        Schema::table('expenses', function (Blueprint $table) {
-            $table->dropColumn('payment_source');
-        });
     }
 };

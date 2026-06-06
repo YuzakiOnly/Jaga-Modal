@@ -1,3 +1,4 @@
+// CashierPage.jsx
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import { router } from "@inertiajs/react";
@@ -19,6 +20,9 @@ const formatNumber = (num) => {
 
 const formatRupiah = (num) => `Rp ${formatNumber(num)}`;
 
+const ONLINE_CHANNELS = ["grabfood", "shopeefood", "gobiz"];
+const ONLINE_PRICE_MARKUP = 0.2;
+
 export default function CashierPage({ products, categories }) {
     const { flash, auth } = usePage().props;
 
@@ -27,6 +31,7 @@ export default function CashierPage({ products, categories }) {
     const [activeCategory, setActiveCategory] = useState(null);
     const [discountAmount, setDiscountAmount] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState("cash");
+    const [orderChannel, setOrderChannel] = useState("dine_in");
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [showSuccessScreen, setShowSuccessScreen] = useState(false);
     const [lastTransactionData, setLastTransactionData] = useState(null);
@@ -42,6 +47,25 @@ export default function CashierPage({ products, categories }) {
             toast.error(flash.error);
         }
     }, [flash]);
+
+    useEffect(() => {
+        const isOnline = ONLINE_CHANNELS.includes(orderChannel);
+        setCart((prevCart) =>
+            prevCart.map((item) => {
+                if (item.is_custom) return item;
+                const basePrice = item.base_unit_price ?? item.unit_price;
+                const newPrice = isOnline
+                    ? Math.round(basePrice * (1 + ONLINE_PRICE_MARKUP))
+                    : basePrice;
+                return {
+                    ...item,
+                    base_unit_price: basePrice,
+                    unit_price: newPrice,
+                    subtotal: newPrice * item.qty,
+                };
+            }),
+        );
+    }, [orderChannel]);
 
     const filteredProducts = useMemo(() => {
         let result = [...products];
@@ -70,54 +94,71 @@ export default function CashierPage({ products, categories }) {
     );
     const totalAmount = Math.max(0, subtotalAmount - discountAmount);
 
-    const handleAddToCart = useCallback((product) => {
-        setCart((prevCart) => {
-            const existingItem = prevCart.find(
-                (item) => item.product_id === product.id,
-            );
+    const handleAddToCart = useCallback(
+        (product) => {
+            setCart((prevCart) => {
+                const existingItem = prevCart.find(
+                    (item) => item.product_id === product.id,
+                );
+                const isOnline = ONLINE_CHANNELS.includes(orderChannel);
+                const basePrice = Number(product.selling_price);
+                const effectivePrice = isOnline
+                    ? Math.round(basePrice * (1 + ONLINE_PRICE_MARKUP))
+                    : basePrice;
 
-            if (existingItem) {
-                if (
-                    product.stock_type === "limited" &&
-                    existingItem.qty >= product.stock
-                ) {
-                    toast.warning(
-                        `Stok ${product.name} hanya tersisa ${product.stock}`,
+                if (existingItem) {
+                    if (
+                        product.stock_type === "limited" &&
+                        existingItem.qty >= product.stock
+                    ) {
+                        toast.warning(
+                            `Stok ${product.name} hanya tersisa ${product.stock}`,
+                        );
+                        return prevCart;
+                    }
+
+                    return prevCart.map((item) =>
+                        item.product_id === product.id
+                            ? {
+                                  ...item,
+                                  qty: item.qty + 1,
+                                  unit_price: effectivePrice,
+                                  subtotal:
+                                      (item.qty + 1) *
+                                      (effectivePrice - (item.discount || 0)),
+                              }
+                            : item,
                     );
-                    return prevCart;
                 }
 
-                return prevCart.map((item) =>
-                    item.product_id === product.id
-                        ? {
-                              ...item,
-                              qty: item.qty + 1,
-                              subtotal:
-                                  (item.qty + 1) *
-                                  (item.unit_price - (item.discount || 0)),
-                          }
-                        : item,
-                );
-            }
-
-            return [
-                ...prevCart,
-                {
-                    product_id: product.id,
-                    name: product.name,
-                    unit_price: Number(product.selling_price),
-                    capital_price: Number(product.capital_price),
-                    qty: 1,
-                    subtotal: Number(product.selling_price),
-                    discount: 0,
-                    is_custom: false,
-                },
-            ];
-        });
-    }, []);
+                return [
+                    ...prevCart,
+                    {
+                        product_id: product.id,
+                        name: product.name,
+                        base_unit_price: basePrice,
+                        unit_price: effectivePrice,
+                        capital_price: Number(product.capital_price),
+                        qty: 1,
+                        subtotal: effectivePrice,
+                        discount: 0,
+                        is_custom: false,
+                        image: product.image || null,
+                    },
+                ];
+            });
+        },
+        [orderChannel],
+    );
 
     const handleAddCustomItem = useCallback((item) => {
-        setCart((prev) => [...prev, item]);
+        setCart((prev) => [
+            ...prev,
+            {
+                ...item,
+                image: null,
+            },
+        ]);
     }, []);
 
     const handleUpdateQuantity = useCallback((itemKey, delta) => {
@@ -171,31 +212,67 @@ export default function CashierPage({ products, categories }) {
         );
     }, []);
 
+    const handleOrderChannelChange = (channel) => {
+        setOrderChannel(channel);
+        setDiscountAmount(0);
+        if (channel !== "dine_in") {
+            setPaymentMethod(channel);
+        } else {
+            setPaymentMethod("cash");
+        }
+    };
+
     const handleProcessPayment = useCallback(
-        (amountPaid, transactedAt = null) => {
+        (amountPaid, transactedAt = null, customer = null) => {
             setIsProcessingPayment(true);
+
+            const isOnline = ONLINE_CHANNELS.includes(orderChannel);
+            let platformFee = 0;
+            if (isOnline) {
+                const originalSubtotal = cart.reduce((sum, item) => {
+                    if (item.is_custom) return sum + item.unit_price * item.qty;
+                    const basePrice =
+                        item.base_unit_price || item.unit_price / 1.2;
+                    return sum + basePrice * item.qty;
+                }, 0);
+                platformFee = totalAmount - originalSubtotal;
+            }
 
             const payload = {
                 payment_method: paymentMethod,
+                order_channel: orderChannel,
                 amount_paid: amountPaid,
                 change_amount: Math.max(0, amountPaid - totalAmount),
                 subtotal: subtotalAmount,
                 discount: discountAmount,
+                platform_fee: platformFee,
                 total: totalAmount,
                 notes: null,
                 transacted_at: transactedAt,
-                items: cart.map(({ _customKey, ...rest }) => ({
+                customer_name: customer?.customer_name ?? null,
+                customer_phone: customer?.customer_phone ?? null,
+                items: cart.map(({ _customKey, base_unit_price, ...rest }) => ({
                     ...rest,
                     discount: rest.discount || 0,
+                    original_price: base_unit_price || rest.unit_price,
                 })),
             };
 
             router.post(route("cashier.transactions.store"), payload, {
-                onSuccess: () => {
+                onSuccess: (response) => {
+                    const transactionData =
+                        response.props?.flash?.transaction || {};
                     setLastTransactionData({
                         total: totalAmount,
+                        subtotal: subtotalAmount,
+                        discount: discountAmount,
                         amountPaid: amountPaid,
                         change: Math.max(0, amountPaid - totalAmount),
+                        orderChannel: orderChannel,
+                        platformFee: platformFee,
+                        customer_name: customer?.customer_name,
+                        customer_phone: customer?.customer_phone,
+                        transaction_number: transactionData.transaction_number,
                     });
                     setIsPaymentModalOpen(false);
                     setShowSuccessScreen(true);
@@ -209,13 +286,22 @@ export default function CashierPage({ products, categories }) {
                 },
             });
         },
-        [cart, paymentMethod, subtotalAmount, discountAmount, totalAmount],
+        [
+            cart,
+            paymentMethod,
+            orderChannel,
+            subtotalAmount,
+            discountAmount,
+            totalAmount,
+        ],
     );
+
 
     const handleResetTransaction = useCallback(() => {
         setCart([]);
         setDiscountAmount(0);
         setPaymentMethod("cash");
+        setOrderChannel("dine_in");
         setShowSuccessScreen(false);
         setLastTransactionData(null);
         setMobileCartOpen(false);
@@ -260,8 +346,10 @@ export default function CashierPage({ products, categories }) {
                             total={totalAmount}
                             discount={discountAmount}
                             paymentMethod={paymentMethod}
+                            orderChannel={orderChannel}
                             onDiscountChange={setDiscountAmount}
                             onPaymentMethodChange={setPaymentMethod}
+                            onOrderChannelChange={handleOrderChannelChange}
                             onUpdateQuantity={handleUpdateQuantity}
                             onUpdateDiscount={handleUpdateDiscount}
                             onRemoveItem={handleRemoveItem}
@@ -319,8 +407,10 @@ export default function CashierPage({ products, categories }) {
                         total={totalAmount}
                         discount={discountAmount}
                         paymentMethod={paymentMethod}
+                        orderChannel={orderChannel}
                         onDiscountChange={setDiscountAmount}
                         onPaymentMethodChange={setPaymentMethod}
+                        onOrderChannelChange={handleOrderChannelChange}
                         onUpdateQuantity={handleUpdateQuantity}
                         onUpdateDiscount={handleUpdateDiscount}
                         onRemoveItem={handleRemoveItem}
@@ -336,6 +426,7 @@ export default function CashierPage({ products, categories }) {
                     discount={discountAmount}
                     total={totalAmount}
                     paymentMethod={paymentMethod}
+                    orderChannel={orderChannel}
                     isProcessing={isProcessingPayment}
                     onConfirm={handleProcessPayment}
                     onClose={() => setIsPaymentModalOpen(false)}

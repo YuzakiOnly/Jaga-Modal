@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { router } from "@inertiajs/react";
 import { route } from "ziggy-js";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import {
     Banknote,
     QrCode,
@@ -8,6 +10,10 @@ import {
     Loader2,
     Bike,
     Zap,
+    User,
+    Phone,
+    ChevronDown,
+    Calendar as CalendarIcon,
 } from "lucide-react";
 
 import {
@@ -22,6 +28,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
 const formatPrice = (price) =>
@@ -80,6 +97,26 @@ const ONLINE_CHANNEL_STYLE = {
     gobiz: "border-emerald-300 bg-emerald-50 text-emerald-700",
 };
 
+const formatDateForBackend = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+const formatShortDate = (date) => {
+    return format(date, "dd/MM/yy", { locale: id });
+};
+
+const isDateDisabled = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date > today;
+};
+
 export function PaymentDialog({
     open,
     onOpenChange,
@@ -101,6 +138,14 @@ export function PaymentDialog({
     const [onlineConfirmed, setOnlineConfirmed] = useState(false);
     const [error, setError] = useState(null);
 
+    const [customerOpen, setCustomerOpen] = useState(false);
+    const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
+
+    const [transactionDate, setTransactionDate] = useState(new Date());
+    const [datePickerOpen, setDatePickerOpen] = useState(false);
+    const [useCustomDate, setUseCustomDate] = useState(false);
+
     const total =
         finalTotal ||
         cartItems.reduce(
@@ -121,6 +166,8 @@ export function PaymentDialog({
             return cashValid;
         })();
 
+    const hasCustomerData = customerName.trim() || customerPhone.trim();
+
     useEffect(() => {
         if (open) {
             const cfg = CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
@@ -130,18 +177,21 @@ export function PaymentDialog({
             setOnlineConfirmed(false);
             setProcessing(false);
             setError(null);
+            setCustomerOpen(false);
+            setCustomerName("");
+            setCustomerPhone("");
+            setUseCustomDate(false);
+            setTransactionDate(new Date());
         }
     }, [open, orderChannel]);
 
     const calculatePlatformFee = (totalAmount, items) => {
         if (!isOnlineChannel) return 0;
-
         const originalSubtotal = items.reduce((sum, item) => {
             if (item.is_custom) return sum + item.unit_price * item.qty;
             const basePrice = item.base_unit_price || item.unit_price / 1.2;
             return sum + basePrice * item.qty;
         }, 0);
-
         return totalAmount - originalSubtotal;
     };
 
@@ -159,6 +209,11 @@ export function PaymentDialog({
 
         const platformFee = calculatePlatformFee(total, cartItems);
 
+        let formattedDate = null;
+        if (useCustomDate && transactionDate) {
+            formattedDate = formatDateForBackend(transactionDate);
+        }
+
         const payload = {
             payment_method: method,
             order_channel: orderChannel,
@@ -169,7 +224,9 @@ export function PaymentDialog({
             platform_fee: platformFee,
             total,
             notes: null,
-            transacted_at: null,
+            transacted_at: formattedDate,
+            customer_name: customerName.trim() || null,
+            customer_phone: customerPhone.trim() || null,
             items: cartItems.map((item) => ({
                 product_id: item.product_id || null,
                 name: item.name,
@@ -211,6 +268,19 @@ export function PaymentDialog({
                 setError(errorMessage);
             },
         });
+    };
+
+    const handleDateSelect = (date) => {
+        if (date) {
+            setTransactionDate(date);
+            setUseCustomDate(true);
+            setDatePickerOpen(false);
+        }
+    };
+
+    const handleUseCurrentDate = () => {
+        setUseCustomDate(false);
+        setTransactionDate(new Date());
     };
 
     return (
@@ -275,6 +345,145 @@ export function PaymentDialog({
                             )}
                         </p>
                     </div>
+
+                    {/* Tanggal Transaksi */}
+                    <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                            Tanggal Transaksi
+                        </label>
+                        <div className="flex gap-2 mb-2">
+                            <button
+                                onClick={handleUseCurrentDate}
+                                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                                    !useCustomDate
+                                        ? "bg-emerald-600 text-white border-emerald-600"
+                                        : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                }`}
+                            >
+                                Hari Ini
+                            </button>
+                            <Popover
+                                open={datePickerOpen}
+                                onOpenChange={setDatePickerOpen}
+                            >
+                                <PopoverTrigger asChild>
+                                    <button
+                                        className={cn(
+                                            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all",
+                                            useCustomDate
+                                                ? "bg-emerald-600 text-white border-emerald-600"
+                                                : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50",
+                                        )}
+                                    >
+                                        <CalendarIcon className="h-3.5 w-3.5" />
+                                        <span>
+                                            {useCustomDate
+                                                ? formatShortDate(
+                                                      transactionDate,
+                                                  )
+                                                : "Pilih Tanggal"}
+                                        </span>
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto p-0"
+                                    align="center"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={transactionDate}
+                                        onSelect={handleDateSelect}
+                                        disabled={isDateDisabled}
+                                        locale={id}
+                                        initialFocus
+                                        fromYear={2020}
+                                        toYear={new Date().getFullYear()}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <p className="text-[10px] text-gray-400">
+                            *Bisa memilih tanggal berapa saja, termasuk bulan
+                            lalu
+                        </p>
+                        {useCustomDate && transactionDate && (
+                            <p className="text-[10px] text-emerald-600 mt-1">
+                                ✓ Transaksi akan dicatat pada tanggal{" "}
+                                {formatShortDate(transactionDate)}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Data Pelanggan */}
+                    <Collapsible
+                        open={customerOpen}
+                        onOpenChange={setCustomerOpen}
+                    >
+                        <CollapsibleTrigger className="w-full">
+                            <div className="flex items-center justify-between rounded-lg border px-3 py-2.5 hover:bg-muted/40 transition-colors">
+                                <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">
+                                        Data Pelanggan
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        (opsional)
+                                    </span>
+                                    {hasCustomerData && !customerOpen && (
+                                        <span className="flex h-2 w-2 rounded-full bg-primary" />
+                                    )}
+                                </div>
+                                <ChevronDown
+                                    className={cn(
+                                        "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                        customerOpen && "rotate-180",
+                                    )}
+                                />
+                            </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <div className="rounded-b-lg border border-t-0 px-3 pb-3 pt-3 space-y-3 bg-muted/20">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs flex items-center gap-1 text-muted-foreground">
+                                            <User className="h-3 w-3" />
+                                            Nama
+                                        </Label>
+                                        <Input
+                                            value={customerName}
+                                            onChange={(e) =>
+                                                setCustomerName(e.target.value)
+                                            }
+                                            placeholder="Nama pelanggan"
+                                            className="h-8 text-sm"
+                                            maxLength={100}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs flex items-center gap-1 text-muted-foreground">
+                                            <Phone className="h-3 w-3" />
+                                            No. HP
+                                        </Label>
+                                        <Input
+                                            value={customerPhone}
+                                            onChange={(e) =>
+                                                setCustomerPhone(e.target.value)
+                                            }
+                                            placeholder="08xx..."
+                                            className="h-8 text-sm"
+                                            inputMode="tel"
+                                            maxLength={20}
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                    Pelanggan otomatis mendapat nomor urut. Jika
+                                    no. HP diisi, pembelian berikutnya dikenali
+                                    sebagai pelanggan yang sama.
+                                </p>
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
 
                     <Separator />
 

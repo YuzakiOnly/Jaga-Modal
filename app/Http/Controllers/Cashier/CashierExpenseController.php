@@ -65,7 +65,6 @@ class CashierExpenseController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ];
 
-        // Validasi khusus owner_withdrawal hanya untuk owner
         if ($request->type === 'owner_withdrawal' && $userRole !== 'owner') {
             return back()->withErrors(['type' => 'Hanya owner yang dapat melakukan penarikan.']);
         }
@@ -85,13 +84,11 @@ class CashierExpenseController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Hitung jumlah pengeluaran
         $expenseAmount = $this->getExpenseAmount($request->type, $validated);
 
-        // Hitung saldo kas saat ini
+        // FIX: pakai getCurrentCashBalance yang sudah benar (storeCashOnly)
         $cashBalance = $this->getCurrentCashBalance($storeId);
 
-        // Validasi saldo untuk SEMUA tipe pengeluaran
         if ($expenseAmount > $cashBalance) {
             return back()->withErrors([
                 'amount' => sprintf(
@@ -146,10 +143,8 @@ class CashierExpenseController extends Controller
         $user = auth()->user();
         $storeId = $user->store_id;
 
-        // Authorisasi: cek store
         abort_if($expense->store_id !== $storeId, 403);
 
-        // Cashier hanya bisa edit pengeluarannya sendiri, owner bisa edit semua
         if ($user->role !== 'owner' && $expense->user_id !== $user->id) {
             abort(403, 'Anda tidak dapat mengedit pengeluaran orang lain.');
         }
@@ -161,7 +156,6 @@ class CashierExpenseController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ];
 
-        // Validasi khusus owner_withdrawal hanya untuk owner
         if ($request->type === 'owner_withdrawal' && $user->role !== 'owner') {
             return back()->withErrors(['type' => 'Hanya owner yang dapat melakukan penarikan.']);
         }
@@ -181,13 +175,11 @@ class CashierExpenseController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Hitung jumlah pengeluaran baru
         $newExpenseAmount = $this->getExpenseAmount($request->type, $validated);
 
-        // Hitung saldo kas saat ini + tambahkan kembali pengeluaran lama (karena akan diupdate)
+        // FIX: tambahkan kembali nilai expense lama sebelum validasi saldo
         $currentCashBalance = $this->getCurrentCashBalance($storeId) + $expense->total_amount;
 
-        // Validasi saldo untuk update
         if ($newExpenseAmount > $currentCashBalance) {
             return back()->withErrors([
                 'amount' => sprintf(
@@ -237,26 +229,21 @@ class CashierExpenseController extends Controller
     }
 
     /**
-     * Hapus method destroy() - cashier tidak boleh hapus pengeluaran
-     */
-
-    /**
-     * Hitung saldo kas toko saat ini
+     * FIX: saldo kas hanya dari transaksi dine_in (storeCashOnly + net_revenue),
+     * bukan semua transaksi termasuk online
      */
     private function getCurrentCashBalance(int $storeId): float
     {
-        $totalIncome = Transaction::forStore($storeId)
+        $totalStoreCashRevenue = Transaction::forStore($storeId)
             ->completed()
-            ->sum('total');
+            ->storeCashOnly()
+            ->sum('net_revenue');
 
         $totalExpenses = Expense::forStore($storeId)->sum('amount');
 
-        return $totalIncome - $totalExpenses;
+        return $totalStoreCashRevenue - $totalExpenses;
     }
 
-    /**
-     * Dapatkan jumlah pengeluaran berdasarkan tipe
-     */
     private function getExpenseAmount(string $type, array $validated): float
     {
         if ($type === 'raw_material') {

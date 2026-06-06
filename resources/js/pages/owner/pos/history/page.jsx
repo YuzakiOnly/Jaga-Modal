@@ -9,7 +9,8 @@ import {
     ArrowLeft,
     Bike,
     Zap,
-    Store,
+    Users,
+    Receipt,
 } from "lucide-react";
 import { Link } from "@inertiajs/react";
 
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { SummaryCard } from "./_components/SummaryCard";
 import { TransactionFilter } from "./_components/TransactionFilter";
 import { TransactionList } from "./_components/TransactionList";
+import { CustomerList } from "./_components/CustomerList";
 
 const formatPrice = (price) =>
     new Intl.NumberFormat("id-ID", {
@@ -26,7 +28,6 @@ const formatPrice = (price) =>
         minimumFractionDigits: 0,
     }).format(price);
 
-// Config tiap channel online untuk tampilan summary
 const ONLINE_CHANNEL_CONFIG = {
     grabfood: {
         label: "GrabFood",
@@ -48,9 +49,15 @@ const ONLINE_CHANNEL_CONFIG = {
     },
 };
 
+const TABS = [
+    { id: "transactions", label: "Transaksi", icon: Receipt },
+    { id: "customers", label: "Pelanggan", icon: Users },
+];
+
 export default function TransactionHistoryPage({
     transactions,
     summary,
+    customers = [],
     filters,
     online_channels = [],
 }) {
@@ -59,6 +66,7 @@ export default function TransactionHistoryPage({
         filters?.date ?? new Date().toISOString().slice(0, 10),
     );
     const [channel, setChannel] = useState(filters?.channel ?? "");
+    const [activeTab, setActiveTab] = useState("transactions");
 
     const applyFilter = (newPeriod, newDate, newChannel) => {
         const params = { period: newPeriod, date: newDate };
@@ -80,12 +88,11 @@ export default function TransactionHistoryPage({
     };
 
     const handleChannelChange = (val) => {
-        const newChannel = val === channel ? "" : val; // toggle
+        const newChannel = val === channel ? "" : val;
         setChannel(newChannel);
         applyFilter(period, date, newChannel);
     };
 
-    // Revenue per channel dari backend
     const revenueByChannel = summary?.revenue_by_channel ?? {};
 
     return (
@@ -109,6 +116,7 @@ export default function TransactionHistoryPage({
                         </p>
                     </div>
                 </div>
+
                 {/* Filter */}
                 <TransactionFilter
                     period={period}
@@ -119,6 +127,7 @@ export default function TransactionHistoryPage({
                     onChannelChange={handleChannelChange}
                 />
 
+                {/* Summary cards */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <SummaryCard
                         icon={TrendingUp}
@@ -146,7 +155,8 @@ export default function TransactionHistoryPage({
                         sub="transaksi"
                     />
                 </div>
-                
+
+                {/* Online channel cards */}
                 {online_channels.length > 0 && (
                     <div>
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
@@ -207,7 +217,48 @@ export default function TransactionHistoryPage({
                         )}
                     </div>
                 )}
-                <TransactionList transactions={transactions} />
+
+                {/* Tabs */}
+                <div className="flex gap-1 border-b">
+                    {TABS.map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
+                        const count =
+                            tab.id === "customers"
+                                ? customers.length
+                                : transactions.total;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                                    isActive
+                                        ? "border-primary text-primary"
+                                        : "border-transparent text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                <Icon className="h-4 w-4" />
+                                {tab.label}
+                                <span
+                                    className={`text-xs rounded-full px-1.5 py-0.5 tabular-nums ${
+                                        isActive
+                                            ? "bg-primary/10 text-primary"
+                                            : "bg-muted text-muted-foreground"
+                                    }`}
+                                >
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Tab content */}
+                {activeTab === "transactions" ? (
+                    <TransactionList transactions={transactions} />
+                ) : (
+                    <CustomerList customers={customers} />
+                )}
             </div>
         </>
     );

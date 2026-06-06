@@ -13,12 +13,12 @@ class Transaction extends Model
 
     const ONLINE_CHANNELS = ['grabfood', 'shopeefood', 'gobiz'];
     const ONLINE_PLATFORM_FEE_PERCENT = 20;
-
     const PAYMENT_METHODS = ['cash', 'qris', 'grabfood', 'shopeefood', 'gobiz'];
 
     protected $fillable = [
         'store_id',
         'user_id',
+        'customer_id',
         'transaction_number',
         'payment_method',
         'order_channel',
@@ -118,6 +118,8 @@ class Transaction extends Model
         return $itemProfits;
     }
 
+    // ── Relationships ─────────────────────────────────────────────────────────
+
     public function store()
     {
         return $this->belongsTo(Store::class);
@@ -128,10 +130,17 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     public function items()
     {
         return $this->hasMany(TransactionItem::class);
     }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeForStore($query, $storeId = null)
     {

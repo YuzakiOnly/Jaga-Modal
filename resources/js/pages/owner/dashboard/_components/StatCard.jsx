@@ -23,106 +23,57 @@ export default function StatCard({
     comparisonValue,
     comparisonLabel,
     icon: Icon,
-    accent = false,
     isCurrency = true,
 }) {
     const displayValue = isCurrency ? formatRp(value) : formatNum(value);
-    const displayComparison =
-        comparisonValue !== undefined && comparisonValue !== null
-            ? isCurrency
-                ? formatRp(comparisonValue)
-                : formatNum(comparisonValue)
-            : null;
-
-    const displayTrend =
-        trend !== null && trend !== undefined ? Math.abs(trend) : 0;
-    const isPositive = trend > 0;
-    const isNegative = trend < 0;
-    const isNeutral = trend === 0;
+    const displayComparison = isCurrency
+        ? formatRp(comparisonValue)
+        : formatNum(comparisonValue);
 
     return (
-        <div
-            className={cn(
-                "rounded-2xl border p-4 sm:p-5 flex flex-col gap-3 transition-shadow hover:shadow-md",
-                accent
-                    ? "bg-emerald-600 border-emerald-600 text-white"
-                    : "bg-white border-gray-100 text-gray-900",
-            )}
-        >
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 flex flex-col gap-3 transition-shadow hover:shadow-md">
             <div className="flex items-start justify-between">
-                <div
-                    className={cn(
-                        "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center",
-                        accent ? "bg-emerald-500/40" : "bg-emerald-50",
-                    )}
-                >
-                    <Icon
-                        className={cn(
-                            "w-4 h-4 sm:w-5 sm:h-5",
-                            accent ? "text-white" : "text-emerald-600",
-                        )}
-                    />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                {trend !== null && trend !== undefined && (
+                {trend !== undefined && trend !== null && (
                     <span
                         className={cn(
                             "flex items-center gap-0.5 text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1 rounded-full",
-                            isPositive
-                                ? accent
-                                    ? "bg-white/20 text-white"
-                                    : "bg-emerald-50 text-emerald-700"
-                                : isNegative
-                                  ? accent
-                                      ? "bg-white/20 text-white"
-                                      : "bg-red-50 text-red-600"
-                                  : accent
-                                    ? "bg-white/20 text-white"
-                                    : "bg-slate-100 text-gray-500",
+                            trend > 0
+                                ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
+                                : trend < 0
+                                  ? "bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400"
+                                  : "bg-muted text-muted-foreground",
                         )}
                     >
-                        {isPositive ? (
+                        {trend > 0 ? (
                             <ArrowUpRight className="w-3 h-3" />
-                        ) : isNegative ? (
+                        ) : trend < 0 ? (
                             <ArrowDownRight className="w-3 h-3" />
                         ) : (
                             <Minus className="w-3 h-3" />
                         )}
-                        {displayTrend}%
+                        {Math.abs(trend)}%
+                    </span>
+                )}
+                {trend === null && (
+                    <span className="text-[10px] text-muted-foreground px-2 py-1 bg-muted rounded-full">
+                        —
                     </span>
                 )}
             </div>
             <div>
-                <p
-                    className={cn(
-                        "text-[10px] sm:text-[11px] font-medium uppercase tracking-widest mb-1",
-                        accent ? "text-emerald-100" : "text-gray-400",
-                    )}
-                >
+                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
                     {title}
                 </p>
-                <p
-                    className={cn(
-                        "text-lg sm:text-2xl font-bold leading-none",
-                        accent ? "text-white" : "text-gray-900",
-                    )}
-                >
+                <p className="text-lg sm:text-2xl font-bold leading-none text-foreground">
                     {displayValue}
                 </p>
-
-                {displayComparison !== null && comparisonLabel && (
-                    <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-[10px] text-muted-foreground">
-                            Dibanding {comparisonLabel}
-                        </p>
-                        <p
-                            className={cn(
-                                "text-xs font-medium",
-                                isNegative && !accent ? "text-red-600" : "",
-                            )}
-                        >
-                            {displayComparison}
-                        </p>
-                    </div>
+                {comparisonValue !== undefined && comparisonLabel && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5">
+                        {comparisonLabel}: {displayComparison}
+                    </p>
                 )}
             </div>
         </div>

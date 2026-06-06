@@ -5,6 +5,13 @@ import {
     QrCode,
     AlertCircle,
     Calendar as CalendarIcon,
+    Store,
+    Bike,
+    ShoppingCart,
+    Zap,
+    User,
+    Phone,
+    ChevronDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -23,21 +30,39 @@ const formatRupiah = (num) => {
 
 const QUICK_AMOUNTS = [20000, 50000, 100000, 200000, 500000];
 
+const CHANNEL_CONFIG = {
+    dine_in: { label: "Dine In", icon: Store },
+    grabfood: { label: "GrabFood", icon: Bike },
+    shopeefood: { label: "ShopeeFood", icon: ShoppingCart },
+    gobiz: { label: "GoBiz", icon: Zap },
+};
+
 export default function PaymentModal({
     subtotal,
     discount,
     total,
     paymentMethod,
+    orderChannel,
     isProcessing,
     onConfirm,
     onClose,
 }) {
+    const isOnlineChannel = orderChannel && orderChannel !== "dine_in";
+    const channelConfig =
+        CHANNEL_CONFIG[orderChannel] || CHANNEL_CONFIG.dine_in;
+    const ChannelIcon = channelConfig.icon;
+
     const [amountPaid, setAmountPaid] = useState(
-        paymentMethod === "qris" ? total : "",
+        paymentMethod === "qris" || isOnlineChannel ? total : "",
     );
     const [transactionDate, setTransactionDate] = useState(new Date());
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [useCustomDate, setUseCustomDate] = useState(false);
+
+    const [customerOpen, setCustomerOpen] = useState(false);
+    const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
+
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -57,9 +82,18 @@ export default function PaymentModal({
     const paidAmount = parseFloat(amountPaid) || 0;
     const changeAmount = Math.max(0, paidAmount - total);
     const isInsufficient =
-        paymentMethod === "cash" && paidAmount > 0 && paidAmount < total;
+        paymentMethod === "cash" &&
+        !isOnlineChannel &&
+        paidAmount > 0 &&
+        paidAmount < total;
+
+    // PERBAIKAN: canConfirm sekarang tidak bergantung pada tanggal
     const canConfirm =
-        paymentMethod === "qris" || (paidAmount >= total && !isProcessing);
+        isOnlineChannel ||
+        paymentMethod === "qris" ||
+        (paidAmount >= total && !isProcessing);
+
+    const hasCustomerData = customerName.trim() || customerPhone.trim();
 
     const formatDateForBackend = (date) => {
         const year = date.getFullYear();
@@ -73,18 +107,18 @@ export default function PaymentModal({
 
     const handleConfirmClick = () => {
         if (!canConfirm) return;
-        const finalAmount = paymentMethod === "qris" ? total : paidAmount;
+        const finalAmount =
+            paymentMethod === "qris" || isOnlineChannel ? total : paidAmount;
 
         let formattedDate = null;
         if (useCustomDate && transactionDate) {
-            const selectedDate = new Date(transactionDate);
-            const now = new Date();
-            if (selectedDate <= now) {
-                formattedDate = formatDateForBackend(selectedDate);
-            }
+            formattedDate = formatDateForBackend(transactionDate);
         }
 
-        onConfirm(finalAmount, formattedDate);
+        onConfirm(finalAmount, formattedDate, {
+            customer_name: customerName.trim() || null,
+            customer_phone: customerPhone.trim() || null,
+        });
     };
 
     const handleExactAmount = () => {
@@ -95,12 +129,17 @@ export default function PaymentModal({
         return format(date, "dd/MM/yy", { locale: id });
     };
 
+    // Hanya tanggal di masa depan (besok dan seterusnya) yang tidak bisa dipilih
     const isDateDisabled = (date) => {
-        return date > new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        // TANGGAL BESOK atau setelahnya = disabled
+        // TANGGAL HARI INI dan SEBELUMNYA = enabled
+        return date > today;
     };
 
     const handleDateSelect = (date) => {
-        if (date && date <= new Date()) {
+        if (date) {
             setTransactionDate(date);
             setUseCustomDate(true);
             setDatePickerOpen(false);
@@ -122,20 +161,31 @@ export default function PaymentModal({
                     <div className="flex items-center gap-3">
                         <div
                             className={`p-2 rounded-xl ${
-                                paymentMethod === "cash"
-                                    ? "bg-emerald-100"
-                                    : "bg-purple-100"
+                                isOnlineChannel
+                                    ? "bg-orange-100"
+                                    : paymentMethod === "cash"
+                                      ? "bg-emerald-100"
+                                      : "bg-purple-100"
                             }`}
                         >
-                            {paymentMethod === "cash" ? (
+                            {isOnlineChannel ? (
+                                <ChannelIcon className="h-5 w-5 text-orange-600" />
+                            ) : paymentMethod === "cash" ? (
                                 <Banknote className="h-5 w-5 text-emerald-600" />
                             ) : (
                                 <QrCode className="h-5 w-5 text-purple-600" />
                             )}
                         </div>
-                        <h3 className="font-semibold text-gray-800">
-                            Konfirmasi Pembayaran
-                        </h3>
+                        <div>
+                            <h3 className="font-semibold text-gray-800">
+                                Konfirmasi Pembayaran
+                            </h3>
+                            {isOnlineChannel && (
+                                <p className="text-xs text-orange-600 font-medium">
+                                    via {channelConfig.label}
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <button
                         onClick={onClose}
@@ -171,6 +221,79 @@ export default function PaymentModal({
                         </div>
                     </div>
 
+                    {/* Data Pelanggan */}
+                    <div className="mb-4">
+                        <button
+                            onClick={() => setCustomerOpen((v) => !v)}
+                            className="w-full flex items-center justify-between rounded-lg border px-3 py-2.5 hover:bg-gray-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm font-medium text-gray-700">
+                                    Data Pelanggan
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                    (opsional)
+                                </span>
+                                {hasCustomerData && !customerOpen && (
+                                    <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                                )}
+                            </div>
+                            <ChevronDown
+                                className={cn(
+                                    "h-4 w-4 text-gray-400 transition-transform duration-200",
+                                    customerOpen && "rotate-180",
+                                )}
+                            />
+                        </button>
+
+                        {customerOpen && (
+                            <div className="rounded-b-lg border border-t-0 px-3 pb-3 pt-3 space-y-3 bg-gray-50">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                                            <User className="h-3 w-3" />
+                                            Nama
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={customerName}
+                                            onChange={(e) =>
+                                                setCustomerName(e.target.value)
+                                            }
+                                            placeholder="Nama pelanggan"
+                                            maxLength={100}
+                                            className="w-full h-8 px-2.5 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                                            <Phone className="h-3 w-3" />
+                                            No. HP
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="tel"
+                                            value={customerPhone}
+                                            onChange={(e) =>
+                                                setCustomerPhone(e.target.value)
+                                            }
+                                            placeholder="08xx..."
+                                            maxLength={20}
+                                            className="w-full h-8 px-2.5 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 bg-white"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-gray-400">
+                                    Pelanggan otomatis mendapat nomor urut. Jika
+                                    no. HP diisi, pembelian berikutnya dikenali
+                                    sebagai pelanggan yang sama.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Tanggal Transaksi */}
                     <div className="mb-4">
                         <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
                             Tanggal Transaksi
@@ -220,16 +343,25 @@ export default function PaymentModal({
                                         disabled={isDateDisabled}
                                         locale={id}
                                         initialFocus
+                                        fromYear={2020}
+                                        toYear={new Date().getFullYear()}
                                     />
                                 </PopoverContent>
                             </Popover>
                         </div>
                         <p className="text-[10px] text-gray-400">
-                            *Biarkan "Hari Ini" untuk transaksi saat ini
+                            *Bisa memilih tanggal berapa saja, termasuk bulan
+                            lalu
                         </p>
+                        {useCustomDate && transactionDate && (
+                            <p className="text-[10px] text-emerald-600 mt-1">
+                                ✓ Transaksi akan dicatat pada tanggal{" "}
+                                {formatShortDate(transactionDate)}
+                            </p>
+                        )}
                     </div>
 
-                    {paymentMethod === "cash" && (
+                    {paymentMethod === "cash" && !isOnlineChannel && (
                         <>
                             <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                                 Jumlah Dibayar
@@ -325,7 +457,7 @@ export default function PaymentModal({
                         </>
                     )}
 
-                    {paymentMethod === "qris" && (
+                    {paymentMethod === "qris" && !isOnlineChannel && (
                         <div className="text-center py-3 mb-3">
                             <div className="bg-gray-100 rounded-xl p-3 inline-block mb-3">
                                 <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center border-2 border-gray-200">
@@ -341,6 +473,23 @@ export default function PaymentModal({
                             <p className="text-[10px] text-gray-400 mt-1">
                                 QRIS - Semua pembayaran digital
                             </p>
+                        </div>
+                    )}
+
+                    {isOnlineChannel && (
+                        <div className="text-center py-3 mb-3">
+                            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-3">
+                                <ChannelIcon className="h-10 w-10 text-orange-400 mx-auto mb-2" />
+                                <p className="text-sm font-semibold text-orange-700">
+                                    {channelConfig.label}
+                                </p>
+                                <p className="text-xl font-bold text-emerald-700 mt-1">
+                                    {formatRupiah(total)}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    Pembayaran diproses melalui platform online
+                                </p>
+                            </div>
                         </div>
                     )}
 

@@ -11,6 +11,7 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Dialog,
     DialogContent,
@@ -176,7 +177,7 @@ export function ProductGrid({
                     Tidak ada produk ditemukan.
                 </div>
             ) : (
-                <div className="flex-1 overflow-y-auto min-h-0">
+                <ScrollArea className="flex-1 h-20">
                     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 pb-2">
                         {filtered.map((product) => {
                             const isOutOfStock =
@@ -256,7 +257,7 @@ export function ProductGrid({
                             );
                         })}
                     </div>
-                </div>
+                </ScrollArea>
             )}
 
             <Dialog open={customOpen} onOpenChange={setCustomOpen}>

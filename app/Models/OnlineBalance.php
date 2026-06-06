@@ -30,23 +30,32 @@ class OnlineBalance extends Model
         return $balance ? (float) $balance->total_balance : 0;
     }
 
-    public static function getChannelBreakdown(int $storeId): array
+    public static function getChannelBalance(int $storeId, string $channel): float
     {
         $balance = self::where('store_id', $storeId)->first();
         if (!$balance || !$balance->channel_breakdown) {
-            return [
-                'grabfood' => 0,
-                'shopeefood' => 0,
-                'gobiz' => 0,
-            ];
+            return 0;
         }
-        return $balance->channel_breakdown;
+        return (float) ($balance->channel_breakdown[$channel] ?? 0);
+    }
+
+    public static function getAllChannelBalances(int $storeId): array
+    {
+        $balance = self::where('store_id', $storeId)->first();
+        $default = ['grabfood' => 0, 'shopeefood' => 0, 'gobiz' => 0];
+
+        if (!$balance || !$balance->channel_breakdown) {
+            return $default;
+        }
+
+        return array_merge($default, $balance->channel_breakdown);
     }
 
     public static function addRevenue(int $storeId, string $channel, float $netRevenue): void
     {
-        if ($netRevenue <= 0)
+        if ($netRevenue <= 0) {
             return;
+        }
 
         $balance = self::firstOrCreate(
             ['store_id' => $storeId],
@@ -84,8 +93,9 @@ class OnlineBalance extends Model
         if ($total > 0) {
             $remainingAmount = $amount;
             foreach ($breakdown as $channel => $value) {
-                if ($remainingAmount <= 0)
+                if ($remainingAmount <= 0) {
                     break;
+                }
                 $proportion = $value / $total;
                 $deduction = min($value, $amount * $proportion);
                 $breakdown[$channel] = max(0, $value - $deduction);
@@ -94,8 +104,9 @@ class OnlineBalance extends Model
 
             if ($remainingAmount > 0) {
                 foreach ($breakdown as $channel => $value) {
-                    if ($remainingAmount <= 0)
+                    if ($remainingAmount <= 0) {
                         break;
+                    }
                     $deduction = min($value, $remainingAmount);
                     $breakdown[$channel] = max(0, $value - $deduction);
                     $remainingAmount -= $deduction;

@@ -418,7 +418,7 @@ export function Cart({
             {/* Items */}
             <ScrollArea className="flex-1 min-h-0 px-4">
                 {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center h-92 gap-2 text-muted-foreground">
                         <ShoppingCart className="h-8 w-8 opacity-30" />
                         <p className="text-sm">Keranjang masih kosong</p>
                         <p className="text-xs opacity-60">

@@ -12,24 +12,33 @@ export default function History({ transactions, summary, filters }) {
     const [date, setDate] = useState(
         filters.date ? new Date(filters.date) : new Date(),
     );
+    const [channelFilter, setChannelFilter] = useState(filters.channel || null);
 
-    function applyFilter(newPeriod, newDate) {
+    function applyFilter(newPeriod, newDate, newChannel) {
         const formattedDate = newDate.toISOString().split("T")[0];
-        router.get(
-            route("cashier.history"),
-            { period: newPeriod, date: formattedDate },
-            { preserveState: true },
-        );
+        const params = { period: newPeriod, date: formattedDate };
+        if (newChannel) {
+            params.channel = newChannel;
+        }
+        router.get(route("cashier.history"), params, { preserveState: true });
     }
 
     function handlePeriodChange(val) {
         setPeriod(val);
-        applyFilter(val, date);
+        setChannelFilter(null);
+        applyFilter(val, date, null);
     }
 
     function handleDateChange(newDate) {
         setDate(newDate);
-        applyFilter(period, newDate);
+        setChannelFilter(null);
+        applyFilter(period, newDate, null);
+    }
+
+    function handleChannelFilter(channel) {
+        const newChannel = channelFilter === channel ? null : channel;
+        setChannelFilter(newChannel);
+        applyFilter(period, date, newChannel);
     }
 
     return (
@@ -45,7 +54,11 @@ export default function History({ transactions, summary, filters }) {
                         onDateChange={handleDateChange}
                     />
 
-                    <HistorySummary summary={summary} />
+                    <HistorySummary
+                        summary={summary}
+                        channelFilter={channelFilter}
+                        onChannelFilter={handleChannelFilter}
+                    />
 
                     <TransactionList transactions={transactions} fmt={fmt} />
                 </div>

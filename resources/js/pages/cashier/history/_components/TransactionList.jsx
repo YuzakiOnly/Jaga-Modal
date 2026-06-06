@@ -1,11 +1,5 @@
 import { Link } from "@inertiajs/react";
-import {
-    Receipt,
-    Banknote,
-    QrCode,
-    ChevronDown,
-    ChevronUp,
-} from "lucide-react";
+import { Receipt } from "lucide-react";
 import { useState } from "react";
 import TransactionItem from "./TransactionItem";
 
