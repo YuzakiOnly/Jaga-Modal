@@ -7,6 +7,9 @@ import ExpenseSummary from "./_components/ExpenseSummary";
 import ExpenseList from "./_components/ExpenseList";
 import { toast, Toaster } from "sonner";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 export default function Expenses({
@@ -20,6 +23,8 @@ export default function Expenses({
     const [date, setDate] = useState(
         filters?.date ? new Date(filters.date) : new Date(),
     );
+
+    useSmartRefresh({ ...refreshConfigs.cashier_expenses });
 
     const expenseList = expenses?.data ?? [];
     const totalExpense = summary?.total ?? 0;

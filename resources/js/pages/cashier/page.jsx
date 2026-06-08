@@ -14,6 +14,9 @@ import SearchBar from "./_components/SearchBar";
 import CategoryFilter from "./_components/CategoryFilter";
 import CashierLayout from "@/layouts/CashierLayout";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 const formatNumber = (num) => {
     return new Intl.NumberFormat("id-ID").format(Math.round(num || 0));
 };
@@ -47,6 +50,9 @@ export default function CashierPage({ products, categories }) {
             toast.error(flash.error);
         }
     }, [flash]);
+
+    useSmartRefresh({
+        ...refreshConfigs.cashier_pos });
 
     useEffect(() => {
         const isOnline = ONLINE_CHANNELS.includes(orderChannel);
@@ -295,7 +301,6 @@ export default function CashierPage({ products, categories }) {
             totalAmount,
         ],
     );
-
 
     const handleResetTransaction = useCallback(() => {
         setCart([]);

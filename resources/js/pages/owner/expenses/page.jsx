@@ -20,6 +20,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
+
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 export default function ExpensesPage({ expenses, summary, filters, balances }) {
@@ -34,6 +38,8 @@ export default function ExpensesPage({ expenses, summary, filters, balances }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    useSmartRefresh({ ...refreshConfigs.owner_expenses });
 
     const handleEdit = (expense) => {
         setEditTarget(expense);

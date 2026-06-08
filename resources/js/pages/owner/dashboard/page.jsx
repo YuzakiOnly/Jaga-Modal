@@ -30,6 +30,9 @@ import CustomerStatCard from "./_components/CustomerStatCard";
 import CurrencyCards from "./_components/CurrencyCards";
 import OnlineChannelCards from "./_components/OnlineChannelCards";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 const PERIODS = [
     { key: "hari_ini", label: "Hari Ini" },
     { key: "minggu_ini", label: "Minggu Ini" },
@@ -63,6 +66,7 @@ export default function Dashboard({
     customer_month: initialCustomerMonth,
     available_months,
 }) {
+    
     const params = new URLSearchParams(window.location.search);
 
     const [period, setPeriod] = useState(
@@ -80,6 +84,8 @@ export default function Dashboard({
     const [customerMonth, setCustomerMonth] = useState(
         initialCustomerMonth ?? params.get("customer_month") ?? currentMonth,
     );
+
+    useSmartRefresh({ ...refreshConfigs.owner_dashboard });
 
     const activeComparison =
         comparisons?.[comparison] ?? comparisons?.last_month;

@@ -11,6 +11,9 @@ import { TopupDialog } from "./_components/TopupDialog";
 import { SpendDialog } from "./_components/SpendDialog";
 import { SendToStoreDialog } from "./_components/SendToStoreDialog";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 export default function WalletPage({ transactions, summary, filters }) {
     const { flash } = usePage().props;
     const [topupOpen, setTopupOpen] = useState(false);
@@ -21,6 +24,8 @@ export default function WalletPage({ transactions, summary, filters }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    useSmartRefresh({ ...refreshConfigs.owner_wallet });
 
     return (
         <>

@@ -94,7 +94,7 @@ Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
     });
 
 // ── Owner (akses untuk owner, super_admin) ────────────────────────────────
-Route::middleware(['auth', 'role:ownerSS', 'ensure.store'])
+Route::middleware(['auth', 'role:owner', 'ensure.store'])
     ->prefix('owner')
     ->group(function () {
         Route::get('/', function () {

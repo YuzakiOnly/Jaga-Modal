@@ -21,6 +21,9 @@ import { TransactionFilter } from "./_components/TransactionFilter";
 import { TransactionList } from "./_components/TransactionList";
 import { CustomerList } from "./_components/CustomerList";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 const formatPrice = (price) =>
     new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -67,6 +70,9 @@ export default function TransactionHistoryPage({
     );
     const [channel, setChannel] = useState(filters?.channel ?? "");
     const [activeTab, setActiveTab] = useState("transactions");
+
+
+    useSmartRefresh({ ...refreshConfigs.owner_history });
 
     const applyFilter = (newPeriod, newDate, newChannel) => {
         const params = { period: newPeriod, date: newDate };

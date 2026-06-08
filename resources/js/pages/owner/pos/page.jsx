@@ -9,6 +9,9 @@ import { Cart } from "./_components/Cart";
 import { PaymentDialog } from "./_components/PaymentDialog";
 import { Badge } from "@/components/ui/badge";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 export const ONLINE_CHANNELS = ["grabfood", "shopeefood", "gobiz"];
 export const ONLINE_PRICE_MARKUP = 0.2;
 
@@ -25,6 +28,8 @@ export default function PosPage({ products, categories }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    useSmartRefresh({ ...refreshConfigs.owner_pos });
 
     useEffect(() => {
         const isOnline = ONLINE_CHANNELS.includes(orderChannel);

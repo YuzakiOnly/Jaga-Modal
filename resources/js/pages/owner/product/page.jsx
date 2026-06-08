@@ -27,6 +27,9 @@ import { DeleteDialog } from "@/components/shared/DeleteDialog";
 import { AddStockDialog } from "./_components/AddStockDialog";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 export default function ProductsPage({ products, categories, filters }) {
     const [deleteProduct, setDeleteProduct] = useState(null);
     const [addStockOpen, setAddStockOpen] = useState(false);
@@ -38,6 +41,8 @@ export default function ProductsPage({ products, categories, filters }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    useSmartRefresh({ ...refreshConfigs.owner_products });
 
     const data = products?.data ?? [];
     const totalCount = products?.total ?? 0;

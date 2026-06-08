@@ -25,6 +25,9 @@ import { CapitalList } from "./_components/CapitalList";
 import { DeleteDialog } from "@/components/shared/DeleteDialog";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 export default function CapitalPricePage({ templates, filters }) {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -35,6 +38,8 @@ export default function CapitalPricePage({ templates, filters }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    useSmartRefresh({ ...refreshConfigs.owner_capital_price });
 
     const data = templates?.data ?? [];
     const totalCount = templates?.total ?? data.length ?? 0;

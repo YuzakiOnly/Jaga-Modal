@@ -5,6 +5,9 @@ import HistoryFilter from "./_components/HistoryFilter";
 import HistorySummary from "./_components/HistorySummary";
 import TransactionList from "./_components/TransactionList";
 
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
+
 const fmt = (n) => "Rp " + Math.round(n).toLocaleString("id-ID");
 
 export default function History({ transactions, summary, filters }) {
@@ -13,6 +16,8 @@ export default function History({ transactions, summary, filters }) {
         filters.date ? new Date(filters.date) : new Date(),
     );
     const [channelFilter, setChannelFilter] = useState(filters.channel || null);
+
+    useSmartRefresh({ ...refreshConfigs.cashier_history });
 
     function applyFilter(newPeriod, newDate, newChannel) {
         const formattedDate = newDate.toISOString().split("T")[0];

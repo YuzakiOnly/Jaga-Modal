@@ -14,7 +14,10 @@ import CashierLayout from "@/layouts/CashierLayout";
 import StatCard from "./_components/StatCard";
 import MiniBarChart from "./_components/MiniBarChart";
 import RecentTransactions from "./_components/RecentTransactions";
-import { fmt, fmtNum } from "../../../lib/cashier/dashboard";
+import { fmt, fmtNum } from "@/lib/cashier/dashboard";
+
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
+import { refreshConfigs } from "@/hooks/refreshConfig";
 
 const ONLINE_CHANNELS = [
     {
@@ -124,6 +127,8 @@ export default function CashierDashboard({
     const [selectedMonth, setSelectedMonth] = useState(
         filters?.month ?? new Date().toISOString().slice(0, 7),
     );
+
+    useSmartRefresh({ ...refreshConfigs.cashier_dashboard });
 
     const today = new Date().toLocaleDateString("id-ID", {
         weekday: "long",
@@ -257,8 +262,8 @@ export default function CashierDashboard({
                             </h1>
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-400 bg-white border border-gray-100 rounded-xl px-2.5 sm:px-3 py-2">
-                            <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="font-medium truncate max-w-[140px] sm:max-w-none">
+                            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                            <span className="font-medium truncate max-w-35 sm:max-w-none">
                                 {today}
                             </span>
                         </div>
