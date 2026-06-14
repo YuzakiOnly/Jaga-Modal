@@ -27,7 +27,8 @@ export function AddStockDialog({ open, onOpenChange, products = [] }) {
         const q = search.toLowerCase();
         return (
             p.name.toLowerCase().includes(q) ||
-            (p.sku && p.sku.toLowerCase().includes(q))
+            (p.sku && p.sku.toLowerCase().includes(q)) ||
+            (p.barcode && p.barcode.toLowerCase().includes(q))
         );
     });
 
@@ -41,7 +42,7 @@ export function AddStockDialog({ open, onOpenChange, products = [] }) {
         const parsed = parseInt(val, 10);
         setAdjustments((prev) => ({
             ...prev,
-            [String(id)]: isNaN(parsed) ? 0 : parsed,
+            [String(id)]: isNaN(parsed) ? 0 : Math.max(0, parsed),
         }));
     };
 

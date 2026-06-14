@@ -35,6 +35,10 @@ class CashierController extends Controller
                 'name',
                 'selling_price',
                 'capital_price',
+                'price_gobiz',
+                'price_grabfood',
+                'price_shopeefood',
+                'enable_online_food',
                 'stock_type',
                 'stock',
                 'minimum_stock',
@@ -58,6 +62,16 @@ class CashierController extends Controller
         ]);
     }
 
+    private function getPlatformFeeRate(string $channel): float
+    {
+        return match ($channel) {
+            'grabfood' => 0.20,
+            'gobiz' => 0.20,
+            'shopeefood' => 0.25,
+            default => 0.0,
+        };
+    }
+
     public function store(Request $request)
     {
         $storeId = auth()->user()->store_id;
@@ -79,19 +93,23 @@ class CashierController extends Controller
             'transacted_at' => ['nullable', 'date', 'before_or_equal:now'],
             'customer_name' => ['nullable', 'string', 'max:100'],
             'customer_phone' => ['nullable', 'string', 'max:20'],
+            'platform_items_total' => ['nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
             'items.*.name' => ['required', 'string', 'max:200'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.base_unit_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.capital_price' => ['required', 'numeric', 'min:0'],
             'items.*.original_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'items.*.is_custom' => ['required', 'boolean'],
+            'items.*.is_using_platform_price' => ['nullable', 'boolean'],
         ]);
 
         $onlineChannels = Transaction::ONLINE_CHANNELS;
+
         if (
             in_array($validated['order_channel'], $onlineChannels) &&
             $validated['payment_method'] !== $validated['order_channel']
@@ -101,25 +119,78 @@ class CashierController extends Controller
             ])->withInput();
         }
 
-        DB::transaction(function () use ($validated, $storeId) {
+        $transaction = null;
+
+        DB::transaction(function () use ($validated, $storeId, &$transaction) {
             $transactedAt = !empty($validated['transacted_at'])
                 ? Carbon::parse($validated['transacted_at'])
                 : now();
 
+            $isOnline = in_array($validated['order_channel'], Transaction::ONLINE_CHANNELS);
+
+            // Gunakan platform fee dari request atau hitung ulang
             $platformFee = $validated['platform_fee'] ?? 0;
+
+            if ($isOnline && $platformFee == 0) {
+                $feeRate = $this->getPlatformFeeRate($validated['order_channel']);
+
+                // Hitung total dari item yang menggunakan platform price
+                $platformItemsTotal = 0;
+                foreach ($validated['items'] as $item) {
+                    $isUsingPlatformPrice = $item['is_using_platform_price'] ?? false;
+                    if ($isUsingPlatformPrice) {
+                        $platformItemsTotal += $item['unit_price'] * $item['qty'];
+                    }
+                }
+
+                $platformFee = (int) round($platformItemsTotal * $feeRate);
+            }
+
             $netRevenue = $validated['total'] - $platformFee;
 
-            $customer = Customer::resolveForTransaction(
-                $storeId,
-                $validated['customer_name'] ?? null,
-                $validated['customer_phone'] ?? null,
-                $transactedAt
-            );
+            // Handle customer
+            $customer = null;
+            $customerName = $validated['customer_name'] ?? null;
+            $customerPhone = $validated['customer_phone'] ?? null;
+
+            if ($customerName || $customerPhone) {
+                // Cari customer berdasarkan nomor telepon atau nama
+                if ($customerPhone) {
+                    $customer = Customer::where('store_id', $storeId)
+                        ->where('phone', $customerPhone)
+                        ->first();
+                }
+
+                if (!$customer && $customerName) {
+                    $customer = Customer::where('store_id', $storeId)
+                        ->where('name', $customerName)
+                        ->first();
+                }
+
+                if (!$customer) {
+                    // Buat customer baru
+                    $lastCustomer = Customer::where('store_id', $storeId)
+                        ->orderBy('customer_number', 'desc')
+                        ->first();
+
+                    $nextNumber = $lastCustomer ? intval($lastCustomer->customer_number) + 1 : 1;
+                    $customerNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+                    $customer = Customer::create([
+                        'store_id' => $storeId,
+                        'customer_number' => $customerNumber,
+                        'name' => $customerName,
+                        'phone' => $customerPhone,
+                        'total_transactions' => 0,
+                        'total_spent' => 0,
+                    ]);
+                }
+            }
 
             $transaction = Transaction::create([
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
-                'customer_id' => $customer->id,
+                'customer_id' => $customer ? $customer->id : null,
                 'payment_method' => $validated['payment_method'],
                 'order_channel' => $validated['order_channel'],
                 'amount_paid' => $validated['amount_paid'],
@@ -134,6 +205,12 @@ class CashierController extends Controller
                 'transacted_at' => $transactedAt,
             ]);
 
+            // Update customer stats jika ada customer
+            if ($customer) {
+                $customer->increment('total_transactions');
+                $customer->increment('total_spent', $validated['total']);
+            }
+
             foreach ($validated['items'] as $item) {
                 TransactionItem::create([
                     'transaction_id' => $transaction->id,
@@ -147,16 +224,36 @@ class CashierController extends Controller
                     'subtotal' => $item['subtotal'],
                 ]);
 
+                // Kurangi stok hanya untuk produk non-custom dengan stock type limited
                 if (!$item['is_custom'] && $item['product_id']) {
-                    Product::where('id', $item['product_id'])
-                        ->where('stock_type', 'limited')
-                        ->decrement('stock', $item['qty']);
+                    $product = Product::where('id', $item['product_id'])
+                        ->where('store_id', $storeId)
+                        ->first();
+
+                    if ($product && $product->stock_type === 'limited') {
+                        $product->decrement('stock', $item['qty']);
+                    }
                 }
             }
         });
 
+        // Return response dengan data transaksi untuk ditampilkan di success overlay
         return redirect()->route('cashier.pos')
-            ->with('success', 'Transaksi berhasil disimpan.');
+            ->with('success', 'Transaksi berhasil disimpan.')
+            ->with('transaction', [
+                'transaction_number' => $transaction->transaction_number ?? null,
+                'total' => $validated['total'],
+                'subtotal' => $validated['subtotal'],
+                'discount' => $validated['discount'] ?? 0,
+                'amount_paid' => $validated['amount_paid'],
+                'change' => $validated['change_amount'],
+                'order_channel' => $validated['order_channel'],
+                'payment_method' => $validated['payment_method'],
+                'platform_fee' => $platformFee ?? 0,
+                'net_revenue' => ($validated['total'] - ($platformFee ?? 0)),
+                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_phone' => $validated['customer_phone'] ?? null,
+            ]);
     }
 
     public function history(Request $request)
@@ -210,9 +307,9 @@ class CashierController extends Controller
                     'change_amount' => (float) $transaction->change_amount,
                     'notes' => $transaction->notes,
                     'transacted_at' => $transaction->transacted_at,
-                    'customer_name' => $transaction->customer ? $transaction->customer->name : null,
-                    'customer_phone' => $transaction->customer ? $transaction->customer->phone : null,
-                    'customer_number' => $transaction->customer ? $transaction->customer->customer_number : null,
+                    'customer_name' => $transaction->customer?->name,
+                    'customer_phone' => $transaction->customer?->phone,
+                    'customer_number' => $transaction->customer?->customer_number,
                     'items' => $transaction->items->map(function ($item) {
                         return [
                             'id' => $item->id,
@@ -267,5 +364,46 @@ class CashierController extends Controller
         }
 
         return back()->with('success', "Stok berhasil diperbarui untuk {$updated} produk.");
+    }
+
+    public function receipt($id)
+    {
+        $storeId = auth()->user()->store_id;
+
+        $transaction = Transaction::where('store_id', $storeId)
+            ->with(['items', 'customer', 'user'])
+            ->findOrFail($id);
+
+        return Inertia::render('cashier/receipt/page', [
+            'transaction' => [
+                'id' => $transaction->id,
+                'transaction_number' => $transaction->transaction_number,
+                'payment_method' => $transaction->payment_method,
+                'order_channel' => $transaction->order_channel,
+                'amount_paid' => $transaction->amount_paid,
+                'change_amount' => $transaction->change_amount,
+                'subtotal' => $transaction->subtotal,
+                'discount' => $transaction->discount,
+                'platform_fee' => $transaction->platform_fee,
+                'net_revenue' => $transaction->net_revenue,
+                'total' => $transaction->total,
+                'notes' => $transaction->notes,
+                'transacted_at' => $transaction->transacted_at,
+                'customer_name' => $transaction->customer?->name,
+                'customer_phone' => $transaction->customer?->phone,
+                'customer_number' => $transaction->customer?->customer_number,
+                'cashier_name' => $transaction->user?->name,
+                'items' => $transaction->items->map(function ($item) {
+                    return [
+                        'name' => $item->name,
+                        'qty' => $item->qty,
+                        'unit_price' => $item->unit_price,
+                        'discount' => $item->discount,
+                        'subtotal' => $item->subtotal,
+                        'is_custom' => $item->is_custom,
+                    ];
+                }),
+            ],
+        ]);
     }
 }

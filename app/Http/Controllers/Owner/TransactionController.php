@@ -34,6 +34,10 @@ class TransactionController extends Controller
                 'name',
                 'selling_price',
                 'capital_price',
+                'price_gobiz',
+                'price_grabfood',
+                'price_shopeefood',
+                'enable_online_food',
                 'stock_type',
                 'stock',
                 'is_active',
@@ -50,6 +54,16 @@ class TransactionController extends Controller
             'products' => $products,
             'categories' => $categories,
         ]);
+    }
+
+    private function getPlatformFeeRate(string $channel): float
+    {
+        return match ($channel) {
+            'grabfood' => 0.20,
+            'gobiz' => 0.20,
+            'shopeefood' => 0.25,
+            default => 0.0,
+        };
     }
 
     public function store(Request $request)
@@ -83,6 +97,7 @@ class TransactionController extends Controller
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'items.*.is_custom' => ['required', 'boolean'],
+            'items.*.is_using_platform_price' => ['nullable', 'boolean'],
         ]);
 
         $onlineChannels = Transaction::ONLINE_CHANNELS;
@@ -100,7 +115,25 @@ class TransactionController extends Controller
                 ? Carbon::parse($validated['transacted_at'])
                 : now();
 
+            $isOnline = in_array($validated['order_channel'], Transaction::ONLINE_CHANNELS);
+
+            // Hitung platform fee dari item yang menggunakan platform price
             $platformFee = $validated['platform_fee'] ?? 0;
+
+            if ($isOnline && $platformFee == 0) {
+                $feeRate = $this->getPlatformFeeRate($validated['order_channel']);
+
+                $platformItemsTotal = 0;
+                foreach ($validated['items'] as $item) {
+                    $isUsingPlatformPrice = $item['is_using_platform_price'] ?? false;
+                    if ($isUsingPlatformPrice) {
+                        $platformItemsTotal += $item['unit_price'] * $item['qty'];
+                    }
+                }
+
+                $platformFee = (int) round($platformItemsTotal * $feeRate);
+            }
+
             $netRevenue = $validated['total'] - $platformFee;
 
             $customer = Customer::resolveForTransaction(
@@ -135,16 +168,20 @@ class TransactionController extends Controller
                     'name' => $item['name'],
                     'is_custom' => $item['is_custom'],
                     'unit_price' => $item['unit_price'],
-                    'capital_price' => $item['capital_price'] ?? 0,
+                    'capital_price' => $item['capital_price'],
                     'qty' => $item['qty'],
                     'discount' => $item['discount'] ?? 0,
                     'subtotal' => $item['subtotal'],
                 ]);
 
                 if (!$item['is_custom'] && $item['product_id']) {
-                    Product::where('id', $item['product_id'])
-                        ->where('stock_type', 'limited')
-                        ->decrement('stock', $item['qty']);
+                    $product = Product::where('id', $item['product_id'])
+                        ->where('store_id', $storeId)
+                        ->first();
+
+                    if ($product && $product->stock_type === 'limited') {
+                        $product->decrement('stock', $item['qty']);
+                    }
                 }
             }
         });
@@ -203,6 +240,37 @@ class TransactionController extends Controller
             ->with(['items', 'items.product:id,image', 'customer:id,customer_number,name,phone'])
             ->latest('transacted_at')
             ->paginate(20)
+            ->through(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'transaction_number' => $transaction->transaction_number,
+                    'payment_method' => $transaction->payment_method,
+                    'order_channel' => $transaction->order_channel ?? 'dine_in',
+                    'total' => (float) $transaction->total,
+                    'subtotal' => (float) $transaction->subtotal,
+                    'discount' => (float) $transaction->discount,
+                    'platform_fee' => (float) $transaction->platform_fee,
+                    'net_revenue' => (float) $transaction->net_revenue,
+                    'amount_paid' => (float) $transaction->amount_paid,
+                    'change_amount' => (float) $transaction->change_amount,
+                    'notes' => $transaction->notes,
+                    'transacted_at' => $transaction->transacted_at,
+                    'customer_name' => $transaction->customer ? $transaction->customer->name : null,
+                    'customer_phone' => $transaction->customer ? $transaction->customer->phone : null,
+                    'customer_number' => $transaction->customer ? $transaction->customer->customer_number : null,
+                    'items' => $transaction->items->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                            'qty' => $item->qty,
+                            'unit_price' => $item->unit_price,
+                            'subtotal' => $item->subtotal,
+                            'discount' => $item->discount,
+                            'is_custom' => $item->is_custom,
+                        ];
+                    }),
+                ];
+            })
             ->withQueryString();
 
         $customerBaseQuery = Transaction::forStore($storeId)
@@ -254,4 +322,4 @@ class TransactionController extends Controller
             'online_channels' => Transaction::ONLINE_CHANNELS,
         ]);
     }
-}
+}   

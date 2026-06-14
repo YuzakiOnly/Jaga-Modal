@@ -5,9 +5,12 @@ import {
     QrCode,
     Smartphone,
     Store,
+    Coffee,
+    Bike,
+    CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fmt, PERIODS } from "../../../../lib/cashier/dashboard";
+import { fmt, PERIODS } from "@/lib/cashier/dashboard";
 
 const CHANNEL_CONFIG = {
     dine_in: {
@@ -18,20 +21,20 @@ const CHANNEL_CONFIG = {
     },
     grabfood: {
         label: "GrabFood",
-        color: "bg-green-50",
-        iconColor: "text-green-600",
-        Icon: Smartphone,
+        color: "bg-[#00B14F]/10",
+        iconColor: "text-[#00B14F]",
+        Icon: Bike,
     },
     shopeefood: {
         label: "ShopeeFood",
-        color: "bg-orange-50",
-        iconColor: "text-orange-500",
-        Icon: Smartphone,
+        color: "bg-[#EE4D2D]/10",
+        iconColor: "text-[#EE4D2D]",
+        Icon: Coffee,
     },
     gobiz: {
         label: "GoBiz",
-        color: "bg-sky-50",
-        iconColor: "text-sky-600",
+        color: "bg-[#00AA13]/10",
+        iconColor: "text-[#00AA13]",
         Icon: Smartphone,
     },
 };
@@ -126,10 +129,23 @@ export default function RecentTransactions({
                             },
                         );
 
+                        const getBadgeStyle = (channel) => {
+                            switch (channel) {
+                                case "grabfood":
+                                    return "bg-[#00B14F]/10 text-[#00B14F]";
+                                case "shopeefood":
+                                    return "bg-[#EE4D2D]/10 text-[#EE4D2D]";
+                                case "gobiz":
+                                    return "bg-[#00AA13]/10 text-[#00AA13]";
+                                default:
+                                    return "bg-gray-100 text-gray-600";
+                            }
+                        };
+
                         return (
                             <div
                                 key={trx.id}
-                                className="flex items-center gap-3 py-2.5"
+                                className="flex items-center gap-3 py-2.5 hover:bg-gray-50/50 rounded-lg transition-colors duration-150"
                             >
                                 <div
                                     className={cn(
@@ -151,12 +167,7 @@ export default function RecentTransactions({
                                             <span
                                                 className={cn(
                                                     "text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0",
-                                                    channel === "grabfood" &&
-                                                        "bg-green-100 text-green-700",
-                                                    channel === "shopeefood" &&
-                                                        "bg-orange-100 text-orange-600",
-                                                    channel === "gobiz" &&
-                                                        "bg-sky-100 text-sky-700",
+                                                    getBadgeStyle(channel),
                                                 )}
                                             >
                                                 {channelLabel}

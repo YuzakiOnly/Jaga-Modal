@@ -14,22 +14,20 @@ use App\Http\Controllers\Owner\DashboardController;
 use App\Http\Controllers\Owner\ExpenseController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\TransactionController;
-use App\Http\Controllers\Owner\MarketDataController;
 use App\Http\Controllers\Owner\WalletController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// ── Root redirect berdasarkan role ─────────────────────────────────────────
 Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
 
         if ($user->isSuperAdmin()) {
-            return redirect('/admin/dashboard');
+            return redirect('/admin/users');
         }
 
         if ($user->isOwner()) {
-            return redirect('/cashier');
+            return redirect('/owner/dashboard');
         }
 
         if ($user->isCashier()) {
@@ -42,7 +40,6 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-// ── Guest routes ──────────────────────────────────────────────────────────
 Route::middleware(['guest'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -50,7 +47,6 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// ── Pending store setup ───────────────────────────────────────────────────
 Route::middleware(['pending.store'])->group(function () {
     Route::get('/verify-phone', [AuthController::class, 'showVerifyPhone'])->name('verify.phone');
     Route::post('/verify-phone', [AuthController::class, 'verify'])->name('verify.phone.submit');
@@ -64,10 +60,13 @@ Route::middleware(['pending.store'])->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// ── Cashier (akses untuk cashier, owner, super_admin) ─────────────────────
 Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
     ->prefix('cashier')
     ->group(function () {
+        Route::get('/', function () {
+            return redirect('/cashier');
+        });
+        
         Route::get('/dashboard', [CashierDashboardController::class, 'index'])
             ->name('cashier.dashboard');
 
@@ -93,7 +92,6 @@ Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
             ->name('cashier.expenses.destroy');
     });
 
-// ── Owner (akses untuk owner, super_admin) ────────────────────────────────
 Route::middleware(['auth', 'role:owner', 'ensure.store'])
     ->prefix('owner')
     ->group(function () {
@@ -104,7 +102,6 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('owner.dashboard');
 
-        // ── Kategori produk ─────────────────────────────────────────────
         Route::get('/categories', [CategoryController::class, 'index'])->name('owner.categories');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('owner.categories.create');
         Route::post('/categories', [CategoryController::class, 'store'])->name('owner.categories.store');
@@ -114,7 +111,6 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('owner.categories.reorder');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('owner.categories.destroy');
 
-        // ── Produk ──────────────────────────────────────────────────────
         Route::get('/products', [ProductController::class, 'index'])->name('owner.products');
         Route::get('/products/create', [ProductController::class, 'create'])->name('owner.products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('owner.products.store');
@@ -124,7 +120,6 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::patch('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('owner.products.toggle');
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('owner.products.destroy');
 
-        // ── Harga modal ─────────────────────────────────────────────────
         Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
         Route::get('/capital-prices/options', [CapitalPriceTemplateController::class, 'options'])->name('owner.capital-prices.options');
         Route::get('/capital-prices/create', [CapitalPriceTemplateController::class, 'create'])->name('owner.capital-prices.create');
@@ -134,12 +129,10 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::patch('/capital-prices/{capitalPrice}/toggle', [CapitalPriceTemplateController::class, 'toggleActive'])->name('owner.capital-prices.toggle');
         Route::delete('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'destroy'])->name('owner.capital-prices.destroy');
 
-        // ── POS & Transaksi ─────────────────────────────────────────────
         Route::get('/pos', [TransactionController::class, 'index'])->name('owner.pos');
         Route::post('/pos/transactions', [TransactionController::class, 'store'])->name('owner.transactions.store');
         Route::get('/pos/history', [TransactionController::class, 'history'])->name('owner.transactions.history');
 
-        // ── Pengeluaran ─────────────────────────────────────────────────
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('owner.expenses');
         Route::post('/expenses', [ExpenseController::class, 'store'])->name('owner.expenses.store');
         Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('owner.expenses.update');
@@ -155,16 +148,12 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::delete('/wallet/{walletTransaction}', [WalletController::class, 'destroy'])->name('owner.wallet.destroy');
     });
 
-// ── Super Admin ───────────────────────────────────────────────────────────
 Route::middleware(['auth', 'role:super_admin'])
     ->prefix('admin')
     ->group(function () {
         Route::get('/', function () {
-            return redirect('/admin/dashboard');
+            return redirect('/admin/users');
         });
-
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('admin.dashboard');
 
         Route::get('/users', [UserController::class, 'index'])->name('admin.users');
         Route::get('/users/create', [UserController::class, 'create'])->name('admin.users.create');
@@ -174,10 +163,8 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
     });
 
-// ── Language ───────────────────────────────────────────────────────────────
 Route::post('/language/switch', [LanguageController::class, 'switch'])->name('language.switch');
 
-// ── Fallback ──────────────────────────────────────────────────────────────
 Route::fallback(function () {
     return Inertia::render('errors/NotFound');
 });

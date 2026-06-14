@@ -20,15 +20,17 @@ class CashierHistoryController extends Controller
 
         $summaryQuery = Transaction::forStore($storeId)->completed();
 
+        $parsedDate = now()->parse($date);
+
         $summaryQuery = match ($period) {
             'weekly' => $summaryQuery->whereBetween('transacted_at', [
-                now()->parse($date)->startOfWeek(),
-                now()->parse($date)->endOfWeek(),
+                $parsedDate->copy()->startOfWeek(),
+                $parsedDate->copy()->endOfWeek(),
             ]),
             'monthly' => $summaryQuery
-                ->whereMonth('transacted_at', now()->parse($date)->month)
-                ->whereYear('transacted_at', now()->parse($date)->year),
-            default => $summaryQuery->whereDate('transacted_at', $date),
+                ->whereMonth('transacted_at', $parsedDate->month)
+                ->whereYear('transacted_at', $parsedDate->year),
+            default => $summaryQuery->whereDate('transacted_at', $parsedDate),
         };
 
         if ($channel) {
@@ -55,6 +57,7 @@ class CashierHistoryController extends Controller
             'shopeefood_count' => (int) (clone $summaryQuery)->where('order_channel', 'shopeefood')->count(),
             'gobiz_count' => (int) (clone $summaryQuery)->where('order_channel', 'gobiz')->count(),
             'revenue_by_channel' => $revenueByChannel,
+            'unique_customer_count' => (int) (clone $summaryQuery)->whereNotNull('customer_id')->distinct('customer_id')->count('customer_id'),
         ];
 
         $transactions = (clone $summaryQuery)
@@ -76,20 +79,18 @@ class CashierHistoryController extends Controller
                     'change_amount' => (float) $transaction->change_amount,
                     'notes' => $transaction->notes,
                     'transacted_at' => $transaction->transacted_at,
-                    'customer_name' => $transaction->customer ? $transaction->customer->name : null,
-                    'customer_phone' => $transaction->customer ? $transaction->customer->phone : null,
-                    'customer_number' => $transaction->customer ? $transaction->customer->customer_number : null,
-                    'items' => $transaction->items->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'name' => $item->name,
-                            'qty' => $item->qty,
-                            'unit_price' => $item->unit_price,
-                            'subtotal' => $item->subtotal,
-                            'discount' => $item->discount,
-                            'is_custom' => $item->is_custom,
-                        ];
-                    }),
+                    'customer_name' => $transaction->customer?->name,
+                    'customer_phone' => $transaction->customer?->phone,
+                    'customer_number' => $transaction->customer?->customer_number,
+                    'items' => $transaction->items->map(fn($item) => [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'qty' => $item->qty,
+                        'unit_price' => $item->unit_price,
+                        'subtotal' => $item->subtotal,
+                        'discount' => $item->discount,
+                        'is_custom' => $item->is_custom,
+                    ]),
                 ];
             })
             ->withQueryString();

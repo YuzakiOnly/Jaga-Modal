@@ -46,7 +46,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->setStatusCode(403);
         });
 
-        // Tangkap semua HTTP error lainnya (401, 500, dst)
         $exceptions->render(function (HttpException $e, $request) {
             return Inertia::render('errors/NotFound', ['status' => $e->getStatusCode()])
                 ->toResponse($request)

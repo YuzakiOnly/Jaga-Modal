@@ -48,7 +48,6 @@ class StoreSetupController extends Controller
         try {
             $user = User::findOrFail($userId);
 
-            // Create store
             $store = Store::create([
                 'user_id' => $user->id,
                 'name' => $request->name,
@@ -60,7 +59,6 @@ class StoreSetupController extends Controller
                 'longitude' => $request->longitude,
             ]);
 
-            // Update user with store_id
             $user->store_id = $store->id;
             $user->save();
 

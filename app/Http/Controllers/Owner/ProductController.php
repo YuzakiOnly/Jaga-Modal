@@ -12,8 +12,6 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-    // ── Index ─────────────────────────────────────────────────────────────────
-
     public function index(Request $request)
     {
         $storeId = auth()->user()->store_id;
@@ -25,7 +23,6 @@ class ProductController extends Controller
 
         $query = Product::with('category')->where('store_id', $storeId);
 
-        // Search
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -34,12 +31,10 @@ class ProductController extends Controller
             });
         }
 
-        // Category filter
         if ($categoryId = $request->input('category_id')) {
             $query->where('category_id', $categoryId);
         }
 
-        // Status filter
         if ($status = $request->input('status')) {
             if ($status === 'active')
                 $query->where('is_active', true);
@@ -49,12 +44,10 @@ class ProductController extends Controller
                 $query->lowStock();
         }
 
-        // Stock type filter
         if ($stockType = $request->input('stock_type')) {
             $query->where('stock_type', $stockType);
         }
 
-        // Sorting
         $sortField = $request->input('sort', 'created_at');
         $sortDir = $request->input('direction', 'desc');
         $allowed = ['name', 'selling_price', 'stock', 'created_at', 'is_active'];
@@ -73,8 +66,6 @@ class ProductController extends Controller
         ]);
     }
 
-    // ── Create ────────────────────────────────────────────────────────────────
-
     public function create()
     {
         $storeId = auth()->user()->store_id;
@@ -85,8 +76,6 @@ class ProductController extends Controller
             'categories' => $categories,
         ]);
     }
-
-    // ── Store ─────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
@@ -104,14 +93,13 @@ class ProductController extends Controller
         }
 
         $validated['store_id'] = $storeId;
+        $validated['enable_online_food'] = $request->boolean('enable_online_food', false);
 
         Product::create($validated);
 
         return redirect()->route('owner.products')
             ->with('success', "Product \"{$validated['name']}\" created successfully.");
     }
-
-    // ── Edit ──────────────────────────────────────────────────────────────────
 
     public function edit(Product $product)
     {
@@ -127,8 +115,6 @@ class ProductController extends Controller
             'categories' => $categories,
         ]);
     }
-
-    // ── Update ────────────────────────────────────────────────────────────────
 
     public function update(Request $request, Product $product)
     {
@@ -147,13 +133,13 @@ class ProductController extends Controller
             $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
+        $validated['enable_online_food'] = $request->boolean('enable_online_food', false);
+
         $product->update($validated);
 
         return redirect()->route('owner.products')
             ->with('success', "Product \"{$product->name}\" updated successfully.");
     }
-
-    // ── Toggle Active ─────────────────────────────────────────────────────────
 
     public function toggleActive(Product $product)
     {
@@ -167,11 +153,8 @@ class ProductController extends Controller
         return back()->with('success', "Product \"{$product->name}\" {$state}.");
     }
 
-    // ── Destroy ───────────────────────────────────────────────────────────────
-
     public function destroy(Product $product)
     {
-        // Cek ownership dulu sebelum apapun
         if ($product->store_id !== auth()->user()->store_id) {
             abort(403);
         }
@@ -200,7 +183,6 @@ class ProductController extends Controller
 
         $ids = collect($request->items)->pluck('id');
 
-        // Ambil semua produk yang diminta, pastikan milik toko ini
         $products = Product::where('store_id', $storeId)
             ->where('stock_type', 'limited')
             ->whereIn('id', $ids)
@@ -213,7 +195,7 @@ class ProductController extends Controller
             $product = $products->get($item['id']);
 
             if (!$product)
-                continue; // skip produk yang bukan milik toko
+                continue;
 
             $product->increment('stock', (int) $item['qty']);
             $updated++;
@@ -224,8 +206,6 @@ class ProductController extends Controller
             "Stok berhasil diperbarui untuk {$updated} produk."
         );
     }
-
-    // ── Shared validation ─────────────────────────────────────────────────────
 
     private function validateProduct(Request $request, int $storeId, ?int $ignoreId = null): array
     {
@@ -257,6 +237,10 @@ class ProductController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'capital_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
+            'price_gobiz' => ['nullable', 'numeric', 'min:0'],
+            'price_grabfood' => ['nullable', 'numeric', 'min:0'],
+            'price_shopeefood' => ['nullable', 'numeric', 'min:0'],
+            'enable_online_food' => ['boolean'],
             'stock_type' => ['required', 'in:limited,unlimited'],
             'stock' => ['nullable', 'integer', 'min:0', 'required_if:stock_type,limited'],
             'minimum_stock' => ['nullable', 'integer', 'min:0'],

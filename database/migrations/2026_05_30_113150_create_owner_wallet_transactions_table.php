@@ -12,21 +12,14 @@ return new class extends Migration {
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 
-            // 'in'  = uang masuk ke dompet (dari withdrawal toko / topup manual)
-            // 'out' = uang keluar dari dompet (pengeluaran pribadi)
             $table->enum('flow', ['in', 'out']);
 
-            // Sumber uang masuk
-            // 'withdrawal'   = ditarik dari kas toko (linked ke expense)
-            // 'manual_topup' = tambah manual (terima piutang, dll)
-            // 'personal_out' = pengeluaran pribadi
             $table->string('source')->default('withdrawal');
 
             $table->decimal('amount', 12, 2);
             $table->string('description');
             $table->text('notes')->nullable();
 
-            // Link ke expense jika berasal dari withdrawal
             $table->foreignId('expense_id')
                 ->nullable()
                 ->constrained('expenses')

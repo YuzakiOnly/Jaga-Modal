@@ -51,7 +51,6 @@ export default function ExpenseFormModal({
     const expenseTypes = isOwner ? OWNER_EXPENSE_TYPES : EXPENSE_TYPES;
     const isEdit = !!editTarget;
 
-    // Gunakan storeCashBalance dari props atau global
     const currentBalance = storeCashBalance ?? globalBalance ?? 0;
 
     const [type, setType] = useState("simple");
@@ -71,7 +70,6 @@ export default function ExpenseFormModal({
     useEffect(() => {
         if (open) {
             if (editTarget) {
-                // Mode edit
                 setType(editTarget.type || "simple");
                 setForm({
                     description: editTarget.description || "",
@@ -83,7 +81,6 @@ export default function ExpenseFormModal({
                     note: editTarget.notes || "",
                 });
             } else {
-                // Mode tambah
                 setType("simple");
                 setForm({
                     description: "",
@@ -101,7 +98,6 @@ export default function ExpenseFormModal({
         }
     }, [open, editTarget]);
 
-    // Cek saldo secara realtime (hanya untuk mode tambah)
     useEffect(() => {
         if (!isEdit && open) {
             let amountToCheck = 0;
@@ -182,7 +178,6 @@ export default function ExpenseFormModal({
             expenseAmount = parseFloat(form.amount) || 0;
         }
 
-        // Validasi saldo hanya untuk mode tambah
         if (!isEdit && expenseAmount > currentBalance) {
             newErrors.amount = `Saldo kas toko tidak mencukupi! Saldo saat ini: ${fmt(currentBalance)}`;
         }

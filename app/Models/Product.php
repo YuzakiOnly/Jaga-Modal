@@ -22,6 +22,10 @@ class Product extends Model
         'image',
         'capital_price',
         'selling_price',
+        'price_gobiz',
+        'price_grabfood',
+        'price_shopeefood',
+        'enable_online_food',
         'stock_type',
         'stock',
         'minimum_stock',
@@ -32,6 +36,10 @@ class Product extends Model
     protected $casts = [
         'capital_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'price_gobiz' => 'decimal:2',
+        'price_grabfood' => 'decimal:2',
+        'price_shopeefood' => 'decimal:2',
+        'enable_online_food' => 'boolean',
         'stock' => 'integer',
         'minimum_stock' => 'integer',
         'is_active' => 'boolean',
@@ -40,7 +48,6 @@ class Product extends Model
     protected static function booted(): void
     {
         static::creating(function (Product $product) {
-            // Set store_id dari user yang login jika belum di-set
             if (auth()->check() && !$product->store_id) {
                 $product->store_id = auth()->user()->store_id;
             }

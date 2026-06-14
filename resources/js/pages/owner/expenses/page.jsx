@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
 
-
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 export default function ExpensesPage({ expenses, summary, filters, balances }) {
@@ -89,11 +88,11 @@ export default function ExpensesPage({ expenses, summary, filters, balances }) {
                         </p>
                     </div>
                     <Button
-                        variant="outline"
                         onClick={() => setFormOpen(true)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-2.5 sm:px-4 py-2 text-sm font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors shrink-0"
+                        size="default"
+                        className="gap-2 shrink-0"
                     >
-                        <Plus className="h-4 w-4 shrink-0" />
+                        <Plus className="h-4 w-4" />
                         <span className="hidden sm:inline">
                             Tambah Pengeluaran
                         </span>
@@ -115,8 +114,10 @@ export default function ExpensesPage({ expenses, summary, filters, balances }) {
                 open={formOpen}
                 onOpenChange={handleFormClose}
                 editTarget={editTarget}
-                storeCashBalance={balances?.cash ?? 0}
-                onlineBalance={balances?.online ?? 0}
+                dineInBalance={balances?.dine_in ?? 0}
+                grabfoodBalance={balances?.grabfood ?? 0}
+                shopeefoodBalance={balances?.shopeefood ?? 0}
+                gobizBalance={balances?.gobiz ?? 0}
             />
 
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -144,7 +145,7 @@ export default function ExpensesPage({ expenses, summary, filters, balances }) {
                                             <span className="font-semibold">
                                                 Jumlah:
                                             </span>{" "}
-                                            <span className="text-rose-600">
+                                            <span className="text-destructive">
                                                 {fmt(deleteTarget.amount)}
                                             </span>
                                         </p>

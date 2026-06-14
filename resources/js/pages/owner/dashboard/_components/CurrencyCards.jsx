@@ -51,9 +51,6 @@ let lastDailyUsd = null;
 let lastDailyGold = null;
 let lastDailyDate = null;
 
-// ============================================================
-// 1. USD/IDR - Lebih akurat dengan multiple source
-// ============================================================
 async function fetchUsdIdr() {
     const urls = [
         "https://api.frankfurter.app/latest?from=USD&to=IDR",
@@ -69,19 +66,15 @@ async function fetchUsdIdr() {
             const data = await res.json();
             let rate = null;
 
-            // Frankfurter format
             if (data.rates && data.rates.IDR) {
                 rate = data.rates.IDR;
             }
-            // Exchange rate host format
             else if (data.success && data.result) {
                 rate = data.result;
             }
-            // CDN format
             else if (data.usd && data.usd.idr) {
                 rate = data.usd.idr;
             }
-            // ER API format
             else if (data.rates && data.rates.IDR) {
                 rate = data.rates.IDR;
             }
@@ -94,17 +87,12 @@ async function fetchUsdIdr() {
         }
     }
 
-    // Fallback ke rate perkiraan
     console.warn("Using fallback USD rate");
     return 15500;
 }
 
-// ============================================================
-// 2. IHSG - Via Backend Proxy (fix CORS)
-// ============================================================
 async function fetchIhsg() {
     try {
-        // Coba panggil backend Laravel dulu
         const res = await fetch("/api/market/ihsg");
 
         if (res.ok) {
@@ -140,7 +128,6 @@ async function fetchIhsg() {
         console.log("Backend proxy not available, using fallback");
     }
 
-    // Fallback: menggunakan allorigins (dengan risiko CORS)
     try {
         const target = encodeURIComponent(
             "https://query1.finance.yahoo.com/v8/finance/chart/%5EJKSE?interval=1d&range=5d",
@@ -166,14 +153,10 @@ async function fetchIhsg() {
         console.error("IHSG fallback error:", e);
     }
 
-    // Fallback data dummy (IHSG biasanya di kisaran 7000-7500)
     console.warn("Using fallback IHSG data");
     return { value: 7234.56, changePct: 0.35 };
 }
 
-// ============================================================
-// 3. Emas - Lebih akurat dengan multiple source
-// ============================================================
 async function fetchGoldPrice(usdIdr) {
     const urls = [
         "https://data-asg.goldprice.org/dbXRates/USD",
@@ -188,15 +171,12 @@ async function fetchGoldPrice(usdIdr) {
             const data = await res.json();
             let xauUsd = null;
 
-            // GoldPrice.org format
             if (data.items && data.items[0] && data.items[0].xauPrice) {
                 xauUsd = data.items[0].xauPrice;
             }
-            // Gold-API format
             else if (data.price) {
                 xauUsd = data.price;
             }
-            // Metals-API format
             else if (data.rates && data.rates.XAU) {
                 xauUsd = 1 / data.rates.XAU;
             }
@@ -219,20 +199,15 @@ async function fetchGoldPrice(usdIdr) {
         }
     }
 
-    // Fallback estimasi (1 gram emas ≈ USD 65-70 × kurs)
     if (usdIdr && usdIdr > 15000) {
         const estimatedPrice = Math.round(usdIdr * 67.5);
         return Math.min(Math.max(estimatedPrice, 1000000), 1500000);
     }
 
-    // Fallback terakhir
     console.warn("Using fallback gold price");
     return 1200000;
 }
 
-// ============================================================
-// 4. Main Hook
-// ============================================================
 function useMarketData() {
     const [state, setState] = useState({
         usd: null,
@@ -296,16 +271,13 @@ function useMarketData() {
 
     useEffect(() => {
         load();
-        const interval = setInterval(load, 5 * 60 * 1000); // setiap 5 menit
+        const interval = setInterval(load, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, []);
 
     return { ...state, refetch: load };
 }
 
-// ============================================================
-// 5. Card Component
-// ============================================================
 function MarketCard({
     flag,
     label,
@@ -375,9 +347,6 @@ function MarketCard({
     );
 }
 
-// ============================================================
-// 6. Main Export
-// ============================================================
 export default function CurrencyCards() {
     const {
         usd,

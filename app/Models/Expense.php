@@ -46,24 +46,30 @@ class Expense extends Model
 
     public function getPaymentSourceLabelAttribute(): string
     {
-        return $this->payment_source === 'online' ? 'Saldo Online' : 'Kas Toko';
+        $labels = [
+            'cash' => 'Kas Toko',
+            'dine_in' => 'Saldo Dine In',
+            'grabfood' => 'Saldo GrabFood',
+            'shopeefood' => 'Saldo ShopeeFood',
+            'gobiz' => 'Saldo GoBiz',
+            'online' => 'Saldo Online',
+        ];
+        return $labels[$this->payment_source] ?? 'Kas Toko';
     }
 
     protected static function booted(): void
     {
         static::created(function (Expense $expense) {
-            if ($expense->payment_source === 'online') {
+            if (in_array($expense->payment_source, ['grabfood', 'shopeefood', 'gobiz'])) {
                 OnlineBalance::deductBalance($expense->store_id, $expense->total_amount);
             }
         });
 
         static::deleted(function (Expense $expense) {
-            if ($expense->payment_source === 'online') {
-                // Refund balance when expense is deleted
-                $currentBalance = OnlineBalance::getBalance($expense->store_id);
+            if (in_array($expense->payment_source, ['grabfood', 'shopeefood', 'gobiz'])) {
                 OnlineBalance::addRevenue(
                     $expense->store_id,
-                    'refund',
+                    $expense->payment_source,
                     $expense->total_amount
                 );
             }

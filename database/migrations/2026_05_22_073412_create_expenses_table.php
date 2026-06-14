@@ -12,17 +12,14 @@ return new class extends Migration {
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 
-            $table->string('type')->default('simple'); // simple, raw_material, salary
+            $table->string('type')->default('simple');
             $table->string('description');
 
-            // Untuk simple expense
             $table->decimal('amount', 12, 2)->nullable();
 
-            // Untuk raw material
             $table->decimal('quantity', 12, 2)->nullable();
             $table->decimal('unit_price', 12, 2)->nullable();
 
-            // Untuk salary
             $table->string('employee_name')->nullable();
             $table->string('salary_period')->nullable();
 

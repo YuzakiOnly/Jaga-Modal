@@ -9,7 +9,9 @@ import {
     User,
     Phone,
     Hash,
+    TrendingDown,
 } from "lucide-react";
+import { formatCurrency, formatDateTime } from "@/lib/formatters";
 
 const CHANNEL_CONFIG = {
     cash: {
@@ -49,12 +51,7 @@ const CHANNEL_CONFIG = {
     },
 };
 
-export default function TransactionItem({
-    transaction,
-    isOpen,
-    onToggle,
-    fmt,
-}) {
+export default function TransactionItem({ transaction, isOpen, onToggle }) {
     if (!transaction) return null;
 
     const trx = transaction;
@@ -63,6 +60,9 @@ export default function TransactionItem({
     const isOnline = trx.order_channel && trx.order_channel !== "dine_in";
     const hasCustomer =
         trx.customer_name || trx.customer_phone || trx.customer_number;
+
+    const platformFee = parseFloat(trx.platform_fee || 0);
+    const netRevenue = trx.total - platformFee;
 
     let customerDisplay = "";
     if (trx.customer_number) {
@@ -107,17 +107,7 @@ export default function TransactionItem({
                                 )}
                             </div>
                             <p className="text-xs text-slate-400">
-                                {trx.transacted_at
-                                    ? new Date(
-                                          trx.transacted_at,
-                                      ).toLocaleString("id-ID", {
-                                          day: "numeric",
-                                          month: "short",
-                                          year: "numeric",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                      })
-                                    : "-"}
+                                {formatDateTime(trx.transacted_at)}
                             </p>
                             {hasCustomer && (
                                 <p className="text-xs text-purple-600 mt-1 truncate flex items-center gap-1 flex-wrap">
@@ -147,9 +137,16 @@ export default function TransactionItem({
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                        <p className="text-base font-black text-slate-900">
-                            {fmt(trx.total)}
-                        </p>
+                        <div className="text-right">
+                            <p className="text-base font-black text-slate-900">
+                                {formatCurrency(trx.total)}
+                            </p>
+                            {platformFee > 0 && (
+                                <p className="text-[10px] text-emerald-600 font-medium">
+                                    Bersih {formatCurrency(netRevenue)}
+                                </p>
+                            )}
+                        </div>
                         {isOpen ? (
                             <ChevronUp
                                 size={16}
@@ -226,11 +223,12 @@ export default function TransactionItem({
                                         )}
                                     </p>
                                     <p className="text-xs text-slate-400">
-                                        {item.qty} × {fmt(item.unit_price)}
+                                        {item.qty} ×{" "}
+                                        {formatCurrency(item.unit_price)}
                                     </p>
                                 </div>
                                 <p className="font-bold text-slate-700 shrink-0 ml-4">
-                                    {fmt(item.subtotal)}
+                                    {formatCurrency(item.subtotal)}
                                 </p>
                             </div>
                         ))}
@@ -239,7 +237,7 @@ export default function TransactionItem({
                             <div className="flex justify-between items-center">
                                 <span className="text-slate-500">Subtotal</span>
                                 <span className="font-medium text-slate-700">
-                                    {fmt(trx.subtotal || trx.total)}
+                                    {formatCurrency(trx.subtotal || trx.total)}
                                 </span>
                             </div>
                             {parseFloat(trx.discount || 0) > 0 && (
@@ -248,17 +246,27 @@ export default function TransactionItem({
                                         Diskon
                                     </span>
                                     <span className="font-medium text-rose-600">
-                                        − {fmt(trx.discount)}
+                                        − {formatCurrency(trx.discount)}
                                     </span>
                                 </div>
                             )}
-                            {parseFloat(trx.platform_fee || 0) > 0 && (
+                            {platformFee > 0 && (
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-500">
-                                        Biaya Platform
-                                    </span>
-                                    <span className="font-medium text-slate-600">
-                                        + {fmt(trx.platform_fee)}
+                                    <div className="flex items-center gap-1">
+                                        <TrendingDown
+                                            size={12}
+                                            className="text-red-500"
+                                        />
+                                        <span className="text-red-500">
+                                            Biaya Platform (
+                                            {Math.round(
+                                                (platformFee / trx.total) * 100,
+                                            )}
+                                            %)
+                                        </span>
+                                    </div>
+                                    <span className="font-medium text-red-600">
+                                        − {formatCurrency(platformFee)}
                                     </span>
                                 </div>
                             )}
@@ -267,9 +275,19 @@ export default function TransactionItem({
                                     Total
                                 </span>
                                 <span className="font-black text-emerald-600 text-lg">
-                                    {fmt(trx.total)}
+                                    {formatCurrency(trx.total)}
                                 </span>
                             </div>
+                            {platformFee > 0 && (
+                                <div className="flex justify-between items-center bg-emerald-50 rounded-lg p-2 -mx-1">
+                                    <span className="text-xs font-semibold text-emerald-700">
+                                        Diterima Bersih
+                                    </span>
+                                    <span className="text-sm font-black text-emerald-700">
+                                        {formatCurrency(netRevenue)}
+                                    </span>
+                                </div>
+                            )}
                             {trx.payment_method === "cash" && (
                                 <>
                                     <div className="flex justify-between items-center">
@@ -277,7 +295,9 @@ export default function TransactionItem({
                                             Dibayar
                                         </span>
                                         <span className="font-medium text-slate-700">
-                                            {fmt(trx.amount_paid || trx.total)}
+                                            {formatCurrency(
+                                                trx.amount_paid || trx.total,
+                                            )}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
@@ -285,7 +305,9 @@ export default function TransactionItem({
                                             Kembalian
                                         </span>
                                         <span className="font-bold text-emerald-700">
-                                            {fmt(trx.change_amount || 0)}
+                                            {formatCurrency(
+                                                trx.change_amount || 0,
+                                            )}
                                         </span>
                                     </div>
                                 </>
@@ -297,4 +319,3 @@ export default function TransactionItem({
         </div>
     );
 }
-    

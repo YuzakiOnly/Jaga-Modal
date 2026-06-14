@@ -24,7 +24,7 @@ export default function TopBar({ onMenuClick }) {
     }, []);
 
     return (
-        <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-slate-100 flex-shrink-0">
+        <div className="sticky top-0 z-30 flex items-center gap-3 px-5 py-3 bg-white border-b border-slate-100 font-inter">
             <button
                 onClick={onMenuClick}
                 className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 transition-colors"
@@ -34,7 +34,11 @@ export default function TopBar({ onMenuClick }) {
 
             <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
-                    <ShieldCheck size={15} className="text-white" strokeWidth={2.5} />
+                    <ShieldCheck
+                        size={15}
+                        className="text-white"
+                        strokeWidth={2.5}
+                    />
                 </div>
                 <div className="flex flex-col leading-none">
                     <span className="text-[10px] font-semibold text-emerald-600 tracking-widest uppercase">

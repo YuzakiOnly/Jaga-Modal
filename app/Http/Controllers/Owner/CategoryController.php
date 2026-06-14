@@ -21,7 +21,6 @@ class CategoryController extends Controller
 
         $query = Category::where('store_id', $storeId);
 
-        // Search
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -29,7 +28,6 @@ class CategoryController extends Controller
             });
         }
 
-        // Status filter
         if ($status = $request->input('status')) {
             if ($status === 'active') {
                 $query->where('is_active', true);
@@ -38,7 +36,6 @@ class CategoryController extends Controller
             }
         }
 
-        // Sorting
         $sortField = $request->input('sort', 'sort_order');
         $sortDir = $request->input('direction', 'asc');
         $allowed = ['name', 'sort_order', 'created_at', 'is_active'];

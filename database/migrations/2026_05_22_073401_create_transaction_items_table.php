@@ -11,22 +11,19 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('transaction_id')->constrained('transactions')->cascadeOnDelete();
 
-            // Nullable: null berarti item custom (tidak ada di menu)
             $table->foreignId('product_id')
                 ->nullable()
                 ->constrained('products')
                 ->nullOnDelete();
 
-            // Nama & harga disimpan sendiri agar history tidak berubah
-            // walau produk diedit/dihapus di kemudian hari
-            $table->string('name');                              // nama produk saat transaksi
-            $table->boolean('is_custom')->default(false);        // true = item tidak ada di menu
+            $table->string('name');                             
+            $table->boolean('is_custom')->default(false);        
 
-            $table->decimal('unit_price', 12, 2)->default(0);   // harga satuan saat transaksi
-            $table->decimal('capital_price', 12, 2)->default(0); // HPP saat transaksi (untuk laporan laba)
+            $table->decimal('unit_price', 12, 2)->default(0);  
+            $table->decimal('capital_price', 12, 2)->default(0);
             $table->unsignedInteger('qty')->default(1);
-            $table->decimal('discount', 12, 2)->default(0);     // diskon per item (nominal)
-            $table->decimal('subtotal', 12, 2)->default(0);     // (unit_price - discount) * qty
+            $table->decimal('discount', 12, 2)->default(0);    
+            $table->decimal('subtotal', 12, 2)->default(0);   
 
             $table->timestamps();
         });

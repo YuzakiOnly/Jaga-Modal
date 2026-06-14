@@ -342,6 +342,44 @@ export function ProductList({
                                                 )}
                                             </p>
 
+                                            {product.enable_online_food && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {product.price_gobiz && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[8px] px-1 py-0 bg-green-50"
+                                                        >
+                                                            GoBiz:{" "}
+                                                            {formatPrice(
+                                                                product.price_gobiz,
+                                                            )}
+                                                        </Badge>
+                                                    )}
+                                                    {product.price_grabfood && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[8px] px-1 py-0 bg-green-50"
+                                                        >
+                                                            Grab:{" "}
+                                                            {formatPrice(
+                                                                product.price_grabfood,
+                                                            )}
+                                                        </Badge>
+                                                    )}
+                                                    {product.price_shopeefood && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[8px] px-1 py-0 bg-orange-50"
+                                                        >
+                                                            Shopee:{" "}
+                                                            {formatPrice(
+                                                                product.price_shopeefood,
+                                                            )}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             <div className="flex flex-wrap items-center gap-1 mt-1">
                                                 {product.category && (
                                                     <Badge

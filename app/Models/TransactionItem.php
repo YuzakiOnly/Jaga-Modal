@@ -29,8 +29,7 @@ class TransactionItem extends Model
         'subtotal' => 'decimal:2',
         'qty' => 'integer',
     ];
-
-    // ── Relationships ─────────────────────────────────────────────────────────
+    
     public function transaction()
     {
         return $this->belongsTo(Transaction::class);

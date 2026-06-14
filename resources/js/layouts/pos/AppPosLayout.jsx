@@ -1,19 +1,13 @@
 import PosLayout from "./PosLayout";
-import {
-    baseNavItems,
-    superAdminExtraItems,
-    sharedProjects,
-} from "@/lib/sidebar-data";
+import { getNavItemsByRole, sharedProjects } from "@/lib/sidebar-data";
 import { usePage } from "@inertiajs/react";
 
 export default function AppPosLayout({ children }) {
     const { auth } = usePage().props;
-    const isSuperAdmin = auth.user.role === "super_admin";
+    const userRole = auth.user?.role || "owner";
 
-    const navItems = isSuperAdmin
-        ? [...superAdminExtraItems, ...baseNavItems]
-        : baseNavItems;
-
+    const navItems = getNavItemsByRole(userRole);
+    
     return (
         <PosLayout
             navItems={navItems}

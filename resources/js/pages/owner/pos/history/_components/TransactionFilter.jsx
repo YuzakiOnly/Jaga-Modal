@@ -5,9 +5,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Store, Bike, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Store, Bike, Zap, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
 
 const CHANNEL_OPTIONS = [
     { id: "", label: "Semua", icon: null },
@@ -15,7 +23,7 @@ const CHANNEL_OPTIONS = [
     { id: "grabfood", label: "GrabFood", icon: Bike, color: "text-green-600" },
     {
         id: "shopeefood",
-        label: "ShopeFood",
+        label: "ShopeeFood",
         icon: Bike,
         color: "text-orange-500",
     },
@@ -30,9 +38,16 @@ export function TransactionFilter({
     onDateChange,
     onChannelChange,
 }) {
+    const selectedDate = date ? parseISO(date) : new Date();
+
+    const handleDateSelect = (picked) => {
+        if (!picked) return;
+        const formatted = format(picked, "yyyy-MM-dd");
+        onDateChange({ target: { value: formatted } });
+    };
+
     return (
         <div className="space-y-3">
-            {/* Period & date row */}
             <div className="flex flex-wrap gap-3 items-center">
                 <Select value={period} onValueChange={onPeriodChange}>
                     <SelectTrigger className="w-36">
@@ -45,15 +60,36 @@ export function TransactionFilter({
                     </SelectContent>
                 </Select>
 
-                <Input
-                    type="date"
-                    value={date}
-                    onChange={onDateChange}
-                    className="w-44"
-                />
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            className={cn(
+                                "w-44 justify-start text-left font-normal",
+                                !date && "text-muted-foreground",
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {date
+                                ? format(selectedDate, "dd MMM yyyy", {
+                                      locale: id,
+                                  })
+                                : "Pilih tanggal"}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={handleDateSelect}
+                            locale={id}
+                            disabled={{ after: new Date() }}
+                            initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
             </div>
 
-            {/* Channel filter pills */}
             {onChannelChange && (
                 <div className="flex flex-wrap gap-2">
                     {CHANNEL_OPTIONS.map((opt) => {

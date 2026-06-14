@@ -11,11 +11,11 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->string('name');
-            $table->string('product_name')->nullable();           // nama produk yang dikalkulasi
-            $table->decimal('labor_cost', 12, 2)->default(0);    // biaya tenaga kerja per unit
-            $table->decimal('overhead_cost', 12, 2)->default(0); // biaya overhead per unit
-            $table->unsignedInteger('output_qty')->default(1);   // jumlah produk dihasilkan
-            $table->decimal('amount', 12, 2)->default(0);        // HPP per unit (auto-calculated)
+            $table->string('product_name')->nullable();          
+            $table->decimal('labor_cost', 12, 2)->default(0);    
+            $table->decimal('overhead_cost', 12, 2)->default(0);
+            $table->unsignedInteger('output_qty')->default(1); 
+            $table->decimal('amount', 12, 2)->default(0);      
             $table->string('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

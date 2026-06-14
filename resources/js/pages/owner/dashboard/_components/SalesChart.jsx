@@ -61,7 +61,7 @@ function CustomTooltip({ active, payload, label }) {
     const total = items.reduce((sum, item) => sum + item.value, 0);
 
     return (
-        <div className="rounded-lg border border-border bg-background shadow-md px-3 py-2 text-xs min-w-[180px]">
+        <div className="rounded-lg border border-border bg-background shadow-md px-3 py-2 text-xs min-w-[200px]">
             <p className="font-semibold text-foreground mb-1.5">
                 Tanggal {label}
             </p>
@@ -88,9 +88,9 @@ function CustomTooltip({ active, payload, label }) {
                 <div className="border-t border-border my-1 pt-1">
                     <div className="flex items-center justify-between gap-3">
                         <span className="font-semibold text-foreground">
-                            Total
+                            Total (Bersih)
                         </span>
-                        <span className="font-bold text-foreground tabular-nums">
+                        <span className="font-bold text-emerald-600 tabular-nums">
                             {formatRp(total)}
                         </span>
                     </div>
@@ -157,7 +157,7 @@ export default function SalesChart({
                         <span className="font-medium text-foreground">
                             {formatRp(totalRevenue)}
                         </span>{" "}
-                        total {monthName.toLowerCase()}
+                        pendapatan bersih {monthName.toLowerCase()}
                     </CardDescription>
                 </div>
                 {availableMonths?.length > 0 && (
@@ -298,7 +298,7 @@ export default function SalesChart({
                         )}
 
                         <div className="text-center text-xs text-muted-foreground mt-3">
-                            *Data penjualan per tanggal {monthName}
+                            *Data penjualan bersih per tanggal {monthName}
                         </div>
                     </div>
                 )}

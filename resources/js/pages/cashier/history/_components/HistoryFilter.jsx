@@ -1,4 +1,4 @@
-import { Calendar } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
@@ -6,13 +6,13 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 
 const PERIODS = [
-    { value: "daily", label: "Hari Ini" },
-    { value: "weekly", label: "Minggu Ini" },
-    { value: "monthly", label: "Bulan Ini" },
+    { value: "daily", label: "Harian" },
+    { value: "weekly", label: "Mingguan" },
+    { value: "monthly", label: "Bulanan" },
 ];
 
 export default function HistoryFilter({
@@ -21,6 +21,15 @@ export default function HistoryFilter({
     onPeriodChange,
     onDateChange,
 }) {
+    const selectedDate =
+        date instanceof Date
+            ? date
+            : new Date(
+                  (typeof date === "string"
+                      ? date
+                      : date.toISOString().split("T")[0]) + "T00:00:00",
+              );
+
     return (
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -47,25 +56,29 @@ export default function HistoryFilter({
                                 variant="outline"
                                 className="w-full sm:w-auto justify-start gap-2 border-slate-200 hover:border-emerald-300"
                             >
-                                <Calendar
+                                <CalendarIcon
                                     size={13}
                                     className="text-slate-400"
                                 />
                                 <span className="text-sm">
-                                    {format(date, "dd MMMM yyyy", {
+                                    {format(selectedDate, "dd MMMM yyyy", {
                                         locale: id,
                                     })}
                                 </span>
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="end">
-                            <CalendarComponent
+                            <Calendar
                                 mode="single"
-                                selected={date}
-                                onSelect={(newDate) =>
-                                    newDate && onDateChange(newDate)
-                                }
-                                disabled={(date) => date > new Date()}
+                                selected={selectedDate}
+                                onSelect={(newDate) => {
+                                    if (newDate) onDateChange(newDate);
+                                }}
+                                disabled={(day) => {
+                                    const today = new Date();
+                                    today.setHours(23, 59, 59, 999);
+                                    return day > today;
+                                }}
                                 locale={id}
                                 initialFocus
                             />

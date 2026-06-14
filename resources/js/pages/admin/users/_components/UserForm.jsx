@@ -43,7 +43,6 @@ const countryCodes = [
     { code: "+61", label: "🇦🇺 +61" },
 ];
 
-// Schema untuk Create (password required)
 const createSchema = z.object({
     name: z.string().min(1, "Name is required"),
     username: z.string().min(1, "Username is required"),
@@ -57,7 +56,6 @@ const createSchema = z.object({
     password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-// Schema untuk Edit (password optional)
 const editSchema = z.object({
     name: z.string().min(1, "Name is required"),
     username: z.string().min(1, "Username is required"),
@@ -89,7 +87,6 @@ export default function UserForm({ user = null, isEdit = false }) {
     const { auth, flash } = usePage().props;
     const currentUser = auth?.user;
 
-    // Edit mode specific checks
     const isSelfEdit = isEdit && currentUser?.id === user?.id;
     const isEditingSuperAdmin = isEdit && user?.role === "super_admin";
     const isSuperAdminSelfEdit =
@@ -125,7 +122,6 @@ export default function UserForm({ user = null, isEdit = false }) {
 
     const onSubmit = form.handleSubmit((data) => {
         if (isEdit) {
-            // Edit mode
             if (isEditingSuperAdmin || isSelfEdit) {
                 delete data.role;
             }
@@ -139,7 +135,6 @@ export default function UserForm({ user = null, isEdit = false }) {
                 onFinish: () => setProcessing(false),
             });
         } else {
-            // Create mode
             setProcessing(true);
             router.post(route("admin.users.store"), data, {
                 preserveScroll: true,
@@ -169,7 +164,6 @@ export default function UserForm({ user = null, isEdit = false }) {
         });
     };
 
-    // Super Admin self edit restriction
     if (isSuperAdminSelfEdit) {
         return (
             <Card>

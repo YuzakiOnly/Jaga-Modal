@@ -24,6 +24,7 @@ export default function StatCard({
     comparisonLabel,
     icon: Icon,
     isCurrency = true,
+    subtitle = null,
 }) {
     const displayValue = isCurrency ? formatRp(value) : formatNum(value);
     const displayComparison = isCurrency
@@ -70,6 +71,11 @@ export default function StatCard({
                 <p className="text-lg sm:text-2xl font-bold leading-none text-foreground">
                     {displayValue}
                 </p>
+                {subtitle && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                        {subtitle}
+                    </p>
+                )}
                 {comparisonValue !== undefined && comparisonLabel && (
                     <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5">
                         {comparisonLabel}: {displayComparison}

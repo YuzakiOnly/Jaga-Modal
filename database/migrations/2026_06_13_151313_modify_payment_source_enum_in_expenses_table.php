@@ -8,14 +8,11 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up(): void
     {
-        DB::table('users')
-            ->join('stores', 'users.id', '=', 'stores.user_id')
-            ->whereNull('users.store_id')
-            ->update(['users.store_id' => DB::raw('stores.id')]);
+        DB::statement("ALTER TABLE expenses MODIFY COLUMN payment_source ENUM('cash', 'online', 'dine_in', 'grabfood', 'shopeefood', 'gobiz') DEFAULT 'cash'");
     }
 
     public function down(): void
     {
-        // no rollback
+        DB::statement("ALTER TABLE expenses MODIFY COLUMN payment_source ENUM('cash', 'online') DEFAULT 'cash'");
     }
 };

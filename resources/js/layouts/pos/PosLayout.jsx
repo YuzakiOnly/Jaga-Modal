@@ -10,14 +10,14 @@ export default function PosLayout({
     user,
 }) {
     return (
-        <SidebarProvider>
+        <SidebarProvider className="overflow-hidden h-screen">
             <AppSidebar
                 appName={appName}
                 navItems={navItems}
                 projects={projects}
                 user={user}
             />
-            <SidebarInset className="bg-sidebar overflow-x-hidden">
+            <SidebarInset className="bg-sidebar overflow-hidden">
                 <div className="flex flex-col h-screen md:mt-2.5 md:mr-2.5 md:rounded-tl-xl md:rounded-tr-xl bg-background">
                     <PosHeader />
                     <main className="flex-1 min-h-0 overflow-hidden">

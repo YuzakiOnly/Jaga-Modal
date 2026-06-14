@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 const formatRupiah = (num) => "Rp " + Math.round(num).toLocaleString("id-ID");
-const formatNumber = (num) => Math.round(num).toLocaleString("id-ID");
 
 const CHANNEL_ICONS = {
     dine_in: Store,
@@ -128,8 +127,7 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                         <div className="flex justify-between">
                             <span>No. Transaksi</span>
                             <span className="font-mono font-semibold">
-                                {transaction.transaction_number ||
-                                    "TRX-" + Date.now()}
+                                {transaction.transaction_number}
                             </span>
                         </div>
                         <div className="flex justify-between">
@@ -188,6 +186,11 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                                     <span className="font-medium">
                                         {item.name}
                                     </span>
+                                    {item.is_custom && (
+                                        <span className="text-[9px] bg-purple-100 text-purple-600 ml-1 px-1 rounded">
+                                            C
+                                        </span>
+                                    )}
                                     <span className="text-xs text-gray-400 ml-2">
                                         {item.qty} ×{" "}
                                         {formatRupiah(item.unit_price)}
@@ -216,16 +219,6 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                                 <span className="text-gray-600">Diskon</span>
                                 <span className="text-red-500">
                                     -{formatRupiah(transaction.discount)}
-                                </span>
-                            </div>
-                        )}
-                        {transaction.platformFee > 0 && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                    Biaya Platform
-                                </span>
-                                <span>
-                                    {formatRupiah(transaction.platformFee)}
                                 </span>
                             </div>
                         )}

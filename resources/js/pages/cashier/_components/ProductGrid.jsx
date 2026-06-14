@@ -47,7 +47,7 @@ export default function ProductGrid({ products, onAddToCart, cartItems }) {
 
     if (products.length === 0) {
         return (
-            <div className="flex-1 flex flex-col h-130 items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center py-12">
                 <Package className="h-12 w-12 text-gray-300 mb-3" />
                 <p className="text-gray-500">Produk tidak ditemukan</p>
                 <p className="text-sm text-gray-400 mt-1">
@@ -58,8 +58,8 @@ export default function ProductGrid({ products, onAddToCart, cartItems }) {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="p-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {products.map((product) => {
                     const isOutOfStock =
                         product.stock_type === "limited" && product.stock <= 0;
@@ -72,7 +72,7 @@ export default function ProductGrid({ products, onAddToCart, cartItems }) {
                                 !isOutOfStock && onAddToCart(product)
                             }
                             disabled={isOutOfStock}
-                            className={`group text-left bg-white rounded-xl border transition-all duration-200 overflow-hidden relative ${
+                            className={`group text-left bg-white rounded-lg border transition-all duration-200 overflow-hidden relative ${
                                 isOutOfStock
                                     ? "opacity-50 cursor-not-allowed border-gray-200"
                                     : quantityInCart > 0
@@ -81,7 +81,7 @@ export default function ProductGrid({ products, onAddToCart, cartItems }) {
                             }`}
                         >
                             {quantityInCart > 0 && (
-                                <div className="absolute top-2 right-2 z-10 bg-emerald-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                                <div className="absolute top-1.5 right-1.5 z-10 bg-emerald-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
                                     {quantityInCart}
                                 </div>
                             )}
@@ -94,27 +94,29 @@ export default function ProductGrid({ products, onAddToCart, cartItems }) {
                                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                     />
                                 ) : (
-                                    <Package className="h-10 w-10 text-gray-300" />
+                                    <Package className="h-8 w-8 text-gray-300" />
                                 )}
 
                                 {!isOutOfStock && (
                                     <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition-all duration-200 flex items-center justify-center">
-                                        <div className="bg-emerald-600 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-75 group-hover:scale-100 shadow-lg">
-                                            <Plus className="h-4 w-4 text-white" />
+                                        <div className="bg-emerald-600 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-75 group-hover:scale-100 shadow-lg">
+                                            <Plus className="h-3.5 w-3.5 text-white" />
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="p-3">
-                                <p className="text-sm font-semibold text-gray-800 line-clamp-2 mb-1">
+                            <div className="p-2">
+                                <p className="text-xs font-semibold text-gray-800 line-clamp-2 mb-1 leading-tight">
                                     {product.name}
                                 </p>
-                                <p className="text-base font-bold text-emerald-700 mb-2">
-                                    {formatRupiah(product.selling_price)}
-                                </p>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                <div className="mb-1.5">
+                                    <p className="text-sm font-bold text-emerald-700">
+                                        {formatRupiah(product.selling_price)}
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate">
                                         {product.category?.name || "-"}
                                     </span>
                                     <StockStatus product={product} />

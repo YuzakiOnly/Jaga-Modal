@@ -14,6 +14,7 @@ import {
     Phone,
     ChevronDown,
     Calendar as CalendarIcon,
+    Info,
 } from "lucide-react";
 
 import {
@@ -56,6 +57,7 @@ const CHANNEL_CONFIG = {
         methods: ["cash", "qris"],
         defaultMethod: "cash",
         isOnline: false,
+        feeRate: 0,
     },
     grabfood: {
         label: "GrabFood",
@@ -63,15 +65,19 @@ const CHANNEL_CONFIG = {
         defaultMethod: "grabfood",
         isOnline: true,
         color: "green",
-        description: "Pembayaran masuk ke saldo GrabFood",
+        feeRate: 0.2,
+        description:
+            "Pembayaran akan diproses melalui GrabFood. Fee platform 20% akan dipotong untuk item dengan harga GrabFood.",
     },
     shopeefood: {
-        label: "ShopeFood",
+        label: "ShopeeFood",
         methods: ["shopeefood"],
         defaultMethod: "shopeefood",
         isOnline: true,
         color: "orange",
-        description: "Pembayaran masuk ke saldo ShopeFood",
+        feeRate: 0.25,
+        description:
+            "Pembayaran akan diproses melalui ShopeeFood. Fee platform 25% akan dipotong untuk item dengan harga ShopeeFood.",
     },
     gobiz: {
         label: "GoBiz",
@@ -79,7 +85,9 @@ const CHANNEL_CONFIG = {
         defaultMethod: "gobiz",
         isOnline: true,
         color: "emerald",
-        description: "Pembayaran masuk ke saldo GoBiz",
+        feeRate: 0.2,
+        description:
+            "Pembayaran akan diproses melalui GoBiz. Fee platform 20% akan dipotong untuk item dengan harga GoBiz.",
     },
 };
 
@@ -87,7 +95,7 @@ const METHOD_CONFIG = {
     cash: { label: "Cash", icon: Banknote },
     qris: { label: "QRIS", icon: QrCode },
     grabfood: { label: "GrabFood", icon: Bike },
-    shopeefood: { label: "ShopeFood", icon: Bike },
+    shopeefood: { label: "ShopeeFood", icon: Bike },
     gobiz: { label: "GoBiz", icon: Zap },
 };
 
@@ -126,10 +134,16 @@ export function PaymentDialog({
     finalTotal = 0,
     subtotalAfterItemDiscount = 0,
     orderChannel = "dine_in",
+    platformFee: propPlatformFee = 0,
+    platformItemsCount: propPlatformItemsCount = 0,
+    platformItemsTotalAmount: propPlatformItemsTotalAmount = 0,
+    originalSubtotal: propOriginalSubtotal = 0,
+    netRevenue: propNetRevenue = 0,
 }) {
     const channelConfig =
         CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
     const isOnlineChannel = channelConfig.isOnline;
+    const feeRate = channelConfig.feeRate || 0;
 
     const [method, setMethod] = useState(channelConfig.defaultMethod);
     const [amountPaid, setAmountPaid] = useState("");
@@ -150,9 +164,17 @@ export function PaymentDialog({
         finalTotal ||
         cartItems.reduce(
             (sum, item) =>
-                sum + (item.unit_price - (item.discount || 0)) * item.qty,
+                sum +
+                (item.subtotal ||
+                    (item.unit_price - (item.discount || 0)) * item.qty),
             0,
         );
+
+    // Gunakan props untuk platform fee
+    const platformFee = propPlatformFee;
+    const platformItemsCount = propPlatformItemsCount;
+    const platformItemsTotalAmount = propPlatformItemsTotalAmount;
+    const netRevenue = propNetRevenue || total - platformFee;
 
     const paid = parseFloat(amountPaid) || 0;
     const change = paid - total;
@@ -185,16 +207,6 @@ export function PaymentDialog({
         }
     }, [open, orderChannel]);
 
-    const calculatePlatformFee = (totalAmount, items) => {
-        if (!isOnlineChannel) return 0;
-        const originalSubtotal = items.reduce((sum, item) => {
-            if (item.is_custom) return sum + item.unit_price * item.qty;
-            const basePrice = item.base_unit_price || item.unit_price / 1.2;
-            return sum + basePrice * item.qty;
-        }, 0);
-        return totalAmount - originalSubtotal;
-    };
-
     const handleSubmit = () => {
         setProcessing(true);
         setError(null);
@@ -203,11 +215,11 @@ export function PaymentDialog({
             subtotalAfterItemDiscount ||
             cartItems.reduce(
                 (sum, item) =>
-                    sum + (item.unit_price - (item.discount || 0)) * item.qty,
+                    sum +
+                    (item.subtotal ||
+                        (item.unit_price - (item.discount || 0)) * item.qty),
                 0,
             );
-
-        const platformFee = calculatePlatformFee(total, cartItems);
 
         let formattedDate = null;
         if (useCustomDate && transactionDate) {
@@ -232,15 +244,15 @@ export function PaymentDialog({
                 name: item.name,
                 unit_price: parseFloat(item.unit_price),
                 capital_price: parseFloat(item.capital_price || 0),
-                original_price:
-                    item.base_unit_price ||
-                    (isOnlineChannel ? item.unit_price / 1.2 : item.unit_price),
+                original_price: item.base_unit_price || item.unit_price,
                 qty: parseInt(item.qty),
                 discount: parseFloat(item.discount || 0),
                 subtotal: parseFloat(
-                    (item.unit_price - (item.discount || 0)) * item.qty,
+                    item.subtotal ||
+                        (item.unit_price - (item.discount || 0)) * item.qty,
                 ),
                 is_custom: item.is_custom || false,
+                is_using_platform_price: item.is_using_platform_price || false,
             })),
         };
 
@@ -285,7 +297,7 @@ export function PaymentDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-xl sm:rounded-lg max-h-[92dvh] overflow-y-auto p-4 sm:p-6">
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-xl sm:rounded-lg max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                     <div className="flex items-center gap-2">
                         <DialogTitle className="text-base sm:text-lg">
@@ -305,7 +317,7 @@ export function PaymentDialog({
                     </div>
                     <DialogDescription className="text-xs sm:text-sm">
                         {isOnlineChannel
-                            ? `Transaksi ${channelConfig.label} — ${channelConfig.description}`
+                            ? channelConfig.description
                             : "Masukkan detail pembayaran untuk menyelesaikan transaksi"}
                     </DialogDescription>
                 </DialogHeader>
@@ -338,15 +350,49 @@ export function PaymentDialog({
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             {cartItems.reduce((s, i) => s + i.qty, 0)} item
-                            {isOnlineChannel && (
-                                <span className="ml-1 text-orange-600 font-medium">
-                                    (harga sudah +20%, termasuk fee platform)
-                                </span>
-                            )}
                         </p>
                     </div>
 
-                    {/* Tanggal Transaksi */}
+                    {isOnlineChannel && platformFee > 0 && (
+                        <div className="rounded-xl border-2 border-dashed border-muted-foreground/20 px-4 py-4">
+                            <div className="w-full space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium">
+                                        Rincian Biaya Platform
+                                    </p>
+                                </div>
+                                <div className="flex justify-between text-sm gap-4">
+                                    <span className="text-muted-foreground">
+                                        Harga ke pelanggan
+                                    </span>
+                                    <span className="font-medium">
+                                        {formatPrice(total)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm gap-4 text-red-500">
+                                    <span className="flex items-center gap-1">
+                                        <Info className="h-3 w-3" />
+                                        Fee Platform (
+                                        {Math.round(feeRate * 100)}%)
+                                    </span>
+                                    <span>− {formatPrice(platformFee)}</span>
+                                </div>
+                                {platformItemsCount > 0 && (
+                                    <div className="text-[10px] text-gray-400 text-right">
+                                        *Dari {platformItemsCount} item dengan
+                                        total{" "}
+                                        {formatPrice(platformItemsTotalAmount)}
+                                    </div>
+                                )}
+                                <Separator />
+                                <div className="flex justify-between text-sm gap-4 font-bold text-emerald-600">
+                                    <span>Pendapatan Bersih</span>
+                                    <span>{formatPrice(netRevenue)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
                             Tanggal Transaksi
@@ -414,7 +460,6 @@ export function PaymentDialog({
                         )}
                     </div>
 
-                    {/* Data Pelanggan */}
                     <Collapsible
                         open={customerOpen}
                         onOpenChange={setCustomerOpen}
@@ -514,28 +559,6 @@ export function PaymentDialog({
                             </div>
                             <Separator />
                         </>
-                    )}
-
-                    {isOnlineChannel && (
-                        <div className="rounded-xl border-2 border-dashed border-muted-foreground/20 px-4 py-4 flex items-start gap-3">
-                            {(() => {
-                                const { icon: Icon } =
-                                    METHOD_CONFIG[orderChannel] ?? {};
-                                return Icon ? (
-                                    <Icon className="h-5 w-5 text-muted-foreground/50 mt-0.5 shrink-0" />
-                                ) : null;
-                            })()}
-                            <div>
-                                <p className="text-sm font-medium">
-                                    Pembayaran via {channelConfig.label}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                    Dana akan masuk ke saldo{" "}
-                                    {channelConfig.label} toko secara otomatis.
-                                    Fee platform 20% akan dipotong dari total.
-                                </p>
-                            </div>
-                        </div>
                     )}
 
                     {!isOnlineChannel && method === "cash" && (
@@ -666,7 +689,7 @@ export function PaymentDialog({
                                 )}
                             />
                             <span className="text-sm font-medium text-left">
-                                Pesanan sudah diproses & pembayaran masuk ke{" "}
+                                Pesanan sudah diproses melalui{" "}
                                 {channelConfig.label}
                             </span>
                         </button>

@@ -42,7 +42,8 @@ export default function MiniBarChart({
         });
     };
 
-    const displayMonthName = currentMonthName || formatBulanIndonesia(selectedMonth);
+    const displayMonthName =
+        currentMonthName || formatBulanIndonesia(selectedMonth);
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">

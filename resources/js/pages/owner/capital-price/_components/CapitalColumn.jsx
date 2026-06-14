@@ -27,7 +27,6 @@ const formatRupiah = (value) =>
     }).format(value);
 
 export const columns = (onDelete) => [
-    // ── Name ──────────────────────────────────────────────────────────────────
     {
         accessorKey: "name",
         enableHiding: false,
@@ -55,7 +54,6 @@ export const columns = (onDelete) => [
         },
     },
 
-    // ── Amount (HPP) ──────────────────────────────────────────────────────────
     {
         accessorKey: "amount",
         header: ({ column }) => (
@@ -79,7 +77,6 @@ export const columns = (onDelete) => [
         },
     },
 
-    // ── Description ───────────────────────────────────────────────────────────
     {
         accessorKey: "description",
         header: "Deskripsi",
@@ -95,7 +92,6 @@ export const columns = (onDelete) => [
         },
     },
 
-    // ── Status toggle ─────────────────────────────────────────────────────────
     {
         accessorKey: "is_active",
         header: ({ column }) => (
@@ -137,7 +133,6 @@ export const columns = (onDelete) => [
         },
     },
 
-    // ── Created at ────────────────────────────────────────────────────────────
     {
         accessorKey: "created_at",
         header: ({ column }) => (
@@ -159,7 +154,6 @@ export const columns = (onDelete) => [
             }),
     },
 
-    // ── Actions ───────────────────────────────────────────────────────────────
     {
         id: "actions",
         enableHiding: false,

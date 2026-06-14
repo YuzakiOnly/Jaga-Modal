@@ -27,6 +27,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { getNavItemsByRole } from "@/lib/sidebar-data";
 
 function Logo() {
     return (
@@ -43,8 +44,16 @@ export function AppSidebar({
     user,
     ...props
 }) {
-    const { url } = usePage();
+    const { url, props: pageProps } = usePage();
     const { setOpenMobile, isMobile } = useSidebar();
+    const userRole = pageProps.auth?.user?.role || "owner";
+
+    const filteredNavItems = React.useMemo(() => {
+        if (navItems && navItems.length > 0) {
+            return filterNavItemsByRole(navItems, userRole);
+        }
+        return getNavItemsByRole(userRole);
+    }, [navItems, userRole]);
 
     useEffect(() => {
         if (isMobile) setOpenMobile(false);
@@ -106,7 +115,7 @@ export function AppSidebar({
 
             <SidebarContent>
                 <ScrollArea className="h-full">
-                    <NavMain navItems={navItems} />
+                    <NavMain navItems={filteredNavItems} />
                 </ScrollArea>
             </SidebarContent>
 
@@ -115,4 +124,51 @@ export function AppSidebar({
             </SidebarFooter>
         </Sidebar>
     );
+}
+
+function filterNavItemsByRole(navItems, role) {
+    const filtered = [];
+
+    for (const group of navItems) {
+        if (group.permission && !group.permission.includes(role)) {
+            continue;
+        }
+
+        const filteredItems = [];
+        for (const item of group.items) {
+            if (item.permission && !item.permission.includes(role)) {
+                continue;
+            }
+
+            if (item.items) {
+                const filteredSubItems = [];
+                for (const subItem of item.items) {
+                    if (
+                        subItem.permission &&
+                        !subItem.permission.includes(role)
+                    ) {
+                        continue;
+                    }
+                    filteredSubItems.push(subItem);
+                }
+                if (filteredSubItems.length > 0) {
+                    filteredItems.push({
+                        ...item,
+                        items: filteredSubItems,
+                    });
+                }
+            } else {
+                filteredItems.push(item);
+            }
+        }
+
+        if (filteredItems.length > 0) {
+            filtered.push({
+                ...group,
+                items: filteredItems,
+            });
+        }
+    }
+
+    return filtered;
 }

@@ -21,6 +21,8 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { AddStockDialog } from "@/components/shared/AddStockDialog";
+import { FloatingCalculator } from "@/components/shared/FloatingCalculator";
 
 export function ProductGrid({
     products,
@@ -34,6 +36,7 @@ export function ProductGrid({
     const [customName, setCustomName] = useState("");
     const [customSellingPrice, setCustomSellingPrice] = useState("");
     const [customCapitalPrice, setCustomCapitalPrice] = useState("");
+    const [addStockOpen, setAddStockOpen] = useState(false);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(false);
     const scrollRef = useRef(null);
@@ -100,7 +103,7 @@ export function ProductGrid({
                         placeholder="Cari produk..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 shadow-none ring-0"
+                        className="pl-9 shadow-none ring-0! focus:ring-0! focus:ring-offset-0!"
                     />
                     {search && (
                         <button
@@ -111,6 +114,15 @@ export function ProductGrid({
                         </button>
                     )}
                 </div>
+                <FloatingCalculator />
+                <Button
+                    variant="outline"
+                    className="gap-1.5 shrink-0 px-3 sm:px-4"
+                    onClick={() => setAddStockOpen(true)}
+                >
+                    <PackagePlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Tambah Stok</span>
+                </Button>
                 <Button
                     variant="outline"
                     className="gap-1.5 shrink-0 px-3 sm:px-4"
@@ -227,7 +239,7 @@ export function ProductGrid({
                                     </div>
 
                                     <div className="flex flex-col gap-0.5 p-2 sm:p-3">
-                                        <p className="text-xs sm:text-sm font-medium line-clamp-2 leading-tight">
+                                        <p className="text-xs font-medium line-clamp-2 leading-tight">
                                             {product.name}
                                         </p>
                                         <p className="text-xs font-semibold text-primary">
@@ -335,6 +347,12 @@ export function ProductGrid({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AddStockDialog
+                open={addStockOpen}
+                onOpenChange={setAddStockOpen}
+                products={products}
+            />
         </div>
     );
 }

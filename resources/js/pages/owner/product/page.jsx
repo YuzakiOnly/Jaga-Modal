@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { DeleteDialog } from "@/components/shared/DeleteDialog";
-import { AddStockDialog } from "./_components/AddStockDialog";
+import { AddStockDialog } from "@/components/shared/AddStockDialog";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
@@ -77,7 +77,7 @@ export default function ProductsPage({ products, categories, filters }) {
             <Head title="Products" />
 
             <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
                             Products
@@ -91,9 +91,9 @@ export default function ProductsPage({ products, categories, filters }) {
                         <Button
                             variant="outline"
                             onClick={() => setAddStockOpen(true)}
-                            className="h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-4"
+                            className="h-9 gap-2 sm:h-10"
                         >
-                            <PackageSearch className="h-4 w-4 sm:mr-2" />
+                            <PackageSearch className="h-4 w-4" />
                             <span className="hidden sm:inline">
                                 Tambah Stok
                             </span>
@@ -103,9 +103,9 @@ export default function ProductsPage({ products, categories, filters }) {
                             onClick={() =>
                                 router.visit(route("owner.products.create"))
                             }
-                            className="h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-4"
+                            className="h-9 gap-2 sm:h-10"
                         >
-                            <PackagePlus className="h-4 w-4 sm:mr-2" />
+                            <PackagePlus className="h-4 w-4" />
                             <span className="hidden sm:inline">
                                 Add Product
                             </span>

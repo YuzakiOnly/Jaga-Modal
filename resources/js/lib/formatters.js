@@ -1,95 +1,254 @@
-// resources/js/lib/formatters.js
+// lib/formatters.js
 
 /**
- * Format currency ke Rupiah
+ * Format angka menjadi mata uang Rupiah
  * @param {number} value - Nilai yang akan diformat
- * @returns {string} - Format Rupiah (contoh: Rp125.000)
+ * @param {Object} options - Opsi formatting tambahan
+ * @returns {string} String mata uang yang sudah diformat
  */
-export function formatCurrency(value) {
-    if (value === undefined || value === null) {
-        return "Rp0"
+export function formatCurrency(value, options = {}) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return "Rp0";
     }
 
-    return new Intl.NumberFormat("id-ID", {
+    const defaultOptions = {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(value)
+    };
+
+    return new Intl.NumberFormat("id-ID", {
+        ...defaultOptions,
+        ...options,
+    }).format(value);
 }
 
 /**
  * Format angka dengan pemisah ribuan
  * @param {number} value - Nilai yang akan diformat
- * @returns {string} - Format angka (contoh: 1.234.567)
+ * @param {Object} options - Opsi formatting tambahan
+ * @returns {string} String angka yang sudah diformat
  */
-export function formatNumber(value) {
-    if (value === undefined || value === null) {
-        return "0"
+export function formatNumber(value, options = {}) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return "0";
     }
 
-    return new Intl.NumberFormat("id-ID").format(value)
+    const defaultOptions = {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    };
+
+    return new Intl.NumberFormat("id-ID", {
+        ...defaultOptions,
+        ...options,
+    }).format(value);
 }
 
 /**
- * Format tanggal ke format Indonesia
+ * Format angka desimal
+ * @param {number} value - Nilai desimal
+ * @param {number} digits - Jumlah digit desimal
+ * @returns {string}
+ */
+export function formatDecimal(value, digits = 2) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return "0";
+    }
+
+    return new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    }).format(value);
+}
+
+/**
+ * Format tanggal ke format Indonesia (contoh: 1 Januari 2024)
  * @param {string|Date} date - Tanggal yang akan diformat
  * @param {Object} options - Opsi formatting tambahan
- * @returns {string} - Format tanggal (contoh: 28 Mei 2025)
+ * @returns {string}
  */
 export function formatDate(date, options = {}) {
-    if (!date) return ""
+    if (!date) return "";
 
-    const d = new Date(date)
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
     const defaultOptions = {
         day: "numeric",
         month: "long",
         year: "numeric",
-        ...options
-    }
+    };
 
-    return d.toLocaleDateString("id-ID", defaultOptions)
+    return d.toLocaleDateString("id-ID", {
+        ...defaultOptions,
+        ...options,
+    });
 }
 
 /**
- * Format tanggal dan waktu ke format Indonesia
- * @param {string|Date} date - Tanggal/waktu yang akan diformat
- * @returns {string} - Format tanggal & waktu (contoh: 28 Mei 2025, 14:30)
+ * Format tanggal dan waktu (contoh: 1 Januari 2024, 14:30)
+ * @param {string|Date} date - Tanggal yang akan diformat
+ * @returns {string}
  */
 export function formatDateTime(date) {
-    if (!date) return ""
+    if (!date) return "";
 
-    return new Date(date).toLocaleDateString("id-ID", {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    return d.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-    })
+    });
+}
+
+/**
+ * Format tanggal pendek (contoh: 1 Jan)
+ * @param {string|Date} date - Tanggal yang akan diformat
+ * @returns {string}
+ */
+export function formatShortDate(date) {
+    if (!date) return "";
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    return d.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+    });
+}
+
+/**
+ * Format tanggal sangat pendek (contoh: 01/01/24)
+ * @param {string|Date} date - Tanggal yang akan diformat
+ * @returns {string}
+ */
+export function formatShortDateSlash(date) {
+    if (!date) return "";
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    return d.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+    });
+}
+
+/**
+ * Format waktu saja (contoh: 14:30)
+ * @param {string|Date} date - Tanggal yang akan diformat
+ * @returns {string}
+ */
+export function formatTime(date) {
+    if (!date) return "";
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    return d.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 }
 
 /**
  * Format persentase
  * @param {number} value - Nilai persentase
- * @returns {string} - Format persentase (contoh: 25.5%)
+ * @param {number} decimals - Jumlah desimal
+ * @returns {string}
  */
-export function formatPercentage(value) {
-    if (value === undefined || value === null) {
-        return "0%"
+export function formatPercentage(value, decimals = 0) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return "0%";
     }
-    return `${value}%`
+
+    if (decimals > 0) {
+        return `${formatDecimal(value, decimals)}%`;
+    }
+
+    return `${value}%`;
 }
 
 /**
- * Format pendek untuk tanggal (tanpa tahun)
- * @param {string|Date} date - Tanggal yang akan diformat
- * @returns {string} - Format pendek (contoh: 28 Mei)
+ * Convert Date object ke string "YYYY-MM-DD" tanpa timezone shift
+ * @param {Date|string} date - Tanggal yang akan dikonversi
+ * @returns {string}
  */
-export function formatShortDate(date) {
-    if (!date) return ""
+export function toDateString(date) {
+    if (!date) return "";
+    if (typeof date === "string") return date.split("T")[0];
 
-    return new Date(date).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-    })
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
 }
+
+/**
+ * Convert string date ke Date object yang aman
+ * @param {string|Date} date - Tanggal yang akan dikonversi
+ * @returns {Date|null}
+ */
+export function toSafeDate(date) {
+    if (!date) return null;
+
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Format jarak waktu (contoh: 2 jam yang lalu, 3 hari yang lalu)
+ * @param {string|Date} date - Tanggal yang akan diformat
+ * @returns {string}
+ */
+export function timeAgo(date) {
+    if (!date) return "";
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000); // detik
+
+    if (diff < 60) return "baru saja";
+    if (diff < 3600) return `${Math.floor(diff / 60)} menit yang lalu`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} jam yang lalu`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} hari yang lalu`;
+    if (diff < 2592000) return `${Math.floor(diff / 604800)} minggu yang lalu`;
+
+    return formatDate(date);
+}
+
+/**
+ * Format angka menjadi format compact (contoh: 1.2K, 1.5M)
+ * @param {number} value - Nilai yang akan diformat
+ * @returns {string}
+ */
+export function formatCompactNumber(value) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return "0";
+    }
+
+    return new Intl.NumberFormat("id-ID", {
+        notation: "compact",
+        compactDisplay: "short",
+    }).format(value);
+}
+
+/**
+ * Format harga dengan kustom (shortcut untuk formatCurrency)
+ * @param {number} value - Nilai yang akan diformat
+ * @returns {string}
+ */
+export const fmt = (value) => formatCurrency(value);

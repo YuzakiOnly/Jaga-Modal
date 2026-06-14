@@ -1,3 +1,4 @@
+// sidebar-data.js
 import {
     LayoutDashboard,
     Users,
@@ -5,6 +6,7 @@ import {
     ShieldCheck,
     Package,
     ShoppingCart,
+    ShoppingBag,
     BarChart2,
     Store,
     Wallet,
@@ -14,136 +16,10 @@ import {
     Boxes,
     Banknote,
     ClipboardList,
-    FolderKanban,
+    CreditCard,
+    TrendingUp,
 } from "lucide-react";
 
-// all role
-export const baseNavItems = [
-    {
-        title: "Overview",
-        items: [
-            {
-                title: "Dashboard",
-                href: "/owner/dashboard",
-                icon: LayoutDashboard,
-            },
-            {
-                title: "Cashier Store",
-                href: "/cashier",
-                icon: ShoppingCart,
-            }
-        ],
-    },
-
-    {
-        title: "Store",
-        items: [
-            {
-                title: "Categories",
-                href: "/owner/categories",
-                icon: Tags,
-            },
-
-            {
-                title: "Products",
-                href: "/owner/products",
-                icon: Boxes,
-            },
-
-            {
-                title: "Capital (HPP)",
-                href: "/owner/capital-prices",
-                icon: Banknote,
-            },
-
-            {
-                title: "POS",
-                href: "/owner/pos",
-                icon: ShoppingCart,
-                items: [
-                    {
-                        title: "Cashier",
-                        href: "/owner/pos",
-                        icon: Receipt,
-                    },
-                    {
-                        title: "Transaction History",
-                        href: "/owner/pos/history",
-                        icon: History,
-                    },
-                ],
-            },
-
-            {
-                title: "Expenses",
-                href: "/owner/expenses",
-                icon: Wallet,
-            },
-        ],
-    },
-
-    {
-        title: "Pribadi",
-        items: [
-            {
-                title: "Wallet",
-                href: "/owner/wallet",
-                icon: Wallet,
-            },
-        ],
-    },
-
-    {
-        title: "Account",
-        items: [
-            {
-                title: "Settings",
-                href: "/settings",
-                icon: Settings,
-            },
-        ],
-    },
-];
-
-// super_admin
-export const superAdminExtraItems = [
-    {
-        title: "Administration",
-        items: [
-            {
-                title: "Admin Dashboard",
-                href: "/admin/dashboard",
-                icon: LayoutDashboard,
-            },
-
-            {
-                title: "Analytics",
-                href: "/admin/analytics",
-                icon: BarChart2,
-            },
-
-            {
-                title: "Reports",
-                href: "/admin/reports",
-                icon: ClipboardList,
-            },
-
-            {
-                title: "Users",
-                href: "/admin/users",
-                icon: Users,
-            },
-
-            {
-                title: "Security",
-                href: "/admin/security",
-                icon: ShieldCheck,
-            },
-        ],
-    },
-];
-
-// Projects
 export const sharedProjects = [
     {
         id: 1,
@@ -152,7 +28,6 @@ export const sharedProjects = [
         status: "Active",
         statusColor: "text-green-500",
     },
-
     {
         id: 2,
         name: "Warehouse",
@@ -162,8 +37,195 @@ export const sharedProjects = [
     },
 ];
 
-// Combined navItems for use in search and other components
+export const superAdminItems = [
+    {
+        title: "Administration",
+        permission: ["super_admin"],
+        items: [
+            {
+                title: "Users Management",
+                href: "/admin/users",
+                icon: Users,
+                permission: ["super_admin"],
+                description: "Manage system users"
+            },
+            {
+                title: "User Analytics",
+                href: "/admin/analytics",
+                icon: BarChart2,
+                permission: ["super_admin"],
+                description: "View user analytics"
+            },
+            {
+                title: "System Reports",
+                href: "/admin/reports",
+                icon: ClipboardList,
+                permission: ["super_admin"],
+                description: "System wide reports"
+            },
+            {
+                title: "Invite Codes",
+                href: "/admin/invite-codes",
+                icon: ShieldCheck,
+                permission: ["super_admin"],
+                description: "Manage invite codes"
+            },
+            {
+                title: "Stores Management",
+                href: "/admin/stores",
+                icon: Store,
+                permission: ["super_admin"],
+                description: "Manage all stores"
+            },
+            {
+                title: "Security Settings",
+                href: "/admin/security",
+                icon: ShieldCheck,
+                permission: ["super_admin"],
+                description: "System security"
+            },
+        ],
+    },
+];
+
+export const ownerItems = [
+    {
+        title: "Overview",
+        permission: ["owner"],
+        items: [
+            {
+                title: "Dashboard",
+                href: "/owner/dashboard",
+                icon: LayoutDashboard,
+                permission: ["owner"],
+                description: "Business overview"
+            },
+            {
+                title: "POS Cashier",
+                href: "/cashier",
+                icon: ShoppingBag,
+                permission: ["owner"],
+                description: "Point of Sale cashier system"
+            },
+        ],
+    },
+    {
+        title: "Store Management",
+        permission: ["owner"],
+        items: [
+            {
+                title: "Categories",
+                href: "/owner/categories",
+                icon: Tags,
+                permission: ["owner"],
+                description: "Manage product categories"
+            },
+            {
+                title: "Products",
+                href: "/owner/products",
+                icon: Boxes,
+                permission: ["owner"],
+                description: "Manage your products"
+            },
+            {
+                title: "Capital Prices (HPP)",
+                href: "/owner/capital-prices",
+                icon: Banknote,
+                permission: ["owner"],
+                description: "Manage capital prices"
+            },
+            {
+                title: "Point of Sale",
+                href: "/owner/pos",
+                icon: ShoppingCart,
+                permission: ["owner"],
+                description: "Process sales",
+                items: [
+                    {
+                        title: "Cashier",
+                        href: "/owner/pos",
+                        icon: Receipt,
+                        permission: ["owner"],
+                        description: "Make a sale"
+                    },
+                    {
+                        title: "Transaction History",
+                        href: "/owner/pos/history",
+                        icon: History,
+                        permission: ["owner"],
+                        description: "View transaction history"
+                    },
+                ],
+            },
+            {
+                title: "Expenses",
+                href: "/owner/expenses",
+                icon: Wallet,
+                permission: ["owner"],
+                description: "Manage expenses"
+            },
+        ],
+    },
+    {
+        title: "Finance",
+        permission: ["owner"],
+        items: [
+            {
+                title: "Wallet",
+                href: "/owner/wallet",
+                icon: CreditCard,
+                permission: ["owner"],
+                description: "Manage your wallet"
+            },
+            {
+                title: "Financial Reports",
+                href: "/owner/reports",
+                icon: TrendingUp,
+                permission: ["owner"],
+                description: "View financial reports"
+            },
+        ],
+    },
+    {
+        title: "Account",
+        permission: ["owner"],
+        items: [
+            {
+                title: "Settings",
+                href: "/settings",
+                icon: Settings,
+                permission: ["owner"],
+                description: "Account settings"
+            },
+            {
+                title: "Profile",
+                href: "/profile",
+                icon: Users,
+                permission: ["owner"],
+                description: "Manage your profile"
+            },
+        ],
+    },
+];
+
+export const baseNavItems = ownerItems;
+
+export function getNavItemsByRole(role) {
+    let items = [];
+
+    if (role === "super_admin") {
+        items.push(...superAdminItems);
+        items.push(...ownerItems);
+    } else if (role === "owner") {
+        items.push(...ownerItems);
+    } else if (role === "cashier") {
+        items = [];
+    }
+
+    return items;
+}
+
 export const navItems = [
-    ...baseNavItems,
-    ...superAdminExtraItems,
+    ...ownerItems,
+    ...superAdminItems,
 ];

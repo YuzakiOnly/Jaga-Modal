@@ -12,7 +12,6 @@ class Transaction extends Model
     use HasFactory, SoftDeletes;
 
     const ONLINE_CHANNELS = ['grabfood', 'shopeefood', 'gobiz'];
-    const ONLINE_PLATFORM_FEE_PERCENT = 20;
     const PAYMENT_METHODS = ['cash', 'qris', 'grabfood', 'shopeefood', 'gobiz'];
 
     protected $fillable = [
@@ -101,25 +100,6 @@ class Transaction extends Model
         return !$this->isOnlineChannel();
     }
 
-    public function getStoreProfitAttribute(): float
-    {
-        if (!$this->isOnlineChannel()) {
-            return $this->total - $this->items->sum(function ($item) {
-                return $item->capital_price * $item->qty;
-            });
-        }
-
-        $itemProfits = $this->items->sum(function ($item) {
-            $productOriginalPrice = $item->unit_price / (1 + self::ONLINE_PLATFORM_FEE_PERCENT / 100);
-            $storeProfitPerItem = $productOriginalPrice - $item->capital_price;
-            return $storeProfitPerItem * $item->qty;
-        });
-
-        return $itemProfits;
-    }
-
-    // ── Relationships ─────────────────────────────────────────────────────────
-
     public function store()
     {
         return $this->belongsTo(Store::class);
@@ -139,8 +119,6 @@ class Transaction extends Model
     {
         return $this->hasMany(TransactionItem::class);
     }
-
-    // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeForStore($query, $storeId = null)
     {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\OwnerWalletTransaction;
+use App\Models\Store;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,14 +17,14 @@ class ExpenseController extends Controller
     {
         $storeId = auth()->user()->store_id;
 
-        $cashBalance = Transaction::forStore($storeId)
-            ->completed()
-            ->sum('total') - Expense::forStore($storeId)->sum('amount');
+        $onlineBalances = \App\Models\OnlineBalance::getAllChannelBalances($storeId);
+        $dineInBalance = Store::getDineInBalance($storeId);
 
         $period = $request->input('period', 'daily');
         $date = $request->input('date', today()->toDateString());
 
         $baseQuery = Expense::where('store_id', $storeId)
+            ->where('type', '!=', 'store_transfer_in')
             ->with('user')
             ->withTrashed();
 
@@ -71,7 +72,12 @@ class ExpenseController extends Controller
             'expenses' => $expenses,
             'summary' => $summary,
             'filters' => $request->only(['period', 'date']),
-            'storeCashBalance' => $cashBalance,
+            'balances' => [
+                'dine_in' => $dineInBalance,
+                'grabfood' => (float) ($onlineBalances['grabfood'] ?? 0),
+                'shopeefood' => (float) ($onlineBalances['shopeefood'] ?? 0),
+                'gobiz' => (float) ($onlineBalances['gobiz'] ?? 0),
+            ],
         ]);
     }
 
@@ -79,42 +85,50 @@ class ExpenseController extends Controller
     {
         $storeId = auth()->user()->store_id;
 
-        // Hitung saldo kas saat ini
-        $currentCashBalance = $this->getCurrentCashBalance($storeId);
+        $onlineBalances = \App\Models\OnlineBalance::getAllChannelBalances($storeId);
+        $dineInBalance = Store::getDineInBalance($storeId);
 
         $validated = $this->validateByType($request);
 
-        // Validasi saldo untuk semua tipe pengeluaran
         $amount = $this->getExpenseAmount($request->type, $validated);
+        $paymentSource = $request->input('payment_source', 'dine_in');
 
-        if ($amount > $currentCashBalance) {
+        switch ($paymentSource) {
+            case 'dine_in':
+                $balance = $dineInBalance;
+                $label = 'Saldo Dine In';
+                break;
+            case 'grabfood':
+                $balance = $onlineBalances['grabfood'] ?? 0;
+                $label = 'Saldo GrabFood';
+                break;
+            case 'shopeefood':
+                $balance = $onlineBalances['shopeefood'] ?? 0;
+                $label = 'Saldo ShopeeFood';
+                break;
+            case 'gobiz':
+                $balance = $onlineBalances['gobiz'] ?? 0;
+                $label = 'Saldo GoBiz';
+                break;
+            default:
+                $balance = $dineInBalance;
+                $label = 'Saldo Dine In';
+        }
+
+        if ($amount > $balance) {
             return back()->withErrors([
                 'amount' => sprintf(
-                    'Saldo kas toko tidak mencukupi. Saldo saat ini: Rp %s',
-                    number_format($currentCashBalance, 0, ',', '.')
+                    '%s tidak mencukupi. Saldo saat ini: Rp %s',
+                    $label,
+                    number_format($balance, 0, ',', '.')
                 )
             ])->withInput();
         }
 
-        DB::transaction(function () use ($request, $validated, $storeId) {
+        DB::transaction(function () use ($request, $validated, $storeId, $paymentSource) {
             $data = $this->buildExpenseData($request->type, $validated, $storeId);
-            $expense = Expense::create($data);
-
-            if ($request->type === 'owner_withdrawal') {
-                $amount = (float) $validated['amount'];
-
-                OwnerWalletTransaction::create([
-                    'store_id' => $storeId,
-                    'user_id' => auth()->id(),
-                    'flow' => 'in',
-                    'source' => 'withdrawal',
-                    'amount' => $amount,
-                    'description' => 'Penarikan toko: ' . $validated['description'],
-                    'notes' => $validated['notes'] ?? null,
-                    'expense_id' => $expense->id,
-                    'transacted_at' => $validated['expensed_at'],
-                ]);
-            }
+            $data['payment_source'] = $paymentSource;
+            Expense::create($data);
         });
 
         return back()->with('success', 'Pengeluaran berhasil dicatat.');
@@ -126,29 +140,62 @@ class ExpenseController extends Controller
 
         $storeId = $expense->store_id;
 
-        // Hitung saldo kas sebelum update (tambahkan kembali pengeluaran lama)
-        $currentCashBalance = $this->getCurrentCashBalance($storeId) + $expense->total_amount;
+        $currentCashBalance = Store::computeCashBalance($storeId) + $expense->total_amount;
+        $onlineBalances = \App\Models\OnlineBalance::getAllChannelBalances($storeId);
 
         $validated = $this->validateByType($request);
 
-        // Validasi saldo untuk update
         $newAmount = $this->getExpenseAmount($request->type, $validated);
+        $paymentSource = $request->input('payment_source', $expense->payment_source ?? 'cash');
 
-        if ($newAmount > $currentCashBalance) {
-            return back()->withErrors([
-                'amount' => sprintf(
-                    'Saldo kas toko tidak mencukupi untuk update ini. Saldo saat ini (setelah mengembalikan pengeluaran lama Rp %s): Rp %s',
-                    number_format($expense->total_amount, 0, ',', '.'),
-                    number_format($currentCashBalance, 0, ',', '.')
-                )
-            ])->withInput();
+        if ($paymentSource === 'cash') {
+            if ($newAmount > $currentCashBalance) {
+                return back()->withErrors([
+                    'amount' => sprintf(
+                        'Saldo kas toko tidak mencukupi untuk update ini. Saldo saat ini (setelah mengembalikan pengeluaran lama Rp %s): Rp %s',
+                        number_format($expense->total_amount, 0, ',', '.'),
+                        number_format($currentCashBalance, 0, ',', '.')
+                    )
+                ])->withInput();
+            }
+        } elseif ($paymentSource === 'grabfood') {
+            $balance = ($onlineBalances['grabfood'] ?? 0) + $expense->total_amount;
+            if ($newAmount > $balance) {
+                return back()->withErrors([
+                    'amount' => sprintf(
+                        'Saldo GrabFood tidak mencukupi untuk update ini. Saldo saat ini (setelah mengembalikan pengeluaran lama Rp %s): Rp %s',
+                        number_format($expense->total_amount, 0, ',', '.'),
+                        number_format($balance, 0, ',', '.')
+                    )
+                ])->withInput();
+            }
+        } elseif ($paymentSource === 'shopeefood') {
+            $balance = ($onlineBalances['shopeefood'] ?? 0) + $expense->total_amount;
+            if ($newAmount > $balance) {
+                return back()->withErrors([
+                    'amount' => sprintf(
+                        'Saldo ShopeeFood tidak mencukupi untuk update ini. Saldo saat ini (setelah mengembalikan pengeluaran lama Rp %s): Rp %s',
+                        number_format($expense->total_amount, 0, ',', '.'),
+                        number_format($balance, 0, ',', '.')
+                    )
+                ])->withInput();
+            }
+        } elseif ($paymentSource === 'gobiz') {
+            $balance = ($onlineBalances['gobiz'] ?? 0) + $expense->total_amount;
+            if ($newAmount > $balance) {
+                return back()->withErrors([
+                    'amount' => sprintf(
+                        'Saldo GoBiz tidak mencukupi untuk update ini. Saldo saat ini (setelah mengembalikan pengeluaran lama Rp %s): Rp %s',
+                        number_format($expense->total_amount, 0, ',', '.'),
+                        number_format($balance, 0, ',', '.')
+                    )
+                ])->withInput();
+            }
         }
 
-        DB::transaction(function () use ($request, $validated, $expense) {
-            $oldType = $expense->type;
-            $oldAmount = $expense->total_amount;
-
+        DB::transaction(function () use ($request, $validated, $expense, $paymentSource) {
             $data = $this->buildExpenseData($request->type, $validated, $expense->store_id, isUpdate: true);
+            $data['payment_source'] = $paymentSource;
             $expense->update($data);
 
             $walletEntry = OwnerWalletTransaction::where('expense_id', $expense->id)->first();
@@ -201,23 +248,6 @@ class ExpenseController extends Controller
         return back()->with('success', 'Pengeluaran berhasil dihapus.');
     }
 
-    /**
-     * Hitung saldo kas toko saat ini
-     */
-    private function getCurrentCashBalance(int $storeId): float
-    {
-        $totalIncome = Transaction::forStore($storeId)
-            ->completed()
-            ->sum('total');
-
-        $totalExpenses = Expense::forStore($storeId)->sum('amount');
-
-        return $totalIncome - $totalExpenses;
-    }
-
-    /**
-     * Dapatkan jumlah pengeluaran berdasarkan tipe
-     */
     private function getExpenseAmount(string $type, array $validated): float
     {
         if ($type === 'raw_material') {
@@ -231,6 +261,7 @@ class ExpenseController extends Controller
     {
         $rules = [
             'type' => ['required', 'in:simple,raw_material,salary,owner_withdrawal'],
+            'payment_source' => ['nullable', 'in:dine_in,grabfood,shopeefood,gobiz'],
             'description' => ['required', 'string', 'max:200'],
             'expensed_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -270,7 +301,7 @@ class ExpenseController extends Controller
         if ($type === 'raw_material') {
             $data['quantity'] = $validated['quantity'];
             $data['unit_price'] = $validated['unit_price'];
-            $data['amount'] = $validated['quantity'] * $validated['amount'];
+            $data['amount'] = $validated['quantity'] * $validated['unit_price'];
             $data['employee_name'] = null;
             $data['salary_period'] = null;
         } elseif ($type === 'salary') {
@@ -306,6 +337,7 @@ class ExpenseController extends Controller
         return [
             'id' => $expense->id,
             'type' => $expense->type,
+            'payment_source' => $expense->payment_source,
             'description' => $expense->description,
             'amount' => $expense->total_amount,
             'quantity' => $expense->quantity,

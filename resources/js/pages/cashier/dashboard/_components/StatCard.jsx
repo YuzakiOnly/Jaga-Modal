@@ -32,7 +32,6 @@ export default function StatCard({
                         )}
                     />
                 </div>
-                {/* FIX: Ganti !== undefined → != null supaya null tidak lolos render */}
                 {trend != null && (
                     <span
                         className={cn(

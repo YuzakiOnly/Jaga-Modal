@@ -1,6 +1,5 @@
 import { ShieldCheck, Crown, Receipt } from "lucide-react";
 
-// ─── Role badge config ────────────────────────────────────────────────────────
 export const roleConfig = {
     super_admin: {
         label: "Super Admin",
@@ -25,7 +24,6 @@ export const roleConfig = {
     },
 };
 
-// ─── Role filter options ──────────────────────────────────────────────────────
 export const roleOptions = [
     { value: "all", label: "All roles", color: "gray" },
     { value: "super_admin", label: "Super Admin", color: "violet" },
@@ -33,7 +31,6 @@ export const roleOptions = [
     { value: "cashier", label: "Cashier", color: "sky" },
 ];
 
-// ─── Role dot color map (inline style fallback for Tailwind purge) ────────────
 export const roleColorMap = {
     violet: "rgb(139, 92, 246)",
     amber: "rgb(245, 158, 11)",

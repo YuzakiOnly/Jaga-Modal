@@ -66,6 +66,8 @@ function ChannelBreakdown({ revenueByChannel }) {
 
     const total = channels.reduce((s, c) => s + c.revenue, 0);
 
+    if (total === 0) return null;
+
     return (
         <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
             <div className="mb-3">
@@ -75,39 +77,49 @@ function ChannelBreakdown({ revenueByChannel }) {
             </div>
 
             <div className="flex rounded-full overflow-hidden h-2 mb-4 gap-0.5">
-                {channels.map((ch) => (
-                    <div
-                        key={ch.key}
-                        className={ch.dotColor}
-                        style={{
-                            width: `${(ch.revenue / total) * 100}%`,
-                            minWidth: "4px",
-                        }}
-                    />
-                ))}
+                {channels.map((ch) => {
+                    const percentage = (ch.revenue / total) * 100;
+                    return (
+                        <div
+                            key={ch.key}
+                            className={ch.dotColor}
+                            style={{
+                                width: `${percentage}%`,
+                                minWidth: "4px",
+                            }}
+                        />
+                    );
+                })}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {channels.map((ch) => (
-                    <div key={ch.key} className={`${ch.color} rounded-xl p-3`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <div
-                                className={`w-1.5 h-1.5 rounded-full ${ch.dotColor}`}
-                            />
-                            <span
-                                className={`text-[10px] font-semibold ${ch.textColor}`}
-                            >
-                                {ch.label}
-                            </span>
+                {channels.map((ch) => {
+                    const percentage =
+                        total > 0 ? (ch.revenue / total) * 100 : 0;
+                    return (
+                        <div
+                            key={ch.key}
+                            className={`${ch.color} rounded-xl p-3`}
+                        >
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <div
+                                    className={`w-1.5 h-1.5 rounded-full ${ch.dotColor}`}
+                                />
+                                <span
+                                    className={`text-[10px] font-semibold ${ch.textColor}`}
+                                >
+                                    {ch.label}
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-gray-800">
+                                {fmt(ch.revenue)}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                                {Math.round(percentage)}%
+                            </p>
                         </div>
-                        <p className="text-sm font-bold text-gray-800">
-                            {fmt(ch.revenue)}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                            {Math.round((ch.revenue / total) * 100)}%
-                        </p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

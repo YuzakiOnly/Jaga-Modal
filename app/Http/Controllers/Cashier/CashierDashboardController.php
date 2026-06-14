@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Expense;
+use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,13 +22,7 @@ class CashierDashboardController extends Controller
         $selectedMonth = $request->input('month', now()->format('Y-m'));
         $selectedDate = Carbon::parse($selectedMonth . '-01');
 
-        $totalStoreCashRevenue = Transaction::forStore($storeId)
-            ->completed()
-            ->storeCashOnly()
-            ->sum('net_revenue');
-
-        $totalExpenseAll = Expense::forStore($storeId)->get()->sum(fn($e) => $e->total_amount);
-        $cashBalance = $totalStoreCashRevenue - $totalExpenseAll;
+        $cashBalance = Store::computeCashBalance($storeId);
 
         $todayStats = Transaction::forStore($storeId)
             ->completed()
@@ -42,6 +37,8 @@ class CashierDashboardController extends Controller
 
         $todayExpense = Expense::forStore($storeId)
             ->whereDate('expensed_at', today())
+            ->where('payment_source', 'cash')
+            ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
@@ -61,6 +58,8 @@ class CashierDashboardController extends Controller
 
         $weeklyExpense = Expense::forStore($storeId)
             ->whereBetween('expensed_at', [$weekStart, $weekEnd])
+            ->where('payment_source', 'cash')
+            ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
@@ -81,6 +80,8 @@ class CashierDashboardController extends Controller
         $monthlyExpense = Expense::forStore($storeId)
             ->whereMonth('expensed_at', now()->month)
             ->whereYear('expensed_at', now()->year)
+            ->where('payment_source', 'cash')
+            ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
@@ -141,22 +142,28 @@ class CashierDashboardController extends Controller
 
         $yesterdayExpense = Expense::forStore($storeId)
             ->whereDate('expensed_at', today()->subDay())
+            ->where('payment_source', 'cash')
+            ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
         $lastWeekExpense = Expense::forStore($storeId)
             ->whereBetween('expensed_at', [$lastWeekStart, $lastWeekEnd])
+            ->where('payment_source', 'cash')
+            ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
         $lastMonthExpense = Expense::forStore($storeId)
             ->whereBetween('expensed_at', [$lastMonthStart, $lastMonthEnd])
+            ->where('payment_source', 'cash')
+            ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
         return Inertia::render('cashier/dashboard/page', [
             'stats' => [
-                'cash_balance' => (float) $cashBalance,
+                'cash_balance' => (float) max(0, $cashBalance),
 
                 'today_revenue' => $todayRevenue,
                 'today_transactions' => (int) ($todayStats->today_transactions ?? 0),
@@ -245,7 +252,7 @@ class CashierDashboardController extends Controller
     {
         $months = Transaction::forStore($storeId)
             ->completed()
-            ->where('total', '>', 0)
+            ->where('net_revenue', '>', 0)
             ->where('transacted_at', '<=', now())
             ->selectRaw('DISTINCT DATE_FORMAT(transacted_at, "%Y-%m") as month_value')
             ->orderBy('month_value', 'desc')

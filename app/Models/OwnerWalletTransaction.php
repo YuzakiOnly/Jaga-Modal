@@ -15,8 +15,8 @@ class OwnerWalletTransaction extends Model
     protected $fillable = [
         'store_id',
         'user_id',
-        'flow',          // in | out
-        'source',        // withdrawal | manual_topup | personal_out
+        'flow',          
+        'source',        
         'amount',
         'description',
         'notes',
@@ -28,8 +28,6 @@ class OwnerWalletTransaction extends Model
         'amount' => 'decimal:2',
         'transacted_at' => 'date',
     ];
-
-    // ── Relationships ─────────────────────────────────────────────────────────
 
     public function store()
     {
@@ -46,8 +44,6 @@ class OwnerWalletTransaction extends Model
         return $this->belongsTo(Expense::class)->withTrashed();
     }
 
-    // ── Scopes ────────────────────────────────────────────────────────────────
-
     public function scopeForStore($query, $storeId = null)
     {
         $storeId = $storeId ?? auth()->user()?->store_id;
@@ -63,12 +59,7 @@ class OwnerWalletTransaction extends Model
     {
         return $query->where('flow', 'out');
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /**
-     * Hitung saldo dompet untuk satu toko.
-     */
+    
     public static function balanceForStore(int $storeId): float
     {
         $in = static::where('store_id', $storeId)->where('flow', 'in')->sum('amount');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
+use App\Models\Store;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,9 +16,10 @@ class CashierExpenseController extends Controller
         $storeId = auth()->user()->store_id;
         $date = $request->input('date', today()->toDateString());
 
-        $cashBalance = $this->getCurrentCashBalance($storeId);
+        $cashBalance = Store::computeCashBalance($storeId);
 
         $expenses = Expense::where('store_id', $storeId)
+            ->where('type', '!=', 'store_transfer_in')
             ->whereDate('expensed_at', $date)
             ->latest('expensed_at')
             ->paginate(20)
@@ -39,6 +41,7 @@ class CashierExpenseController extends Controller
 
         $summary = [
             'total' => Expense::where('store_id', $storeId)
+                ->where('type', '!=', 'store_transfer_in')
                 ->whereDate('expensed_at', $date)
                 ->get()
                 ->sum(fn($e) => $e->total_amount),
@@ -86,8 +89,8 @@ class CashierExpenseController extends Controller
 
         $expenseAmount = $this->getExpenseAmount($request->type, $validated);
 
-        // FIX: pakai getCurrentCashBalance yang sudah benar (storeCashOnly)
-        $cashBalance = $this->getCurrentCashBalance($storeId);
+        // FIX: Gunakan method yang sama
+        $cashBalance = Store::computeCashBalance($storeId);
 
         if ($expenseAmount > $cashBalance) {
             return back()->withErrors([
@@ -177,8 +180,8 @@ class CashierExpenseController extends Controller
 
         $newExpenseAmount = $this->getExpenseAmount($request->type, $validated);
 
-        // FIX: tambahkan kembali nilai expense lama sebelum validasi saldo
-        $currentCashBalance = $this->getCurrentCashBalance($storeId) + $expense->total_amount;
+        // FIX: Gunakan method yang sama + tambah pengembalian expense lama
+        $currentCashBalance = Store::computeCashBalance($storeId) + $expense->total_amount;
 
         if ($newExpenseAmount > $currentCashBalance) {
             return back()->withErrors([
@@ -228,20 +231,20 @@ class CashierExpenseController extends Controller
         return back()->with('success', 'Pengeluaran berhasil diperbarui.');
     }
 
-    /**
-     * FIX: saldo kas hanya dari transaksi dine_in (storeCashOnly + net_revenue),
-     * bukan semua transaksi termasuk online
-     */
-    private function getCurrentCashBalance(int $storeId): float
+    public function destroy(Expense $expense)
     {
-        $totalStoreCashRevenue = Transaction::forStore($storeId)
-            ->completed()
-            ->storeCashOnly()
-            ->sum('net_revenue');
+        $user = auth()->user();
+        $storeId = $user->store_id;
 
-        $totalExpenses = Expense::forStore($storeId)->sum('amount');
+        abort_if($expense->store_id !== $storeId, 403);
 
-        return $totalStoreCashRevenue - $totalExpenses;
+        if ($user->role !== 'owner' && $expense->user_id !== $user->id) {
+            abort(403, 'Anda tidak dapat menghapus pengeluaran orang lain.');
+        }
+
+        $expense->forceDelete();
+
+        return back()->with('success', 'Pengeluaran berhasil dihapus.');
     }
 
     private function getExpenseAmount(string $type, array $validated): float

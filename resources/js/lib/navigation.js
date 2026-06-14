@@ -1,4 +1,3 @@
-// resources/js/lib/navigation.js
 import {
     ShoppingCart,
     History,

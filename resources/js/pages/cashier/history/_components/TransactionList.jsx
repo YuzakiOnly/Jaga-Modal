@@ -36,7 +36,6 @@ export default function TransactionList({ transactions, fmt }) {
                     onToggle={() =>
                         setOpenId(openId === trx.id ? null : trx.id)
                     }
-                    fmt={fmt}
                 />
             ))}
 

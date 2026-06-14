@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { CommandIcon, SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 import {
     CommandDialog,
@@ -21,6 +21,8 @@ import { navItems } from "@/lib/sidebar-data";
 
 export default function Search() {
     const [open, setOpen] = useState(false);
+    const { props } = usePage();
+    const userRole = props.auth?.user?.role || "owner";
 
     useEffect(() => {
         const down = (e) => {
@@ -32,6 +34,134 @@ export default function Search() {
         document.addEventListener("keydown", down);
         return () => document.removeEventListener("keydown", down);
     }, []);
+
+    const checkItemPermission = (item, role) => {
+        const href = item.href || "";
+
+        const adminOnlyRoutes = [
+            "/admin",
+            "/admin/users",
+            "/admin/invite-codes",
+            "/admin/stores",
+            "/admin/settings",
+        ];
+
+        const ownerOnlyRoutes = [
+            "/owner",
+            "/owner/dashboard",
+            "/owner/products",
+            "/owner/categories",
+            "/owner/capital-prices",
+            "/owner/transactions",
+            "/owner/expenses",
+            "/owner/wallet",
+            "/owner/reports",
+            "/owner/settings",
+        ];
+
+        const cashierOnlyRoutes = [
+            "/cashier",
+            "/cashier/pos",
+            "/cashier/transactions",
+        ];
+
+        if (adminOnlyRoutes.some((route) => href.startsWith(route))) {
+            return role === "super_admin";
+        }
+
+        if (ownerOnlyRoutes.some((route) => href.startsWith(route))) {
+            return ["super_admin", "owner"].includes(role);
+        }
+
+        if (cashierOnlyRoutes.some((route) => href.startsWith(route))) {
+            return ["super_admin", "owner", "cashier"].includes(role);
+        }
+
+        return true;
+    };
+
+    const getFilteredNavItems = () => {
+        const adminRoles = ["super_admin"];
+
+        const ownerRoles = ["owner"];
+
+        const cashierRoles = ["owner", "cashier"];
+
+        const filtered = [];
+
+        for (const route of navItems) {
+            let isRouteVisible = false;
+
+            if (route.title === "Admin") {
+                isRouteVisible = adminRoles.includes(userRole);
+            } else if (route.title === "Owner") {
+                isRouteVisible = ownerRoles.includes(userRole);
+            } else if (route.title === "Cashier") {
+                isRouteVisible = cashierRoles.includes(userRole);
+            } else {
+                isRouteVisible = true;
+            }
+
+            if (!isRouteVisible) continue;
+
+            const filteredItems = [];
+
+            for (const item of route.items) {
+                if (item.items) {
+                    const filteredSubItems = [];
+                    for (const subItem of item.items) {
+                        if (checkItemPermission(subItem, userRole)) {
+                            filteredSubItems.push(subItem);
+                        }
+                    }
+
+                    if (filteredSubItems.length > 0) {
+                        filteredItems.push({
+                            ...item,
+                            items: filteredSubItems,
+                        });
+                    }
+                } else {
+                    if (checkItemPermission(item, userRole)) {
+                        filteredItems.push(item);
+                    }
+                }
+            }
+
+            if (filteredItems.length > 0) {
+                filtered.push({
+                    ...route,
+                    items: filteredItems,
+                });
+            }
+        }
+
+        return filtered;
+    };
+
+    const filteredNavItems = getFilteredNavItems();
+
+    const getFlatItems = (route) => {
+        const items = [];
+        for (const item of route.items) {
+            if (item.items) {
+                for (const sub of item.items) {
+                    items.push({
+                        title: sub.title,
+                        href: sub.href,
+                        icon: item.icon,
+                    });
+                }
+            } else {
+                items.push({
+                    title: item.title,
+                    href: item.href,
+                    icon: item.icon,
+                });
+            }
+        }
+        return items;
+    };
 
     return (
         <div className="lg:flex-1">
@@ -60,43 +190,29 @@ export default function Search() {
             <CommandDialog open={open} onOpenChange={setOpen}>
                 <VisuallyHidden>
                     <DialogHeader>
-                        <DialogTitle></DialogTitle>
+                        <DialogTitle>Search Menu</DialogTitle>
                     </DialogHeader>
                 </VisuallyHidden>
                 <CommandInput placeholder="Type a command or search..." />
                 <CommandList>
                     <CommandEmpty>No results found.</CommandEmpty>
-                    {navItems.map((route) => (
+                    {filteredNavItems.map((route) => (
                         <React.Fragment key={route.title}>
                             <CommandGroup heading={route.title}>
-                                {route.items
-                                    .flatMap((item) =>
-                                        item.items
-                                            ? item.items.map((sub) => ({
-                                                  title: sub.title,
-                                                  href: sub.href,
-                                                  icon: item.icon,
-                                              }))
-                                            : [
-                                                  {
-                                                      title: item.title,
-                                                      href: item.href,
-                                                      icon: item.icon,
-                                                  },
-                                              ],
-                                    )
-                                    .map((flatItem, key) => (
-                                        <CommandItem
-                                            key={key}
-                                            onSelect={() => {
-                                                setOpen(false);
-                                                router.visit(flatItem.href);
-                                            }}
-                                        >
-                                            {flatItem.icon && <flatItem.icon />}
-                                            <span>{flatItem.title}</span>
-                                        </CommandItem>
-                                    ))}
+                                {getFlatItems(route).map((flatItem, key) => (
+                                    <CommandItem
+                                        key={key}
+                                        onSelect={() => {
+                                            setOpen(false);
+                                            router.visit(flatItem.href);
+                                        }}
+                                    >
+                                        {flatItem.icon && (
+                                            <flatItem.icon className="mr-2 h-4 w-4" />
+                                        )}
+                                        <span>{flatItem.title}</span>
+                                    </CommandItem>
+                                ))}
                             </CommandGroup>
                             <CommandSeparator />
                         </React.Fragment>

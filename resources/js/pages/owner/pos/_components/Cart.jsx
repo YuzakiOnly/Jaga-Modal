@@ -10,6 +10,7 @@ import {
     Bike,
     Store,
     Zap,
+    Info,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,6 @@ const formatNumberInput = (value) => {
     return new Intl.NumberFormat("id-ID").format(value);
 };
 
-// ─── Channel config ──────────────────────────────────────────────────────────
 export const CHANNELS = [
     {
         id: "dine_in",
@@ -57,6 +57,7 @@ export const CHANNELS = [
         bgInactive:
             "bg-background text-muted-foreground border-border hover:bg-accent",
         online: false,
+        feeRate: 0,
     },
     {
         id: "grabfood",
@@ -68,10 +69,11 @@ export const CHANNELS = [
         bgInactive:
             "bg-background text-green-700 border-green-200 hover:bg-green-50",
         online: true,
+        feeRate: 0.2,
     },
     {
         id: "shopeefood",
-        label: "ShopeFood",
+        label: "ShopeeFood",
         shortLabel: "Shopee",
         icon: Bike,
         color: "text-orange-500",
@@ -79,6 +81,7 @@ export const CHANNELS = [
         bgInactive:
             "bg-background text-orange-600 border-orange-200 hover:bg-orange-50",
         online: true,
+        feeRate: 0.25,
     },
     {
         id: "gobiz",
@@ -90,17 +93,26 @@ export const CHANNELS = [
         bgInactive:
             "bg-background text-emerald-700 border-emerald-200 hover:bg-emerald-50",
         online: true,
+        feeRate: 0.2,
     },
 ];
 
-// ─── CartItem ─────────────────────────────────────────────────────────────────
 function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
-    const subtotal = (item.unit_price - item.discount) * item.qty;
+    const subtotal =
+        item.subtotal || (item.unit_price - item.discount) * item.qty;
     const profitPerItem = item.unit_price - item.capital_price;
     const [discountInput, setDiscountInput] = useState(
         item.discount ? formatNumberInput(item.discount) : "",
     );
     const [discountError, setDiscountError] = useState("");
+    const [qtyInput, setQtyInput] = useState(item.qty.toString());
+    const [isEditingQty, setIsEditingQty] = useState(false);
+
+    const willBeChargedFee = item.is_using_platform_price === true;
+    const feeRate =
+        CHANNELS.find((c) =>
+            c.id === isOnline ? item._channel || "grabfood" : null,
+        )?.feeRate || 20;
 
     const handleDiscountChange = (e) => {
         const rawValue = e.target.value;
@@ -138,10 +150,49 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
         try {
             qtyInputSchema.parse({ qty: newQty });
             onUpdateQty(item._key, newQty);
+            setQtyInput(newQty.toString());
         } catch (error) {
             toast.error(error.errors[0]?.message || "Quantity tidak valid");
         }
     };
+
+    const handleQtyInputChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === "") {
+            setQtyInput("");
+            return;
+        }
+        const numericValue = parseNumberInput(rawValue);
+        setQtyInput(numericValue.toString());
+    };
+
+    const handleQtyInputBlur = () => {
+        if (qtyInput === "") {
+            handleQtyChange(1);
+        } else {
+            const newQty = parseInt(qtyInput, 10);
+            if (newQty >= 1) {
+                handleQtyChange(newQty);
+            } else {
+                handleQtyChange(1);
+            }
+        }
+        setIsEditingQty(false);
+    };
+
+    const handleQtyInputKeyDown = (e) => {
+        if (e.key === "Enter") {
+            e.currentTarget.blur();
+        }
+    };
+
+    const handleQtyClick = () => {
+        setIsEditingQty(true);
+        setQtyInput(item.qty.toString());
+    };
+
+    const hasPlatformPrice =
+        item.base_unit_price && item.base_unit_price !== item.unit_price;
 
     return (
         <div className="flex flex-col gap-1.5 py-3">
@@ -151,25 +202,31 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
                         <p className="text-sm font-medium leading-tight line-clamp-1">
                             {item.name}
                         </p>
-                        {isOnline && !item.is_custom && (
+                        {willBeChargedFee && (
+                            <Badge
+                                variant="outline"
+                                className="text-[10px] px-1 py-0 border-red-300 text-red-600 bg-red-50 shrink-0"
+                            >
+                                <Info className="h-2.5 w-2.5 mr-0.5" />
+                                Fee {Math.round(feeRate * 100)}%
+                            </Badge>
+                        )}
+                        {hasPlatformPrice && !willBeChargedFee && (
                             <Badge
                                 variant="outline"
                                 className="text-[10px] px-1 py-0 border-orange-300 text-orange-600 bg-orange-50 shrink-0"
                             >
-                                +20%
+                                Harga Online
                             </Badge>
                         )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                         {formatPrice(item.unit_price)}
-                        {/* Tampilkan harga asli jika online */}
-                        {isOnline &&
-                            !item.is_custom &&
-                            item.base_unit_price && (
-                                <span className="ml-1 text-muted-foreground/60 line-through text-[10px]">
-                                    {formatPrice(item.base_unit_price)}
-                                </span>
-                            )}
+                        {hasPlatformPrice && (
+                            <span className="ml-1 text-muted-foreground/60 line-through text-[10px]">
+                                {formatPrice(item.base_unit_price)}
+                            </span>
+                        )}
                         {item.discount > 0 && (
                             <span className="ml-1 text-destructive">
                                 − {formatPrice(item.discount)}
@@ -180,11 +237,6 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
                         <p className="text-[10px] text-emerald-600 mt-0.5">
                             Modal: {formatPrice(item.capital_price)} |
                             Laba/item: {formatPrice(profitPerItem)}
-                        </p>
-                    )}
-                    {item.is_custom && item.capital_price === 0 && (
-                        <p className="text-[10px] text-amber-600 mt-0.5">
-                            Modal: 0 (laba penuh)
                         </p>
                     )}
                     {item.is_custom && (
@@ -212,9 +264,25 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
                     >
                         <Minus className="h-3 w-3" />
                     </button>
-                    <span className="w-8 text-center text-sm tabular-nums font-medium">
-                        {item.qty}
-                    </span>
+                    {isEditingQty ? (
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={qtyInput}
+                            onChange={handleQtyInputChange}
+                            onBlur={handleQtyInputBlur}
+                            onKeyDown={handleQtyInputKeyDown}
+                            className="w-12 text-center text-sm tabular-nums font-medium border rounded-md px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            autoFocus
+                        />
+                    ) : (
+                        <span
+                            onClick={handleQtyClick}
+                            className="w-12 text-center text-sm tabular-nums font-medium cursor-pointer hover:bg-accent rounded-md px-1 py-0.5 transition-colors"
+                        >
+                            {item.qty}
+                        </span>
+                    )}
                     <button
                         onClick={() => handleQtyChange(item.qty + 1)}
                         className="flex h-6 w-6 items-center justify-center rounded-md border hover:bg-accent transition-colors"
@@ -268,7 +336,6 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
     );
 }
 
-// ─── ChannelSelector ──────────────────────────────────────────────────────────
 function ChannelSelector({ orderChannel, onChannelChange }) {
     return (
         <div className="px-4 pt-3 pb-2 space-y-1.5 shrink-0">
@@ -294,16 +361,10 @@ function ChannelSelector({ orderChannel, onChannelChange }) {
                     );
                 })}
             </div>
-            {CHANNELS.find((c) => c.id === orderChannel)?.online && (
-                <p className="text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-md px-2 py-1 text-center">
-                    Harga produk otomatis +20% untuk channel online
-                </p>
-            )}
         </div>
     );
 }
 
-// ─── Cart ─────────────────────────────────────────────────────────────────────
 export function Cart({
     items,
     onUpdateQty,
@@ -317,9 +378,14 @@ export function Cart({
     finalTotal = 0,
     orderChannel = "dine_in",
     onChannelChange,
+    platformFee: propPlatformFee = 0,
+    platformItemsCount: propPlatformItemsCount = 0,
+    platformItemsTotalAmount: propPlatformItemsTotalAmount = 0,
+    netRevenue: propNetRevenue = 0,
 }) {
     const isOnline =
         CHANNELS.find((c) => c.id === orderChannel)?.online ?? false;
+    const feeRate = CHANNELS.find((c) => c.id === orderChannel)?.feeRate ?? 0;
     const activeChannel = CHANNELS.find((c) => c.id === orderChannel);
 
     const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
@@ -331,11 +397,20 @@ export function Cart({
     const computedSubtotal =
         subtotalAfterItemDiscount ||
         items.reduce(
-            (sum, item) => sum + (item.unit_price - item.discount) * item.qty,
+            (sum, item) =>
+                sum +
+                (item.subtotal ||
+                    (item.unit_price - (item.discount || 0)) * item.qty),
             0,
         );
     const computedFinalTotal =
         finalTotal || Math.max(0, computedSubtotal - globalDiscount);
+
+    // Gunakan props untuk platform fee
+    const platformFee = propPlatformFee;
+    const platformItemsCount = propPlatformItemsCount;
+    const platformItemsTotalAmount = propPlatformItemsTotalAmount;
+    const netRevenue = propNetRevenue || computedFinalTotal - platformFee;
 
     const handleGlobalDiscountChange = (e) => {
         const rawValue = e.target.value;
@@ -367,8 +442,7 @@ export function Cart({
     };
 
     return (
-        <div className="flex flex-col h-full bg-card border-l w-full min-w-0">
-            {/* Header */}
+        <div className="flex flex-col h-full bg-card w-full min-w-0">
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
                 <div className="flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4" />
@@ -378,7 +452,6 @@ export function Cart({
                             {totalItems}
                         </Badge>
                     )}
-                    {/* Channel badge */}
                     {activeChannel && (
                         <Badge
                             variant="outline"
@@ -399,12 +472,11 @@ export function Cart({
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
-                        Kosongkan
+                        <span className="hidden sm:inline">Kosongkan</span>
                     </button>
                 )}
             </div>
 
-            {/* Channel selector */}
             {onChannelChange && (
                 <>
                     <ChannelSelector
@@ -415,10 +487,9 @@ export function Cart({
                 </>
             )}
 
-            {/* Items */}
             <ScrollArea className="flex-1 min-h-0 px-4">
                 {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-92 gap-2 text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center h-64 gap-2 text-muted-foreground">
                         <ShoppingCart className="h-8 w-8 opacity-30" />
                         <p className="text-sm">Keranjang masih kosong</p>
                         <p className="text-xs opacity-60">
@@ -426,23 +497,33 @@ export function Cart({
                         </p>
                     </div>
                 ) : (
-                    <div className="divide-y">
-                        {items.map((item) => (
-                            <CartItem
-                                key={item._key}
-                                item={item}
-                                onUpdateQty={onUpdateQty}
-                                onUpdateDiscount={onUpdateDiscount}
-                                onRemove={onRemoveItem}
-                                isOnline={isOnline}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        {isOnline && platformItemsCount > 0 && (
+                            <div className="mt-2 mb-3 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-[10px] text-red-600 flex items-center gap-1">
+                                    <Info className="h-3 w-3" />
+                                    {platformItemsCount} item akan dikenakan
+                                    biaya platform {Math.round(feeRate * 100)}%
+                                </p>
+                            </div>
+                        )}
+                        <div className="divide-y pb-2">
+                            {items.map((item) => (
+                                <CartItem
+                                    key={item._key}
+                                    item={item}
+                                    onUpdateQty={onUpdateQty}
+                                    onUpdateDiscount={onUpdateDiscount}
+                                    onRemove={onRemoveItem}
+                                    isOnline={isOnline ? orderChannel : null}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
             </ScrollArea>
 
-            {/* Summary & checkout */}
-            <div className="border-t px-4 py-4 space-y-3 shrink-0">
+            <div className="border-t px-4 py-4 space-y-3 shrink-0 bg-card">
                 <div className="space-y-1.5">
                     <div className="flex justify-between text-sm text-muted-foreground">
                         <span>Subtotal ({totalItems} item)</span>
@@ -492,6 +573,33 @@ export function Cart({
                                 − {formatPrice(globalDiscount)}
                             </span>
                         </div>
+                    )}
+
+                    {isOnline && platformFee > 0 && (
+                        <>
+                            <div className="flex justify-between text-sm text-red-500">
+                                <span className="flex items-center gap-1">
+                                    <Info className="h-3 w-3" />
+                                    Fee Platform ({Math.round(feeRate * 100)}%)
+                                </span>
+                                <span className="tabular-nums">
+                                    − {formatPrice(platformFee)}
+                                </span>
+                            </div>
+                            {platformItemsCount > 0 && (
+                                <div className="text-[10px] text-gray-400 text-right -mt-1">
+                                    *Dari {platformItemsCount} item dengan total{" "}
+                                    {formatPrice(platformItemsTotalAmount)}
+                                </div>
+                            )}
+                            <Separator />
+                            <div className="flex justify-between text-sm font-semibold text-emerald-600">
+                                <span>Pendapatan Bersih</span>
+                                <span className="tabular-nums">
+                                    {formatPrice(netRevenue)}
+                                </span>
+                            </div>
+                        </>
                     )}
 
                     <Separator />

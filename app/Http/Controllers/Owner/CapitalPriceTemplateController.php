@@ -12,8 +12,6 @@ use Inertia\Inertia;
 
 class CapitalPriceTemplateController extends Controller
 {
-    // ── Index ─────────────────────────────────────────────────────────────────
-
     public function index(Request $request)
     {
         $storeId = auth()->user()->store_id;
@@ -40,14 +38,10 @@ class CapitalPriceTemplateController extends Controller
         ]);
     }
 
-    // ── Create ────────────────────────────────────────────────────────────────
-
     public function create()
     {
         return Inertia::render('owner/capital-price/create/page');
     }
-
-    // ── Store ─────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
@@ -63,7 +57,7 @@ class CapitalPriceTemplateController extends Controller
 
         DB::transaction(function () use ($validated, $ingredients, $storeId) {
             $validated['store_id'] = $storeId;
-            $validated['amount'] = 0; // akan di-recalculate setelah ingredients disimpan
+            $validated['amount'] = 0; 
 
             $template = CapitalPriceTemplate::create($validated);
 
@@ -76,8 +70,6 @@ class CapitalPriceTemplateController extends Controller
             ->with('success', "Template HPP \"{$validated['name']}\" berhasil dibuat.");
     }
 
-    // ── Edit ──────────────────────────────────────────────────────────────────
-
     public function edit(CapitalPriceTemplate $capitalPrice)
     {
         if ($capitalPrice->store_id !== auth()->user()->store_id) {
@@ -88,8 +80,6 @@ class CapitalPriceTemplateController extends Controller
             'template' => $capitalPrice->load('ingredients'),
         ]);
     }
-
-    // ── Update ────────────────────────────────────────────────────────────────
 
     public function update(Request $request, CapitalPriceTemplate $capitalPrice)
     {
@@ -114,8 +104,6 @@ class CapitalPriceTemplateController extends Controller
             ->with('success', "Template HPP \"{$capitalPrice->name}\" berhasil diperbarui.");
     }
 
-    // ── Toggle Active ─────────────────────────────────────────────────────────
-
     public function toggleActive(CapitalPriceTemplate $capitalPrice)
     {
         if ($capitalPrice->store_id !== auth()->user()->store_id) {
@@ -128,8 +116,6 @@ class CapitalPriceTemplateController extends Controller
         return back()->with('success', "Template \"{$capitalPrice->name}\" {$state}.");
     }
 
-    // ── Destroy ───────────────────────────────────────────────────────────────
-
     public function destroy(CapitalPriceTemplate $capitalPrice)
     {
         if ($capitalPrice->store_id !== auth()->user()->store_id) {
@@ -137,13 +123,11 @@ class CapitalPriceTemplateController extends Controller
         }
 
         $name = $capitalPrice->name;
-        $capitalPrice->delete(); // ingredients ikut terhapus via cascadeOnDelete
+        $capitalPrice->delete();
 
         return redirect()->route('owner.capital-prices')
             ->with('success', "Template HPP \"{$name}\" dihapus.");
     }
-
-    // ── API — untuk dropdown di ProductForm ───────────────────────────────────
 
     public function options()
     {
@@ -157,11 +141,8 @@ class CapitalPriceTemplateController extends Controller
         return response()->json($templates);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private function syncIngredients(CapitalPriceTemplate $template, array $ingredients): void
     {
-        // Hapus semua lama, ganti dengan yang baru
         $template->ingredients()->delete();
 
         foreach ($ingredients as $index => $ingredient) {
@@ -180,8 +161,6 @@ class CapitalPriceTemplateController extends Controller
             ]);
         }
     }
-
-    // ── Shared validation ─────────────────────────────────────────────────────
 
     private function validateTemplate(Request $request, int $storeId, ?int $ignoreId = null): array
     {

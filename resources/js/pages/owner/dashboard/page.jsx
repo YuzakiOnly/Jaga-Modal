@@ -7,6 +7,9 @@ import {
     Package,
     ReceiptText,
     Landmark,
+    Wallet,
+    ArrowLeftRight,
+    Store,
 } from "lucide-react";
 import {
     Select,
@@ -29,6 +32,7 @@ import ProductSummaryCards from "./_components/ProductSummaryCards";
 import CustomerStatCard from "./_components/CustomerStatCard";
 import CurrencyCards from "./_components/CurrencyCards";
 import OnlineChannelCards from "./_components/OnlineChannelCards";
+import MonthlyRevenueChart from "./_components/MonthlyRevenueChart";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
@@ -46,6 +50,21 @@ const COMPARISONS = [
 ];
 
 const currentMonth = new Date().toISOString().slice(0, 7);
+
+function formatRp(value) {
+    if (!value && value !== 0) return "Rp 0";
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value);
+}
+
+function formatNum(value) {
+    if (!value && value !== 0) return "0";
+    return new Intl.NumberFormat("id-ID").format(value);
+}
 
 export default function Dashboard({
     store,
@@ -65,8 +84,8 @@ export default function Dashboard({
     product_month: initialProductMonth,
     customer_month: initialCustomerMonth,
     available_months,
+    monthly_revenue_chart,
 }) {
-    
     const params = new URLSearchParams(window.location.search);
 
     const [period, setPeriod] = useState(
@@ -151,6 +170,10 @@ export default function Dashboard({
             comparisonLabel: activeComparison?.label,
             icon: DollarSign,
             isCurrency: true,
+            subtitle:
+                stats.total_platform_fee > 0
+                    ? `Fee platform: ${formatRp(stats.total_platform_fee)}`
+                    : null,
         },
         {
             title: "Laba Bersih",
@@ -185,32 +208,34 @@ export default function Dashboard({
         {
             label: "Saldo Kas Toko",
             value: stats.cash_balance,
-            subValue: "Uang tunai di toko",
+            subValue: "Total semua channel (bersih)",
             isCurrency: true,
             icon: Landmark,
             iconColor: "text-slate-600 dark:text-slate-400",
+        },
+        {
+            label: "Saldo Dine In",
+            value: stats.dine_in_balance,
+            subValue: "Uang tunai dari transaksi dine in",
+            isCurrency: true,
+            icon: Store,
+            iconColor: "text-emerald-600 dark:text-emerald-400",
         },
         {
             label: "Saldo Online Total",
             value: stats.online_balance_total,
             subValue: "Grab + Shopee + GoBiz",
             isCurrency: true,
-            icon: Package,
+            icon: Wallet,
             iconColor: "text-orange-500 dark:text-orange-400",
         },
         {
             label: "Total Pengeluaran",
             value: stats.monthly_expense,
-            subValue: "Termasuk penarikan owner",
-            isCurrency: true,
-            iconColor: "text-red-500 dark:text-red-400",
-        },
-        {
-            label: "Penarikan Owner",
-            value: stats.total_withdrawal,
             subValue: "Bulan ini",
             isCurrency: true,
-            iconColor: "text-purple-500 dark:text-purple-400",
+            icon: ArrowLeftRight,
+            iconColor: "text-red-500 dark:text-red-400",
         },
     ];
 
@@ -294,6 +319,8 @@ export default function Dashboard({
                         <CurrencyCards />
                     </div>
                 </div>
+
+                <MonthlyRevenueChart data={monthly_revenue_chart} />
 
                 <SalesChart
                     data={sales_chart}

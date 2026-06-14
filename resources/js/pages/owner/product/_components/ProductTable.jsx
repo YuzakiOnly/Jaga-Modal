@@ -96,14 +96,12 @@ export function ProductTable({
                 <div className="w-full lg:max-w-md">
                     <div className="relative">
                         <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
                         <Input
                             placeholder="Search name, SKU, barcode..."
                             value={filters?.search || ""}
                             onChange={(e) => onSearch(e.target.value)}
                             className="h-10 pl-9 pr-9"
                         />
-
                         {filters?.search && (
                             <button
                                 type="button"
@@ -132,7 +130,6 @@ export function ProductTable({
                                 <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
-
                         <PopoverContent
                             className="w-56 p-0 max-h-60 overflow-y-auto"
                             align="end"
@@ -150,7 +147,6 @@ export function ProductTable({
                                         <Check className="h-4 w-4" />
                                     )}
                                 </button>
-
                                 {categories.map((cat) => (
                                     <button
                                         key={cat.id}
@@ -186,7 +182,6 @@ export function ProductTable({
                                 <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
-
                         <PopoverContent className="w-44 p-0" align="end">
                             <div className="py-1">
                                 {statusOptions.map((opt) => (
@@ -217,7 +212,6 @@ export function ProductTable({
                                 Columns
                             </Button>
                         </DropdownMenuTrigger>
-
                         <DropdownMenuContent align="end">
                             {table
                                 .getAllColumns()

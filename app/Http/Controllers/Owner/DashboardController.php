@@ -10,6 +10,7 @@ use App\Models\Expense;
 use App\Models\OnlineBalance;
 use App\Models\Product;
 use App\Models\OwnerWalletTransaction;
+use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -132,12 +133,16 @@ class DashboardController extends Controller
             'total_low_stock' => $lowStockProducts->count(),
         ];
 
-        $totalStoreCashRevenue = Transaction::forStore($storeId)->completed()->storeCashOnly()->sum('net_revenue');
-        $totalExpenseAll = Expense::forStore($storeId)->get()->sum(fn($e) => $e->total_amount);
-        $cashBalance = $totalStoreCashRevenue - $totalExpenseAll;
+        // Saldo Kas Toko (semua channel)
+        $cashBalance = Store::computeCashBalance($storeId);
+
+        // Saldo Dine In (hanya dari transaksi dine_in, TANPA transfer)
+        $dineInBalance = Store::getDineInBalance($storeId);
+
+        // Saldo Online per channel
+        $onlineBalances = OnlineBalance::getAllChannelBalances($storeId);
         $onlineBalanceTotal = OnlineBalance::getBalance($storeId);
 
-        $onlineBalances = OnlineBalance::getAllChannelBalances($storeId);
         $onlineChannelBalances = [];
         foreach ($onlineBalances as $channel => $balance) {
             $onlineChannelBalances[$channel] = ['net_revenue' => (float) $balance];
@@ -152,6 +157,7 @@ class DashboardController extends Controller
 
         $walletBalance = OwnerWalletTransaction::balanceForStore($storeId);
         $availableMonths = $this->getAvailableMonths($storeId);
+        $monthlyRevenueChart = $this->buildMonthlyRevenueChart($storeId);
 
         $monthData = $this->getPeriodData($storeId, $startOfMonth, $effectiveEnd);
         $netProfitMonth = $monthData['net_profit'];
@@ -170,15 +176,27 @@ class DashboardController extends Controller
                 'products_sold' => (int) $currentData['products_sold'],
                 'avg_transaction' => (float) $avgTransaction,
                 'transactions' => $periodTransactions,
+
+                // Saldo
                 'cash_balance' => (float) $cashBalance,
+                'dine_in_balance' => (float) $dineInBalance,
                 'online_balance_total' => (float) $onlineBalanceTotal,
+
+                // Online per channel
+                'online_balance_grabfood' => (float) ($onlineBalances['grabfood'] ?? 0),
+                'online_balance_shopeefood' => (float) ($onlineBalances['shopeefood'] ?? 0),
+                'online_balance_gobiz' => (float) ($onlineBalances['gobiz'] ?? 0),
+
+                'online_channel_balances' => $onlineChannelBalances,
+                'online_channel_period' => $onlineChannelPeriod,
+
                 'wallet_balance' => (float) $walletBalance,
                 'monthly_expense' => (float) $monthData['expense'],
                 'total_withdrawal' => (float) $monthData['withdrawal'],
-                'online_channel_balances' => $onlineChannelBalances,
-                'online_channel_period' => $onlineChannelPeriod,
                 'average_margin' => $averageMargin,
                 'net_profit_month' => (float) $netProfitMonth,
+                'total_platform_fee' => (float) $currentData['platform_fee'],
+                'gross_revenue' => (float) $currentData['gross_revenue'],
             ],
 
             'comparisons' => $comparisons,
@@ -197,10 +215,12 @@ class DashboardController extends Controller
             'product_month' => $productMonth,
             'customer_month' => $customerMonth,
             'available_months' => $availableMonths,
+            'monthly_revenue_chart' => $monthlyRevenueChart,
             'online_channels' => Transaction::ONLINE_CHANNELS,
         ]);
     }
 
+    // ... sisanya sama seperti kode Anda sebelumnya
     private function getEffectiveEnd(Carbon $date): Carbon
     {
         $isCurrentMonth = $date->isSameMonth(now());
@@ -277,6 +297,8 @@ class DashboardController extends Controller
         $make = fn($data, $avg, $label) => [
             'label' => $label,
             'revenue' => $data['net_revenue'],
+            'gross_revenue' => $data['gross_revenue'],
+            'platform_fee' => $data['platform_fee'],
             'net_profit' => $data['net_profit'],
             'products_sold' => $data['products_sold'],
             'avg_transaction' => (float) $avg,
@@ -320,7 +342,7 @@ class DashboardController extends Controller
         })->sum(DB::raw('capital_price * qty'));
 
         $expenses = Expense::forStore($storeId)->whereBetween('expensed_at', [$startDate, $endDate])->get();
-        $expenseTotal = $expenses->sum(fn($e) => $e->total_amount);
+        $expenseTotal = $expenses->where('type', '!=', 'store_transfer_in')->sum(fn($e) => $e->total_amount);
         $withdrawalTotal = $expenses->where('type', 'owner_withdrawal')->sum(fn($e) => $e->total_amount);
 
         $productsSold = TransactionItem::whereHas('transaction', function ($q) use ($storeId, $startDate, $endDate) {
@@ -338,7 +360,7 @@ class DashboardController extends Controller
             'expense' => (float) $expenseTotal,
             'withdrawal' => (float) $withdrawalTotal,
             'gross_profit' => (float) ($netRevenue - $hpp),
-            'net_profit' => (float) ($netRevenue - $hpp - $expenseTotal),
+            'net_profit' => (float) ($netRevenue - $hpp),
             'products_sold' => (int) $productsSold,
             'transaction_count' => (int) $transactionCount,
         ];
@@ -428,6 +450,40 @@ class DashboardController extends Controller
             ];
         }
         return $chart;
+    }
+
+    private function buildMonthlyRevenueChart(int $storeId): array
+    {
+        $rows = Transaction::forStore($storeId)->completed()
+            ->where('total', '>', 0)
+            ->selectRaw("YEAR(transacted_at) as year, MONTH(transacted_at) as month, SUM(net_revenue) as revenue, SUM(total) as gross_revenue, SUM(platform_fee) as platform_fee, COUNT(*) as transactions")
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        $profitRows = TransactionItem::join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+            ->where('transactions.store_id', $storeId)
+            ->where('transactions.status', 'completed')
+            ->where('transactions.total', '>', 0)
+            ->selectRaw("YEAR(transactions.transacted_at) as year, MONTH(transactions.transacted_at) as month, SUM(transaction_items.capital_price * transaction_items.qty) as hpp")
+            ->groupBy('year', 'month')
+            ->get()
+            ->keyBy(fn($r) => $r->year . '-' . $r->month);
+
+        return $rows->map(function ($row) use ($profitRows) {
+            $key = $row->year . '-' . $row->month;
+            $hpp = (float) ($profitRows[$key]->hpp ?? 0);
+            return [
+                'year' => (int) $row->year,
+                'month' => (int) $row->month,
+                'revenue' => (float) $row->revenue,
+                'gross_revenue' => (float) $row->gross_revenue,
+                'platform_fee' => (float) $row->platform_fee,
+                'net_profit' => (float) $row->revenue - $hpp,
+                'transactions' => (int) $row->transactions,
+            ];
+        })->values()->toArray();
     }
 
     private function getAvailableMonths($storeId): array

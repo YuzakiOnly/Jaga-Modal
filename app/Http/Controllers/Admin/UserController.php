@@ -11,7 +11,6 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /**
      * Returns the currently authenticated user.
@@ -31,8 +30,6 @@ class UserController extends Controller
     {
         return $this->me()->isSuperAdmin() && $this->me()->isPrimary();
     }
-
-    // ─── Index ────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
     {
@@ -60,8 +57,6 @@ class UserController extends Controller
         ]);
     }
 
-    // ─── Create ───────────────────────────────────────────────────────────────
-
     public function create()
     {
         return Inertia::render('admin/users/create/page');
@@ -69,7 +64,6 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        // Prevent non-primary super_admins from creating another super_admin
         if ($request->role === 'super_admin' && !$this->canManageSuperAdmin()) {
             return redirect()
                 ->back()
@@ -101,25 +95,20 @@ class UserController extends Controller
             ->with('success', 'User created successfully.');
     }
 
-    // ─── Edit ─────────────────────────────────────────────────────────────────
-
     public function edit(User $user)
     {
-        // Nobody may edit the primary super admin through this UI
         if ($user->isPrimary()) {
             return redirect()
                 ->route('admin.users')
                 ->with('error', 'The primary Super Admin account cannot be edited here.');
         }
 
-        // A non-primary super_admin cannot edit any other super_admin
         if ($user->isSuperAdmin() && !$this->canManageSuperAdmin()) {
             return redirect()
                 ->route('admin.users')
                 ->with('error', 'Only the primary Super Admin can edit other Super Admin accounts.');
         }
 
-        // Prevent editing yourself through the admin panel (use profile instead)
         if ($this->me()->id === $user->id) {
             return redirect()
                 ->route('admin.users')
@@ -133,28 +122,24 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        // Hard-protect the primary super admin
         if ($user->isPrimary()) {
             return redirect()
                 ->route('admin.users')
                 ->with('error', 'The primary Super Admin account cannot be modified.');
         }
 
-        // Non-primary super_admin cannot update another super_admin
         if ($user->isSuperAdmin() && !$this->canManageSuperAdmin()) {
             return redirect()
                 ->route('admin.users')
                 ->with('error', 'Only the primary Super Admin can modify Super Admin accounts.');
         }
 
-        // Cannot change your own role
         if ($this->me()->id === $user->id && $request->role !== $user->role) {
             return redirect()
                 ->back()
                 ->with('error', 'You cannot change your own role. Please contact another administrator.');
         }
 
-        // Only the primary super_admin may assign the super_admin role
         if ($request->role === 'super_admin' && !$this->canManageSuperAdmin()) {
             return redirect()
                 ->back()
@@ -190,25 +175,20 @@ class UserController extends Controller
             ->with('success', 'User updated successfully.');
     }
 
-    // ─── Delete ───────────────────────────────────────────────────────────────
-
     public function destroy(User $user)
     {
-        // The primary super admin can never be deleted
         if ($user->isPrimary()) {
             return redirect()
                 ->route('admin.users')
                 ->with('error', 'The primary Super Admin account cannot be deleted.');
         }
 
-        // Non-primary super_admin cannot delete another super_admin
         if ($user->isSuperAdmin() && !$this->canManageSuperAdmin()) {
             return redirect()
                 ->route('admin.users')
                 ->with('error', 'Only the primary Super Admin can delete Super Admin accounts.');
         }
 
-        // Cannot delete yourself
         if ($this->me()->id === $user->id) {
             return redirect()
                 ->route('admin.users')

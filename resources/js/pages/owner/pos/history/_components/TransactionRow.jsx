@@ -43,6 +43,7 @@ const CHANNEL_CONFIG = {
         badgeClass: "border-slate-200 bg-slate-50 text-slate-600",
         feeBox: "bg-slate-50 border-slate-200 text-slate-700",
         netColor: "text-slate-700",
+        feeRate: 0,
     },
     grabfood: {
         label: "GrabFood",
@@ -50,6 +51,7 @@ const CHANNEL_CONFIG = {
         badgeClass: "border-green-200 bg-green-50 text-green-700",
         feeBox: "bg-green-50 border-green-200 text-green-800",
         netColor: "text-green-700",
+        feeRate: 0.2,
     },
     shopeefood: {
         label: "ShopeeFood",
@@ -57,6 +59,7 @@ const CHANNEL_CONFIG = {
         badgeClass: "border-orange-200 bg-orange-50 text-orange-600",
         feeBox: "bg-orange-50 border-orange-200 text-orange-800",
         netColor: "text-orange-600",
+        feeRate: 0.25,
     },
     gobiz: {
         label: "GoBiz",
@@ -64,6 +67,7 @@ const CHANNEL_CONFIG = {
         badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
         feeBox: "bg-emerald-50 border-emerald-200 text-emerald-800",
         netColor: "text-emerald-700",
+        feeRate: 0.2,
     },
 };
 
@@ -88,8 +92,11 @@ export function TransactionRow({ transaction }) {
     const platformFee = parseFloat(transaction.platform_fee ?? 0);
     const netRevenue = parseFloat(transaction.net_revenue ?? 0);
     const total = parseFloat(transaction.total ?? 0);
+    const subtotal = parseFloat(transaction.subtotal ?? 0);
+    const discount = parseFloat(transaction.discount ?? 0);
+    const amountPaid = parseFloat(transaction.amount_paid ?? 0);
+    const changeAmount = parseFloat(transaction.change_amount ?? 0);
 
-    // Customer info
     const customer = transaction.customer;
     const customerLabel = customer
         ? customer.name
@@ -97,11 +104,12 @@ export function TransactionRow({ transaction }) {
             : `Pelanggan #${customer.customer_number}`
         : null;
 
+    const feeRate = channelCfg.feeRate;
+
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
             <CollapsibleTrigger className="w-full text-left">
                 <div className="flex items-center justify-between px-3 sm:px-4 py-3 hover:bg-muted/40 transition-colors rounded-lg cursor-pointer gap-2">
-                    {/* Left: icon + info */}
                     <div className="flex items-center gap-3 min-w-0">
                         <div
                             className={cn(
@@ -125,7 +133,6 @@ export function TransactionRow({ transaction }) {
                                 <p className="text-xs text-muted-foreground">
                                     {formatDate(transaction.transacted_at)}
                                 </p>
-                                {/* Customer label inline */}
                                 {customerLabel && (
                                     <>
                                         <span className="text-muted-foreground/40 text-xs">
@@ -141,7 +148,6 @@ export function TransactionRow({ transaction }) {
                         </div>
                     </div>
 
-                    {/* Right: badges + total */}
                     <div className="flex items-center gap-2 shrink-0">
                         <Badge
                             variant="outline"
@@ -175,7 +181,7 @@ export function TransactionRow({ transaction }) {
                                     {formatPrice(netRevenue)}
                                 </span>
                                 <p className="text-[10px] text-muted-foreground leading-none mt-0.5">
-                                    setelah fee
+                                    setelah fee {Math.round(feeRate * 100)}%
                                 </p>
                             </div>
                         ) : (
@@ -195,7 +201,6 @@ export function TransactionRow({ transaction }) {
 
             <CollapsibleContent>
                 <div className="mx-3 sm:mx-4 mb-3 rounded-lg border bg-muted/30 p-3 space-y-2">
-                    {/* Badges mobile */}
                     <div className="flex items-center gap-1.5 sm:hidden mb-2 flex-wrap">
                         <Badge
                             variant="outline"
@@ -218,7 +223,6 @@ export function TransactionRow({ transaction }) {
                         )}
                     </div>
 
-                    {/* Customer detail box */}
                     {customer && (
                         <div className="flex items-center gap-2 rounded-md bg-background border px-3 py-2">
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
@@ -243,7 +247,6 @@ export function TransactionRow({ transaction }) {
                         </div>
                     )}
 
-                    {/* Item list */}
                     <div className="space-y-1.5">
                         {transaction.items?.map((item) => (
                             <div
@@ -280,14 +283,14 @@ export function TransactionRow({ transaction }) {
                     <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Subtotal</span>
                         <span className="tabular-nums">
-                            {formatPrice(transaction.subtotal)}
+                            {formatPrice(subtotal)}
                         </span>
                     </div>
-                    {parseFloat(transaction.discount) > 0 && (
+                    {discount > 0 && (
                         <div className="flex justify-between text-xs text-destructive">
                             <span>Diskon</span>
                             <span className="tabular-nums">
-                                − {formatPrice(transaction.discount)}
+                                − {formatPrice(discount)}
                             </span>
                         </div>
                     )}
@@ -298,7 +301,6 @@ export function TransactionRow({ transaction }) {
                         </span>
                     </div>
 
-                    {/* Fee platform breakdown */}
                     {isOnline && platformFee > 0 && (
                         <>
                             <Separator />
@@ -321,7 +323,8 @@ export function TransactionRow({ transaction }) {
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="opacity-80">
-                                        Fee platform (20%)
+                                        Fee platform (
+                                        {Math.round(feeRate * 100)}%)
                                     </span>
                                     <span className="tabular-nums font-medium text-destructive">
                                         − {formatPrice(platformFee)}
@@ -343,20 +346,19 @@ export function TransactionRow({ transaction }) {
                         </>
                     )}
 
-                    {/* Cash detail */}
                     {transaction.payment_method === "cash" && (
                         <>
                             <Separator />
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Dibayar</span>
                                 <span className="tabular-nums">
-                                    {formatPrice(transaction.amount_paid)}
+                                    {formatPrice(amountPaid)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Kembalian</span>
                                 <span className="tabular-nums">
-                                    {formatPrice(transaction.change_amount)}
+                                    {formatPrice(changeAmount)}
                                 </span>
                             </div>
                         </>

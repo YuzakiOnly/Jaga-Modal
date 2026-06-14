@@ -11,7 +11,6 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        // Ambil semua owner yang punya store
         $owners = User::where('role', 'owner')->whereNotNull('store_id')->get();
 
         if ($owners->isEmpty()) {

@@ -1,6 +1,8 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar-v1/AppSidebar";
 import { AppHeader } from "@/layouts/dashboard/AppHeader";
+import { getNavItemsByRole } from "@/lib/sidebar-data";
+import { usePage } from "@inertiajs/react";
 
 export default function SidebarLayout({
     children,
@@ -9,11 +11,16 @@ export default function SidebarLayout({
     projects,
     user,
 }) {
+    const { props } = usePage();
+    const userRole = props.auth?.user?.role || "owner";
+
+    const finalNavItems = navItems || getNavItemsByRole(userRole);
+
     return (
         <SidebarProvider>
             <AppSidebar
                 appName={appName}
-                navItems={navItems}
+                navItems={finalNavItems}
                 projects={projects}
                 user={user}
             />

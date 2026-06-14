@@ -111,9 +111,21 @@ export const columns = (onDelete) => [
             </Button>
         ),
         cell: ({ row }) => (
-            <span className="text-xs sm:text-sm font-medium tabular-nums">
-                {formatPrice(row.getValue("selling_price"))}
-            </span>
+            <div className="space-y-0.5">
+                <span className="text-xs sm:text-sm font-medium tabular-nums block">
+                    {formatPrice(row.getValue("selling_price"))}
+                </span>
+                {row.original.enable_online_food && (
+                    <span className="text-[9px] sm:text-[10px] text-muted-foreground">
+                        {row.original.price_gobiz &&
+                            `GoBiz ${formatPrice(row.original.price_gobiz)}`}
+                        {row.original.price_grabfood &&
+                            ` | Grab ${formatPrice(row.original.price_grabfood)}`}
+                        {row.original.price_shopeefood &&
+                            ` | Shopee ${formatPrice(row.original.price_shopeefood)}`}
+                    </span>
+                )}
+            </div>
         ),
     },
     {
@@ -159,6 +171,7 @@ export const columns = (onDelete) => [
                     {stock ?? 0} {unit}
                     {isLow && (
                         <span className="ml-1 text-[10px] sm:text-xs text-destructive hidden sm:inline">
+                            {" "}
                             ⚠ Low
                         </span>
                     )}

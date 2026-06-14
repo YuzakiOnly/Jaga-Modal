@@ -11,25 +11,20 @@ class EnsureUserHasStore
     {
         $user = auth()->user();
 
-        // Jika user tidak login, lanjutkan ke middleware auth berikutnya
         if (!$user) {
             return $next($request);
         }
 
-        // Super admin doesn't need a store
         if ($user->role === 'super_admin') {
             return $next($request);
         }
 
-        // Check if user has store_id
         if (!$user->store_id) {
             return redirect()->route('store.setup')
                 ->with('warning', 'Please complete your store setup first.');
         }
 
-        // Optional: Verify the store actually exists
         if ($user->store_id && !$user->store) {
-            // Store doesn't exist, clear the store_id
             $user->store_id = null;
             $user->save();
             return redirect()->route('store.setup')

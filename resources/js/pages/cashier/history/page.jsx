@@ -1,31 +1,36 @@
-import { Head, Link, router } from "@inertiajs/react";
-import { useState } from "react";
+import { Head, router } from "@inertiajs/react";
+import { useState, useEffect } from "react";
 import CashierLayout from "@/layouts/CashierLayout";
 import HistoryFilter from "./_components/HistoryFilter";
 import HistorySummary from "./_components/HistorySummary";
 import TransactionList from "./_components/TransactionList";
-
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
-
-const fmt = (n) => "Rp " + Math.round(n).toLocaleString("id-ID");
+import { toDateString, formatCurrency } from "@/lib/formatters";
 
 export default function History({ transactions, summary, filters }) {
     const [period, setPeriod] = useState(filters.period || "daily");
     const [date, setDate] = useState(
-        filters.date ? new Date(filters.date) : new Date(),
+        filters.date ? new Date(filters.date + "T00:00:00") : new Date(),
     );
     const [channelFilter, setChannelFilter] = useState(filters.channel || null);
 
     useSmartRefresh({ ...refreshConfigs.cashier_history });
 
+    useEffect(() => {
+        if (filters.period) setPeriod(filters.period);
+        if (filters.date) setDate(new Date(filters.date + "T00:00:00"));
+        if (filters.channel !== undefined)
+            setChannelFilter(filters.channel || null);
+    }, [filters]);
+
     function applyFilter(newPeriod, newDate, newChannel) {
-        const formattedDate = newDate.toISOString().split("T")[0];
-        const params = { period: newPeriod, date: formattedDate };
-        if (newChannel) {
-            params.channel = newChannel;
-        }
-        router.get(route("cashier.history"), params, { preserveState: true });
+        const params = { period: newPeriod, date: toDateString(newDate) };
+        if (newChannel) params.channel = newChannel;
+        router.get(route("cashier.history"), params, {
+            preserveState: true,
+            replace: true,
+        });
     }
 
     function handlePeriodChange(val) {
@@ -36,8 +41,7 @@ export default function History({ transactions, summary, filters }) {
 
     function handleDateChange(newDate) {
         setDate(newDate);
-        setChannelFilter(null);
-        applyFilter(period, newDate, null);
+        applyFilter(period, newDate, channelFilter);
     }
 
     function handleChannelFilter(channel) {
@@ -65,7 +69,10 @@ export default function History({ transactions, summary, filters }) {
                         onChannelFilter={handleChannelFilter}
                     />
 
-                    <TransactionList transactions={transactions} fmt={fmt} />
+                    <TransactionList
+                        transactions={transactions}
+                        fmt={formatCurrency}
+                    />
                 </div>
             </div>
         </CashierLayout>

@@ -1,5 +1,3 @@
-// resources/js/schemas/templateSchema.js
-
 import { z } from "zod";
 
 export const ingredientSchema = z.object({
