@@ -11,8 +11,7 @@ class Transaction extends Model
 {
     use HasFactory, SoftDeletes;
 
-    const ONLINE_CHANNELS = ['grabfood', 'shopeefood', 'gobiz'];
-    const PAYMENT_METHODS = ['cash', 'qris', 'grabfood', 'shopeefood', 'gobiz'];
+    const PAYMENT_METHODS = ['cash', 'qris'];
 
     protected $fillable = [
         'store_id',
@@ -20,13 +19,10 @@ class Transaction extends Model
         'customer_id',
         'transaction_number',
         'payment_method',
-        'order_channel',
         'amount_paid',
         'change_amount',
         'subtotal',
         'discount',
-        'platform_fee',
-        'net_revenue',
         'total',
         'status',
         'notes',
@@ -38,8 +34,6 @@ class Transaction extends Model
         'change_amount' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
-        'platform_fee' => 'decimal:2',
-        'net_revenue' => 'decimal:2',
         'total' => 'decimal:2',
         'transacted_at' => 'datetime',
     ];
@@ -55,20 +49,6 @@ class Transaction extends Model
 
             if (empty($transaction->transacted_at)) {
                 $transaction->transacted_at = now();
-            }
-
-            if (empty($transaction->order_channel)) {
-                $transaction->order_channel = 'dine_in';
-            }
-        });
-
-        static::created(function (Transaction $transaction) {
-            if ($transaction->isOnlineChannel()) {
-                OnlineBalance::addRevenue(
-                    $transaction->store_id,
-                    $transaction->order_channel,
-                    $transaction->net_revenue
-                );
             }
         });
     }
@@ -88,16 +68,6 @@ class Transaction extends Model
             : 1;
 
         return $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
-    }
-
-    public function isOnlineChannel(): bool
-    {
-        return in_array($this->order_channel, self::ONLINE_CHANNELS);
-    }
-
-    public function isStoreCashRevenue(): bool
-    {
-        return !$this->isOnlineChannel();
     }
 
     public function store()
@@ -129,16 +99,6 @@ class Transaction extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
-    }
-
-    public function scopeStoreCashOnly($query)
-    {
-        return $query->whereNotIn('order_channel', self::ONLINE_CHANNELS);
-    }
-
-    public function scopeForChannel($query, string $channel)
-    {
-        return $query->where('order_channel', $channel);
     }
 
     public function scopeToday($query)

@@ -13,20 +13,16 @@ export default function History({ transactions, summary, filters }) {
     const [date, setDate] = useState(
         filters.date ? new Date(filters.date + "T00:00:00") : new Date(),
     );
-    const [channelFilter, setChannelFilter] = useState(filters.channel || null);
 
     useSmartRefresh({ ...refreshConfigs.cashier_history });
 
     useEffect(() => {
         if (filters.period) setPeriod(filters.period);
         if (filters.date) setDate(new Date(filters.date + "T00:00:00"));
-        if (filters.channel !== undefined)
-            setChannelFilter(filters.channel || null);
     }, [filters]);
 
-    function applyFilter(newPeriod, newDate, newChannel) {
+    function applyFilter(newPeriod, newDate) {
         const params = { period: newPeriod, date: toDateString(newDate) };
-        if (newChannel) params.channel = newChannel;
         router.get(route("cashier.history"), params, {
             preserveState: true,
             replace: true,
@@ -35,19 +31,12 @@ export default function History({ transactions, summary, filters }) {
 
     function handlePeriodChange(val) {
         setPeriod(val);
-        setChannelFilter(null);
-        applyFilter(val, date, null);
+        applyFilter(val, date);
     }
 
     function handleDateChange(newDate) {
         setDate(newDate);
-        applyFilter(period, newDate, channelFilter);
-    }
-
-    function handleChannelFilter(channel) {
-        const newChannel = channelFilter === channel ? null : channel;
-        setChannelFilter(newChannel);
-        applyFilter(period, date, newChannel);
+        applyFilter(period, newDate);
     }
 
     return (
@@ -63,11 +52,7 @@ export default function History({ transactions, summary, filters }) {
                         onDateChange={handleDateChange}
                     />
 
-                    <HistorySummary
-                        summary={summary}
-                        channelFilter={channelFilter}
-                        onChannelFilter={handleChannelFilter}
-                    />
+                    <HistorySummary summary={summary} />
 
                     <TransactionList
                         transactions={transactions}

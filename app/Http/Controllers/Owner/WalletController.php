@@ -167,7 +167,6 @@ class WalletController extends Controller
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
                 'type' => 'store_transfer_in',
-                'payment_source' => 'dine_in',
                 'description' => $validated['description'],
                 'amount' => $validated['amount'],
                 'expensed_at' => $validated['transacted_at'],
@@ -175,8 +174,9 @@ class WalletController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Saldo berhasil dikirim ke kas toko (Dine In).');
+        return back()->with('success', 'Saldo berhasil dikirim ke kas toko.');
     }
+
     public function edit(OwnerWalletTransaction $walletTransaction)
     {
         abort_if($walletTransaction->store_id !== auth()->user()->store_id, 403);

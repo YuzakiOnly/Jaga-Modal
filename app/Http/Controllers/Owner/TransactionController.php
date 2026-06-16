@@ -34,10 +34,6 @@ class TransactionController extends Controller
                 'name',
                 'selling_price',
                 'capital_price',
-                'price_gobiz',
-                'price_grabfood',
-                'price_shopeefood',
-                'enable_online_food',
                 'stock_type',
                 'stock',
                 'is_active',
@@ -56,16 +52,6 @@ class TransactionController extends Controller
         ]);
     }
 
-    private function getPlatformFeeRate(string $channel): float
-    {
-        return match ($channel) {
-            'grabfood' => 0.20,
-            'gobiz' => 0.20,
-            'shopeefood' => 0.25,
-            default => 0.0,
-        };
-    }
-
     public function store(Request $request)
     {
         $storeId = auth()->user()->store_id;
@@ -75,13 +61,11 @@ class TransactionController extends Controller
         }
 
         $validated = $request->validate([
-            'payment_method' => ['required', 'in:cash,qris,grabfood,shopeefood,gobiz'],
-            'order_channel' => ['required', 'in:dine_in,grabfood,shopeefood,gobiz'],
+            'payment_method' => ['required', 'in:cash,qris'],
             'amount_paid' => ['required', 'numeric', 'min:0'],
             'change_amount' => ['required', 'numeric', 'min:0'],
             'subtotal' => ['required', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
-            'platform_fee' => ['nullable', 'numeric', 'min:0'],
             'total' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],
             'transacted_at' => ['nullable', 'date', 'before_or_equal:now'],
@@ -92,49 +76,16 @@ class TransactionController extends Controller
             'items.*.name' => ['required', 'string', 'max:200'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.capital_price' => ['required', 'numeric', 'min:0'],
-            'items.*.original_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'items.*.is_custom' => ['required', 'boolean'],
-            'items.*.is_using_platform_price' => ['nullable', 'boolean'],
         ]);
-
-        $onlineChannels = Transaction::ONLINE_CHANNELS;
-        if (
-            in_array($validated['order_channel'], $onlineChannels) &&
-            $validated['payment_method'] !== $validated['order_channel']
-        ) {
-            return back()->withErrors([
-                'payment_method' => 'Metode pembayaran harus sesuai dengan channel pesanan.',
-            ])->withInput();
-        }
 
         DB::transaction(function () use ($validated, $storeId) {
             $transactedAt = !empty($validated['transacted_at'])
                 ? Carbon::parse($validated['transacted_at'])
                 : now();
-
-            $isOnline = in_array($validated['order_channel'], Transaction::ONLINE_CHANNELS);
-
-            // Hitung platform fee dari item yang menggunakan platform price
-            $platformFee = $validated['platform_fee'] ?? 0;
-
-            if ($isOnline && $platformFee == 0) {
-                $feeRate = $this->getPlatformFeeRate($validated['order_channel']);
-
-                $platformItemsTotal = 0;
-                foreach ($validated['items'] as $item) {
-                    $isUsingPlatformPrice = $item['is_using_platform_price'] ?? false;
-                    if ($isUsingPlatformPrice) {
-                        $platformItemsTotal += $item['unit_price'] * $item['qty'];
-                    }
-                }
-
-                $platformFee = (int) round($platformItemsTotal * $feeRate);
-            }
-
-            $netRevenue = $validated['total'] - $platformFee;
 
             $customer = Customer::resolveForTransaction(
                 $storeId,
@@ -148,13 +99,10 @@ class TransactionController extends Controller
                 'user_id' => auth()->id(),
                 'customer_id' => $customer->id,
                 'payment_method' => $validated['payment_method'],
-                'order_channel' => $validated['order_channel'],
                 'amount_paid' => $validated['amount_paid'],
                 'change_amount' => $validated['change_amount'],
                 'subtotal' => $validated['subtotal'],
                 'discount' => $validated['discount'] ?? 0,
-                'platform_fee' => $platformFee,
-                'net_revenue' => $netRevenue,
                 'total' => $validated['total'],
                 'notes' => $validated['notes'] ?? null,
                 'status' => 'completed',
@@ -195,7 +143,6 @@ class TransactionController extends Controller
 
         $period = $request->input('period', 'daily');
         $date = $request->input('date', today()->toDateString());
-        $channel = $request->input('channel');
 
         $summaryQuery = Transaction::forStore($storeId)->completed();
 
@@ -210,30 +157,11 @@ class TransactionController extends Controller
             default => $summaryQuery->whereDate('transacted_at', $date),
         };
 
-        if ($channel) {
-            $summaryQuery->where('order_channel', $channel);
-        }
-
-        $revenueByChannel = (clone $summaryQuery)
-            ->select('order_channel', DB::raw('SUM(net_revenue) as net_revenue'))
-            ->groupBy('order_channel')
-            ->get()
-            ->mapWithKeys(fn($item) => [
-                $item->order_channel => (float) $item->net_revenue,
-            ])
-            ->toArray();
-
         $summary = [
             'total_revenue' => (float) (clone $summaryQuery)->sum('total'),
-            'total_net_revenue' => (float) (clone $summaryQuery)->sum('net_revenue'),
-            'total_platform_fee' => (float) (clone $summaryQuery)->sum('platform_fee'),
             'total_count' => (int) (clone $summaryQuery)->count(),
             'cash_count' => (int) (clone $summaryQuery)->where('payment_method', 'cash')->count(),
             'qris_count' => (int) (clone $summaryQuery)->where('payment_method', 'qris')->count(),
-            'grabfood_count' => (int) (clone $summaryQuery)->where('order_channel', 'grabfood')->count(),
-            'shopeefood_count' => (int) (clone $summaryQuery)->where('order_channel', 'shopeefood')->count(),
-            'gobiz_count' => (int) (clone $summaryQuery)->where('order_channel', 'gobiz')->count(),
-            'revenue_by_channel' => $revenueByChannel,
         ];
 
         $transactions = (clone $summaryQuery)
@@ -245,12 +173,9 @@ class TransactionController extends Controller
                     'id' => $transaction->id,
                     'transaction_number' => $transaction->transaction_number,
                     'payment_method' => $transaction->payment_method,
-                    'order_channel' => $transaction->order_channel ?? 'dine_in',
                     'total' => (float) $transaction->total,
                     'subtotal' => (float) $transaction->subtotal,
                     'discount' => (float) $transaction->discount,
-                    'platform_fee' => (float) $transaction->platform_fee,
-                    'net_revenue' => (float) $transaction->net_revenue,
                     'amount_paid' => (float) $transaction->amount_paid,
                     'change_amount' => (float) $transaction->change_amount,
                     'notes' => $transaction->notes,
@@ -288,10 +213,6 @@ class TransactionController extends Controller
             default => $customerBaseQuery->whereDate('transacted_at', $date),
         };
 
-        if ($channel) {
-            $customerBaseQuery->where('order_channel', $channel);
-        }
-
         $customers = $customerBaseQuery
             ->select(
                 'customer_id',
@@ -318,8 +239,7 @@ class TransactionController extends Controller
             'transactions' => $transactions,
             'summary' => $summary,
             'customers' => $customers,
-            'filters' => $request->only(['period', 'date', 'channel']),
-            'online_channels' => Transaction::ONLINE_CHANNELS,
+            'filters' => $request->only(['period', 'date']),
         ]);
     }
-}   
+}

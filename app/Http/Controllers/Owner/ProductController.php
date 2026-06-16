@@ -93,7 +93,6 @@ class ProductController extends Controller
         }
 
         $validated['store_id'] = $storeId;
-        $validated['enable_online_food'] = $request->boolean('enable_online_food', false);
 
         Product::create($validated);
 
@@ -237,10 +236,6 @@ class ProductController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'capital_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
-            'price_gobiz' => ['nullable', 'numeric', 'min:0'],
-            'price_grabfood' => ['nullable', 'numeric', 'min:0'],
-            'price_shopeefood' => ['nullable', 'numeric', 'min:0'],
-            'enable_online_food' => ['boolean'],
             'stock_type' => ['required', 'in:limited,unlimited'],
             'stock' => ['nullable', 'integer', 'min:0', 'required_if:stock_type,limited'],
             'minimum_stock' => ['nullable', 'integer', 'min:0'],

@@ -9,11 +9,6 @@ import {
     X,
     Percent,
     Package,
-    Store,
-    Bike,
-    ShoppingCart as ShoppingCartIcon,
-    Zap,
-    Info,
 } from "lucide-react";
 
 import {
@@ -38,37 +33,6 @@ const formatNumberInput = (value) => {
     if (!value || value === 0) return "";
     return new Intl.NumberFormat("id-ID").format(value);
 };
-
-const CHANNELS = [
-    {
-        value: "dine_in",
-        label: "Dine In",
-        icon: Store,
-        color: "slate",
-        feeRate: 0,
-    },
-    {
-        value: "grabfood",
-        label: "GrabFood",
-        icon: Bike,
-        color: "green",
-        feeRate: 0.2,
-    },
-    {
-        value: "shopeefood",
-        label: "ShopeeFood",
-        icon: ShoppingCartIcon,
-        color: "orange",
-        feeRate: 0.25,
-    },
-    {
-        value: "gobiz",
-        label: "GoBiz",
-        icon: Zap,
-        color: "emerald",
-        feeRate: 0.2,
-    },
-];
 
 const AddCustomItemForm = ({ onAdd }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +76,6 @@ const AddCustomItemForm = ({ onAdd }) => {
             discount: 0,
             is_custom: true,
             image: null,
-            is_using_platform_price: false,
         });
 
         setName("");
@@ -254,7 +217,6 @@ const CartItem = ({
     onUpdateQuantity,
     onRemoveItem,
     onUpdateDiscount,
-    orderChannel,
 }) => {
     const itemTotal = (item.unit_price - (item.discount || 0)) * item.qty;
     const [discountInput, setDiscountInput] = useState(
@@ -263,22 +225,6 @@ const CartItem = ({
     const [discountError, setDiscountError] = useState("");
     const [qtyInput, setQtyInput] = useState(item.qty.toString());
     const [isEditingQty, setIsEditingQty] = useState(false);
-
-    const willBeChargedFee = item.is_using_platform_price === true;
-
-    // Dapatkan rate fee untuk channel saat ini
-    const getFeeRateText = () => {
-        switch (orderChannel) {
-            case "grabfood":
-                return "20%";
-            case "gobiz":
-                return "20%";
-            case "shopeefood":
-                return "25%";
-            default:
-                return "";
-        }
-    };
 
     const handleDiscountChange = (e) => {
         const rawValue = e.target.value;
@@ -358,9 +304,6 @@ const CartItem = ({
         setQtyInput(item.qty.toString());
     };
 
-    const hasPlatformPrice =
-        item.base_unit_price && item.base_unit_price !== item.unit_price;
-
     return (
         <div className="p-3 hover:bg-gray-50 transition">
             <div className="flex gap-3">
@@ -396,29 +339,16 @@ const CartItem = ({
                                 C
                             </span>
                         )}
-                        {willBeChargedFee && (
-                            <span className="text-[9px] bg-red-100 text-red-600 px-1 rounded flex items-center gap-0.5">
-                                <Info className="h-2.5 w-2.5" />
-                                Kena Fee {getFeeRateText()}
-                            </span>
-                        )}
                     </div>
 
-                    <div className="flex items-center gap-1 flex-wrap">
-                        {hasPlatformPrice && (
-                            <p className="text-[10px] text-gray-400 line-through">
-                                {formatRupiah(item.base_unit_price)}
-                            </p>
-                        )}
-                        <p className="text-xs font-semibold text-emerald-600">
-                            {formatRupiah(item.unit_price)}
-                        </p>
+                    <p className="text-xs font-semibold text-emerald-600">
+                        {formatRupiah(item.unit_price)}
                         {item.discount > 0 && (
-                            <p className="text-xs text-red-500">
+                            <span className="text-xs text-red-500 ml-1">
                                 -{formatRupiah(item.discount)}
-                            </p>
+                            </span>
                         )}
-                    </div>
+                    </p>
 
                     <div className="flex items-center gap-2 mt-2">
                         <button
@@ -508,14 +438,12 @@ export default function Cart({
     subtotal,
     total,
     discount,
-    orderChannel = "dine_in",
     onDiscountChange,
     onUpdateQuantity,
     onUpdateDiscount,
     onRemoveItem,
     onCheckout,
     onAddCustomItem,
-    onOrderChannelChange,
     onClose,
 }) {
     const totalItems = items.reduce((sum, i) => sum + i.qty, 0);
@@ -523,13 +451,6 @@ export default function Cart({
         discount ? formatNumberInput(discount) : "",
     );
     const [discountError, setDiscountError] = useState("");
-
-    // Hitung item yang kena fee untuk ditampilkan
-    const platformItemsCount = items.filter(
-        (i) => i.is_using_platform_price === true,
-    ).length;
-    const platformFeeRate =
-        CHANNELS.find((ch) => ch.value === orderChannel)?.feeRate || 0;
 
     const handleDiscountChange = (e) => {
         const rawValue = e.target.value;
@@ -557,35 +478,6 @@ export default function Cart({
         }
     };
 
-    const isOnlineChannel = orderChannel !== "dine_in";
-    const activeChannel = CHANNELS.find((ch) => ch.value === orderChannel);
-    const ChannelIcon = activeChannel?.icon;
-
-    const getButtonColor = (channel) => {
-        if (orderChannel === channel.value) {
-            switch (channel.color) {
-                case "green":
-                    return "bg-green-600 text-white border-green-600";
-                case "orange":
-                    return "bg-orange-500 text-white border-orange-500";
-                case "emerald":
-                    return "bg-emerald-600 text-white border-emerald-600";
-                default:
-                    return "bg-slate-700 text-white border-slate-700";
-            }
-        }
-        switch (channel.color) {
-            case "green":
-                return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100";
-            case "orange":
-                return "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100";
-            case "emerald":
-                return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
-            default:
-                return "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200";
-        }
-    };
-
     return (
         <div className="h-full flex flex-col bg-white">
             <div className="shrink-0 p-4 border-b">
@@ -603,29 +495,6 @@ export default function Cart({
                         </button>
                     )}
                 </div>
-
-                <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-2">
-                        Channel Order
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                        {CHANNELS.map((ch) => {
-                            const Icon = ch.icon;
-                            return (
-                                <button
-                                    key={ch.value}
-                                    onClick={() =>
-                                        onOrderChannelChange(ch.value)
-                                    }
-                                    className={`flex flex-col items-center gap-1 py-2 rounded-lg text-xs font-medium transition border ${getButtonColor(ch)}`}
-                                >
-                                    <Icon className="h-3.5 w-3.5" />
-                                    {ch.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
@@ -637,30 +506,17 @@ export default function Cart({
                         </p>
                     </div>
                 ) : (
-                    <>
-                        {isOnlineChannel && platformItemsCount > 0 && (
-                            <div className="mx-3 mt-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-[10px] text-red-600 flex items-center gap-1">
-                                    <Info className="h-3 w-3" />
-                                    {platformItemsCount} item akan dikenakan
-                                    biaya platform{" "}
-                                    {Math.round(platformFeeRate * 100)}%
-                                </p>
-                            </div>
-                        )}
-                        <div className="divide-y">
-                            {items.map((item) => (
-                                <CartItem
-                                    key={item._customKey || item.product_id}
-                                    item={item}
-                                    orderChannel={orderChannel}
-                                    onUpdateQuantity={onUpdateQuantity}
-                                    onUpdateDiscount={onUpdateDiscount}
-                                    onRemoveItem={onRemoveItem}
-                                />
-                            ))}
-                        </div>
-                    </>
+                    <div className="divide-y">
+                        {items.map((item) => (
+                            <CartItem
+                                key={item._customKey || item.product_id}
+                                item={item}
+                                onUpdateQuantity={onUpdateQuantity}
+                                onUpdateDiscount={onUpdateDiscount}
+                                onRemoveItem={onRemoveItem}
+                            />
+                        ))}
+                    </div>
                 )}
             </div>
 

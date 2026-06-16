@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\Store;
-use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -89,7 +88,6 @@ class CashierExpenseController extends Controller
 
         $expenseAmount = $this->getExpenseAmount($request->type, $validated);
 
-        // FIX: Gunakan method yang sama
         $cashBalance = Store::computeCashBalance($storeId);
 
         if ($expenseAmount > $cashBalance) {
@@ -180,7 +178,6 @@ class CashierExpenseController extends Controller
 
         $newExpenseAmount = $this->getExpenseAmount($request->type, $validated);
 
-        // FIX: Gunakan method yang sama + tambah pengembalian expense lama
         $currentCashBalance = Store::computeCashBalance($storeId) + $expense->total_amount;
 
         if ($newExpenseAmount > $currentCashBalance) {

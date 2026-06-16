@@ -8,7 +8,7 @@ import UserMenu from "@/components/navbar/header/user-menu";
 
 export function AppHeader() {
     return (
-        <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background/40 backdrop-blur-md rounded-t-2xl">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/40 backdrop-blur-md">
             <div className="flex w-full items-center gap-1 px-4 lg:gap-2">
                 <SidebarTrigger className="h-9 w-9 shrink-0" />
 

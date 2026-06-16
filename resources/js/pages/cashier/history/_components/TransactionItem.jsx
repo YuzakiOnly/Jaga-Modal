@@ -1,19 +1,15 @@
 import {
     Banknote,
     QrCode,
-    Bike,
-    ShoppingCart,
-    Zap,
     ChevronDown,
     ChevronUp,
     User,
     Phone,
     Hash,
-    TrendingDown,
 } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/formatters";
 
-const CHANNEL_CONFIG = {
+const PAYMENT_CONFIG = {
     cash: {
         label: "CASH",
         icon: Banknote,
@@ -28,41 +24,16 @@ const CHANNEL_CONFIG = {
         iconBg: "bg-indigo-50",
         badgeColor: "bg-indigo-100 text-indigo-700",
     },
-    grabfood: {
-        label: "GrabFood",
-        icon: Bike,
-        iconColor: "text-green-600",
-        iconBg: "bg-green-50",
-        badgeColor: "bg-green-100 text-green-700",
-    },
-    shopeefood: {
-        label: "ShopeeFood",
-        icon: ShoppingCart,
-        iconColor: "text-orange-600",
-        iconBg: "bg-orange-50",
-        badgeColor: "bg-orange-100 text-orange-700",
-    },
-    gobiz: {
-        label: "GoBiz",
-        icon: Zap,
-        iconColor: "text-sky-600",
-        iconBg: "bg-sky-50",
-        badgeColor: "bg-sky-100 text-sky-700",
-    },
 };
 
 export default function TransactionItem({ transaction, isOpen, onToggle }) {
     if (!transaction) return null;
 
     const trx = transaction;
-    const config = CHANNEL_CONFIG[trx.payment_method] || CHANNEL_CONFIG.cash;
+    const config = PAYMENT_CONFIG[trx.payment_method] || PAYMENT_CONFIG.cash;
     const Icon = config.icon;
-    const isOnline = trx.order_channel && trx.order_channel !== "dine_in";
     const hasCustomer =
         trx.customer_name || trx.customer_phone || trx.customer_number;
-
-    const platformFee = parseFloat(trx.platform_fee || 0);
-    const netRevenue = trx.total - platformFee;
 
     let customerDisplay = "";
     if (trx.customer_number) {
@@ -92,11 +63,6 @@ export default function TransactionItem({ transaction, isOpen, onToggle }) {
                                 >
                                     {config.label}
                                 </span>
-                                {isOnline && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 shrink-0">
-                                        {trx.order_channel}
-                                    </span>
-                                )}
                                 {hasCustomer && (
                                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 shrink-0 flex items-center gap-0.5">
                                         <User className="h-2 w-2" />
@@ -141,11 +107,6 @@ export default function TransactionItem({ transaction, isOpen, onToggle }) {
                             <p className="text-base font-black text-slate-900">
                                 {formatCurrency(trx.total)}
                             </p>
-                            {platformFee > 0 && (
-                                <p className="text-[10px] text-emerald-600 font-medium">
-                                    Bersih {formatCurrency(netRevenue)}
-                                </p>
-                            )}
                         </div>
                         {isOpen ? (
                             <ChevronUp
@@ -250,26 +211,6 @@ export default function TransactionItem({ transaction, isOpen, onToggle }) {
                                     </span>
                                 </div>
                             )}
-                            {platformFee > 0 && (
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-1">
-                                        <TrendingDown
-                                            size={12}
-                                            className="text-red-500"
-                                        />
-                                        <span className="text-red-500">
-                                            Biaya Platform (
-                                            {Math.round(
-                                                (platformFee / trx.total) * 100,
-                                            )}
-                                            %)
-                                        </span>
-                                    </div>
-                                    <span className="font-medium text-red-600">
-                                        − {formatCurrency(platformFee)}
-                                    </span>
-                                </div>
-                            )}
                             <div className="flex justify-between items-center pt-1 border-t border-dashed border-slate-200">
                                 <span className="font-black text-slate-800">
                                     Total
@@ -278,16 +219,6 @@ export default function TransactionItem({ transaction, isOpen, onToggle }) {
                                     {formatCurrency(trx.total)}
                                 </span>
                             </div>
-                            {platformFee > 0 && (
-                                <div className="flex justify-between items-center bg-emerald-50 rounded-lg p-2 -mx-1">
-                                    <span className="text-xs font-semibold text-emerald-700">
-                                        Diterima Bersih
-                                    </span>
-                                    <span className="text-sm font-black text-emerald-700">
-                                        {formatCurrency(netRevenue)}
-                                    </span>
-                                </div>
-                            )}
                             {trx.payment_method === "cash" && (
                                 <>
                                     <div className="flex justify-between items-center">

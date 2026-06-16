@@ -8,13 +8,10 @@ import {
     QrCode,
     CheckCircle2,
     Loader2,
-    Bike,
-    Zap,
     User,
     Phone,
     ChevronDown,
     Calendar as CalendarIcon,
-    Info,
 } from "lucide-react";
 
 import {
@@ -28,7 +25,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import {
     Collapsible,
     CollapsibleContent,
@@ -51,58 +47,9 @@ const formatPrice = (price) =>
 
 const QUICK_AMOUNTS = [5000, 10000, 20000, 50000, 100000];
 
-const CHANNEL_CONFIG = {
-    dine_in: {
-        label: "Dine In",
-        methods: ["cash", "qris"],
-        defaultMethod: "cash",
-        isOnline: false,
-        feeRate: 0,
-    },
-    grabfood: {
-        label: "GrabFood",
-        methods: ["grabfood"],
-        defaultMethod: "grabfood",
-        isOnline: true,
-        color: "green",
-        feeRate: 0.2,
-        description:
-            "Pembayaran akan diproses melalui GrabFood. Fee platform 20% akan dipotong untuk item dengan harga GrabFood.",
-    },
-    shopeefood: {
-        label: "ShopeeFood",
-        methods: ["shopeefood"],
-        defaultMethod: "shopeefood",
-        isOnline: true,
-        color: "orange",
-        feeRate: 0.25,
-        description:
-            "Pembayaran akan diproses melalui ShopeeFood. Fee platform 25% akan dipotong untuk item dengan harga ShopeeFood.",
-    },
-    gobiz: {
-        label: "GoBiz",
-        methods: ["gobiz"],
-        defaultMethod: "gobiz",
-        isOnline: true,
-        color: "emerald",
-        feeRate: 0.2,
-        description:
-            "Pembayaran akan diproses melalui GoBiz. Fee platform 20% akan dipotong untuk item dengan harga GoBiz.",
-    },
-};
-
 const METHOD_CONFIG = {
     cash: { label: "Cash", icon: Banknote },
     qris: { label: "QRIS", icon: QrCode },
-    grabfood: { label: "GrabFood", icon: Bike },
-    shopeefood: { label: "ShopeeFood", icon: Bike },
-    gobiz: { label: "GoBiz", icon: Zap },
-};
-
-const ONLINE_CHANNEL_STYLE = {
-    grabfood: "border-green-300 bg-green-50 text-green-700",
-    shopeefood: "border-orange-300 bg-orange-50 text-orange-700",
-    gobiz: "border-emerald-300 bg-emerald-50 text-emerald-700",
 };
 
 const formatDateForBackend = (date) => {
@@ -133,23 +80,11 @@ export function PaymentDialog({
     globalDiscount = 0,
     finalTotal = 0,
     subtotalAfterItemDiscount = 0,
-    orderChannel = "dine_in",
-    platformFee: propPlatformFee = 0,
-    platformItemsCount: propPlatformItemsCount = 0,
-    platformItemsTotalAmount: propPlatformItemsTotalAmount = 0,
-    originalSubtotal: propOriginalSubtotal = 0,
-    netRevenue: propNetRevenue = 0,
 }) {
-    const channelConfig =
-        CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
-    const isOnlineChannel = channelConfig.isOnline;
-    const feeRate = channelConfig.feeRate || 0;
-
-    const [method, setMethod] = useState(channelConfig.defaultMethod);
+    const [method, setMethod] = useState("cash");
     const [amountPaid, setAmountPaid] = useState("");
     const [processing, setProcessing] = useState(false);
     const [qrisConfirmed, setQrisConfirmed] = useState(false);
-    const [onlineConfirmed, setOnlineConfirmed] = useState(false);
     const [error, setError] = useState(null);
 
     const [customerOpen, setCustomerOpen] = useState(false);
@@ -170,33 +105,20 @@ export function PaymentDialog({
             0,
         );
 
-    // Gunakan props untuk platform fee
-    const platformFee = propPlatformFee;
-    const platformItemsCount = propPlatformItemsCount;
-    const platformItemsTotalAmount = propPlatformItemsTotalAmount;
-    const netRevenue = propNetRevenue || total - platformFee;
-
     const paid = parseFloat(amountPaid) || 0;
     const change = paid - total;
     const cashValid = paid >= total;
 
     const canSubmit =
-        cartItems.length > 0 &&
-        (() => {
-            if (isOnlineChannel) return onlineConfirmed;
-            if (method === "qris") return qrisConfirmed;
-            return cashValid;
-        })();
+        cartItems.length > 0 && (method === "cash" ? cashValid : qrisConfirmed);
 
     const hasCustomerData = customerName.trim() || customerPhone.trim();
 
     useEffect(() => {
         if (open) {
-            const cfg = CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
-            setMethod(cfg.defaultMethod);
+            setMethod("cash");
             setAmountPaid("");
             setQrisConfirmed(false);
-            setOnlineConfirmed(false);
             setProcessing(false);
             setError(null);
             setCustomerOpen(false);
@@ -205,7 +127,7 @@ export function PaymentDialog({
             setUseCustomDate(false);
             setTransactionDate(new Date());
         }
-    }, [open, orderChannel]);
+    }, [open]);
 
     const handleSubmit = () => {
         setProcessing(true);
@@ -228,12 +150,11 @@ export function PaymentDialog({
 
         const payload = {
             payment_method: method,
-            order_channel: orderChannel,
+            order_channel: "dine_in",
             amount_paid: method === "cash" ? paid : total,
             change_amount: method === "cash" ? Math.max(change, 0) : 0,
             subtotal,
             discount: globalDiscount,
-            platform_fee: platformFee,
             total,
             notes: null,
             transacted_at: formattedDate,
@@ -244,7 +165,6 @@ export function PaymentDialog({
                 name: item.name,
                 unit_price: parseFloat(item.unit_price),
                 capital_price: parseFloat(item.capital_price || 0),
-                original_price: item.base_unit_price || item.unit_price,
                 qty: parseInt(item.qty),
                 discount: parseFloat(item.discount || 0),
                 subtotal: parseFloat(
@@ -252,7 +172,6 @@ export function PaymentDialog({
                         (item.unit_price - (item.discount || 0)) * item.qty,
                 ),
                 is_custom: item.is_custom || false,
-                is_using_platform_price: item.is_using_platform_price || false,
             })),
         };
 
@@ -299,26 +218,11 @@ export function PaymentDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-xl sm:rounded-lg max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
-                    <div className="flex items-center gap-2">
-                        <DialogTitle className="text-base sm:text-lg">
-                            Pembayaran
-                        </DialogTitle>
-                        <Badge
-                            variant="outline"
-                            className={cn(
-                                "text-xs",
-                                isOnlineChannel
-                                    ? ONLINE_CHANNEL_STYLE[orderChannel]
-                                    : "border-slate-200 text-slate-600",
-                            )}
-                        >
-                            {channelConfig.label}
-                        </Badge>
-                    </div>
+                    <DialogTitle className="text-base sm:text-lg">
+                        Pembayaran
+                    </DialogTitle>
                     <DialogDescription className="text-xs sm:text-sm">
-                        {isOnlineChannel
-                            ? channelConfig.description
-                            : "Masukkan detail pembayaran untuk menyelesaikan transaksi"}
+                        Masukkan detail pembayaran untuk menyelesaikan transaksi
                     </DialogDescription>
                 </DialogHeader>
 
@@ -334,14 +238,7 @@ export function PaymentDialog({
                         </div>
                     )}
 
-                    <div
-                        className={cn(
-                            "rounded-lg px-4 py-3 text-center",
-                            isOnlineChannel
-                                ? "bg-orange-50 border border-orange-200"
-                                : "bg-muted/50",
-                        )}
-                    >
+                    <div className="rounded-lg bg-muted/50 px-4 py-3 text-center">
                         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
                             Total Pembayaran
                         </p>
@@ -352,46 +249,6 @@ export function PaymentDialog({
                             {cartItems.reduce((s, i) => s + i.qty, 0)} item
                         </p>
                     </div>
-
-                    {isOnlineChannel && platformFee > 0 && (
-                        <div className="rounded-xl border-2 border-dashed border-muted-foreground/20 px-4 py-4">
-                            <div className="w-full space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium">
-                                        Rincian Biaya Platform
-                                    </p>
-                                </div>
-                                <div className="flex justify-between text-sm gap-4">
-                                    <span className="text-muted-foreground">
-                                        Harga ke pelanggan
-                                    </span>
-                                    <span className="font-medium">
-                                        {formatPrice(total)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-sm gap-4 text-red-500">
-                                    <span className="flex items-center gap-1">
-                                        <Info className="h-3 w-3" />
-                                        Fee Platform (
-                                        {Math.round(feeRate * 100)}%)
-                                    </span>
-                                    <span>− {formatPrice(platformFee)}</span>
-                                </div>
-                                {platformItemsCount > 0 && (
-                                    <div className="text-[10px] text-gray-400 text-right">
-                                        *Dari {platformItemsCount} item dengan
-                                        total{" "}
-                                        {formatPrice(platformItemsTotalAmount)}
-                                    </div>
-                                )}
-                                <Separator />
-                                <div className="flex justify-between text-sm gap-4 font-bold text-emerald-600">
-                                    <span>Pendapatan Bersih</span>
-                                    <span>{formatPrice(netRevenue)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     <div>
                         <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
@@ -532,36 +389,31 @@ export function PaymentDialog({
 
                     <Separator />
 
-                    {!isOnlineChannel && (
-                        <>
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                {channelConfig.methods.map((m) => {
-                                    const { label, icon: Icon } =
-                                        METHOD_CONFIG[m];
-                                    return (
-                                        <button
-                                            key={m}
-                                            onClick={() => setMethod(m)}
-                                            className={cn(
-                                                "flex flex-col items-center gap-1.5 sm:gap-2 rounded-xl border-2 py-3 sm:py-4 transition-all",
-                                                method === m
-                                                    ? "border-primary bg-primary/5 text-primary"
-                                                    : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40",
-                                            )}
-                                        >
-                                            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                                            <span className="text-xs sm:text-sm font-semibold">
-                                                {label}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <Separator />
-                        </>
-                    )}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                        {Object.entries(METHOD_CONFIG).map(
+                            ([key, { label, icon: Icon }]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setMethod(key)}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1.5 sm:gap-2 rounded-xl border-2 py-3 sm:py-4 transition-all",
+                                        method === key
+                                            ? "border-primary bg-primary/5 text-primary"
+                                            : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40",
+                                    )}
+                                >
+                                    <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+                                    <span className="text-xs sm:text-sm font-semibold">
+                                        {label}
+                                    </span>
+                                </button>
+                            ),
+                        )}
+                    </div>
 
-                    {!isOnlineChannel && method === "cash" && (
+                    <Separator />
+
+                    {method === "cash" && (
                         <div className="space-y-3 sm:space-y-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs sm:text-sm">
@@ -630,7 +482,7 @@ export function PaymentDialog({
                         </div>
                     )}
 
-                    {!isOnlineChannel && method === "qris" && (
+                    {method === "qris" && (
                         <div className="space-y-3 sm:space-y-4">
                             <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-muted-foreground/30 py-5 sm:py-6 px-4">
                                 <QrCode className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50" />
@@ -668,31 +520,6 @@ export function PaymentDialog({
                                 </span>
                             </button>
                         </div>
-                    )}
-
-                    {isOnlineChannel && (
-                        <button
-                            onClick={() => setOnlineConfirmed((v) => !v)}
-                            className={cn(
-                                "flex w-full items-center gap-3 rounded-lg border-2 px-4 py-3 transition-all",
-                                onlineConfirmed
-                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                    : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40",
-                            )}
-                        >
-                            <CheckCircle2
-                                className={cn(
-                                    "h-5 w-5 shrink-0",
-                                    onlineConfirmed
-                                        ? "text-emerald-500"
-                                        : "text-muted-foreground/30",
-                                )}
-                            />
-                            <span className="text-sm font-medium text-left">
-                                Pesanan sudah diproses melalui{" "}
-                                {channelConfig.label}
-                            </span>
-                        </button>
                     )}
 
                     <Button

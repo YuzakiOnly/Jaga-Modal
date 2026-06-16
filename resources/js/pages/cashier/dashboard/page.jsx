@@ -7,8 +7,6 @@ import {
     Package,
     CalendarDays,
     Landmark,
-    Store,
-    Smartphone,
 } from "lucide-react";
 import CashierLayout from "@/layouts/CashierLayout";
 import StatCard from "./_components/StatCard";
@@ -18,112 +16,6 @@ import { fmt, fmtNum } from "@/lib/cashier/dashboard";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
-
-const ONLINE_CHANNELS = [
-    {
-        key: "grabfood",
-        label: "GrabFood",
-        color: "bg-green-50",
-        textColor: "text-green-700",
-        dotColor: "bg-green-500",
-    },
-    {
-        key: "shopeefood",
-        label: "ShopeeFood",
-        color: "bg-orange-50",
-        textColor: "text-orange-600",
-        dotColor: "bg-orange-500",
-    },
-    {
-        key: "gobiz",
-        label: "GoBiz",
-        color: "bg-sky-50",
-        textColor: "text-sky-700",
-        dotColor: "bg-sky-500",
-    },
-];
-
-function ChannelBreakdown({ revenueByChannel }) {
-    if (!revenueByChannel) return null;
-
-    const dineIn = revenueByChannel["dine_in"] ?? 0;
-    const channels = [
-        {
-            key: "dine_in",
-            label: "Dine In",
-            revenue: dineIn,
-            color: "bg-emerald-50",
-            textColor: "text-emerald-700",
-            dotColor: "bg-emerald-500",
-        },
-        ...ONLINE_CHANNELS.map((ch) => ({
-            ...ch,
-            revenue: revenueByChannel[ch.key] ?? 0,
-        })),
-    ].filter((ch) => ch.revenue > 0);
-
-    if (channels.length <= 1) return null;
-
-    const total = channels.reduce((s, c) => s + c.revenue, 0);
-
-    if (total === 0) return null;
-
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
-            <div className="mb-3">
-                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Omzet per Channel
-                </p>
-            </div>
-
-            <div className="flex rounded-full overflow-hidden h-2 mb-4 gap-0.5">
-                {channels.map((ch) => {
-                    const percentage = (ch.revenue / total) * 100;
-                    return (
-                        <div
-                            key={ch.key}
-                            className={ch.dotColor}
-                            style={{
-                                width: `${percentage}%`,
-                                minWidth: "4px",
-                            }}
-                        />
-                    );
-                })}
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {channels.map((ch) => {
-                    const percentage =
-                        total > 0 ? (ch.revenue / total) * 100 : 0;
-                    return (
-                        <div
-                            key={ch.key}
-                            className={`${ch.color} rounded-xl p-3`}
-                        >
-                            <div className="flex items-center gap-1.5 mb-1">
-                                <div
-                                    className={`w-1.5 h-1.5 rounded-full ${ch.dotColor}`}
-                                />
-                                <span
-                                    className={`text-[10px] font-semibold ${ch.textColor}`}
-                                >
-                                    {ch.label}
-                                </span>
-                            </div>
-                            <p className="text-sm font-bold text-gray-800">
-                                {fmt(ch.revenue)}
-                            </p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">
-                                {Math.round(percentage)}%
-                            </p>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
 
 export default function CashierDashboard({
     stats,
@@ -216,16 +108,6 @@ export default function CashierDashboard({
         minggu_ini: "minggu ini",
         bulan_ini: "bulan ini",
     };
-
-    const revenueByChannel = (() => {
-        const trxList = recent_transactions?.data ?? recent_transactions ?? [];
-        const map = {};
-        trxList.forEach((trx) => {
-            const ch = trx.order_channel ?? "dine_in";
-            map[ch] = (map[ch] ?? 0) + (trx.net_revenue ?? trx.total ?? 0);
-        });
-        return map;
-    })();
 
     const revenueTrend = (() => {
         const t = stats.revenue_trend;
@@ -335,8 +217,6 @@ export default function CashierDashboard({
                             icon={Wallet}
                         />
                     </div>
-
-                    <ChannelBreakdown revenueByChannel={revenueByChannel} />
 
                     <MiniBarChart
                         data={sales_chart}

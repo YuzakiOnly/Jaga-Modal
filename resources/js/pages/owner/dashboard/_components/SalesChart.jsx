@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
     Card,
     CardContent,
@@ -36,22 +37,19 @@ function formatRp(value) {
     }).format(value);
 }
 
-const CHANNELS = [
+const PAYMENT_METHODS = [
     { key: "cash", label: "Tunai", color: "#3b82f6" },
     { key: "qris", label: "QRIS", color: "#a855f7" },
-    { key: "grabfood", label: "GrabFood", color: "#00b14f" },
-    { key: "shopeefood", label: "ShopeeFood", color: "#ee4d2d" },
-    { key: "gobiz", label: "GoBiz", color: "#00aed6" },
 ];
 
 const chartConfig = Object.fromEntries(
-    CHANNELS.map(({ key, label, color }) => [key, { label, color }]),
+    PAYMENT_METHODS.map(({ key, label, color }) => [key, { label, color }]),
 );
 
 function CustomTooltip({ active, payload, label }) {
     if (!active || !payload || !payload.length) return null;
 
-    const items = CHANNELS.map((ch) => {
+    const items = PAYMENT_METHODS.map((ch) => {
         const entry = payload.find((p) => p.dataKey === ch.key);
         return { ...ch, value: entry?.value ?? 0 };
     }).filter((item) => item.value > 0);
@@ -88,7 +86,7 @@ function CustomTooltip({ active, payload, label }) {
                 <div className="border-t border-border my-1 pt-1">
                     <div className="flex items-center justify-between gap-3">
                         <span className="font-semibold text-foreground">
-                            Total (Bersih)
+                            Total
                         </span>
                         <span className="font-bold text-emerald-600 tabular-nums">
                             {formatRp(total)}
@@ -100,7 +98,7 @@ function CustomTooltip({ active, payload, label }) {
     );
 }
 
-export default function SalesChart({
+function SalesChartComponent({
     data,
     selectedMonth,
     availableMonths,
@@ -116,9 +114,6 @@ export default function SalesChart({
             dateLabel: d.date,
             cash: d.cash ?? 0,
             qris: d.qris ?? 0,
-            grabfood: d.grabfood ?? 0,
-            shopeefood: d.shopeefood ?? 0,
-            gobiz: d.gobiz ?? 0,
             revenue: d.revenue ?? 0,
         })) ?? [];
 
@@ -139,7 +134,7 @@ export default function SalesChart({
         year: "numeric",
     });
 
-    const channelPercentages = CHANNELS.map(({ key, label, color }) => {
+    const paymentPercentages = PAYMENT_METHODS.map(({ key, label, color }) => {
         const total = chartData.reduce((sum, d) => sum + (d[key] || 0), 0);
         const percentage = totalRevenue > 0 ? (total / totalRevenue) * 100 : 0;
         return { key, label, color, total, percentage };
@@ -157,7 +152,7 @@ export default function SalesChart({
                         <span className="font-medium text-foreground">
                             {formatRp(totalRevenue)}
                         </span>{" "}
-                        pendapatan bersih {monthName.toLowerCase()}
+                        pendapatan {monthName.toLowerCase()}
                     </CardDescription>
                 </div>
                 {availableMonths?.length > 0 && (
@@ -196,7 +191,7 @@ export default function SalesChart({
                                 }}
                             >
                                 <defs>
-                                    {CHANNELS.map(({ key, color }) => (
+                                    {PAYMENT_METHODS.map(({ key, color }) => (
                                         <linearGradient
                                             key={key}
                                             id={`gradient-${key}`}
@@ -254,7 +249,7 @@ export default function SalesChart({
                                     content={<CustomTooltip />}
                                 />
                                 <ChartLegend content={<ChartLegendContent />} />
-                                {CHANNELS.map(({ key, color }) => (
+                                {PAYMENT_METHODS.map(({ key, color }) => (
                                     <Area
                                         key={key}
                                         type="monotone"
@@ -273,9 +268,9 @@ export default function SalesChart({
                             </AreaChart>
                         </ChartContainer>
 
-                        {channelPercentages.length > 0 && (
+                        {paymentPercentages.length > 0 && (
                             <div className="flex justify-center gap-4 mt-4 flex-wrap">
-                                {channelPercentages.map(
+                                {paymentPercentages.map(
                                     ({ key, label, color, percentage }) => (
                                         <div
                                             key={key}
@@ -298,7 +293,7 @@ export default function SalesChart({
                         )}
 
                         <div className="text-center text-xs text-muted-foreground mt-3">
-                            *Data penjualan bersih per tanggal {monthName}
+                            *Data penjualan per tanggal {monthName}
                         </div>
                     </div>
                 )}
@@ -306,3 +301,5 @@ export default function SalesChart({
         </Card>
     );
 }
+
+export default memo(SalesChartComponent);

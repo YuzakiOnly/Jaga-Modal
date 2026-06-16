@@ -7,10 +7,6 @@ import {
     X,
     Tag,
     Percent,
-    Bike,
-    Store,
-    Zap,
-    Info,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { qtyInputSchema } from "@/schemas/posSchema";
-import { cn } from "@/lib/utils";
 
 const formatPrice = (price) =>
     new Intl.NumberFormat("id-ID", {
@@ -46,73 +41,15 @@ const formatNumberInput = (value) => {
     return new Intl.NumberFormat("id-ID").format(value);
 };
 
-export const CHANNELS = [
-    {
-        id: "dine_in",
-        label: "Dine In",
-        shortLabel: "Dine In",
-        icon: Store,
-        color: "text-slate-600",
-        bgActive: "bg-slate-800 text-white border-slate-800",
-        bgInactive:
-            "bg-background text-muted-foreground border-border hover:bg-accent",
-        online: false,
-        feeRate: 0,
-    },
-    {
-        id: "grabfood",
-        label: "GrabFood",
-        shortLabel: "Grab",
-        icon: Bike,
-        color: "text-green-600",
-        bgActive: "bg-green-600 text-white border-green-600",
-        bgInactive:
-            "bg-background text-green-700 border-green-200 hover:bg-green-50",
-        online: true,
-        feeRate: 0.2,
-    },
-    {
-        id: "shopeefood",
-        label: "ShopeeFood",
-        shortLabel: "Shopee",
-        icon: Bike,
-        color: "text-orange-500",
-        bgActive: "bg-orange-500 text-white border-orange-500",
-        bgInactive:
-            "bg-background text-orange-600 border-orange-200 hover:bg-orange-50",
-        online: true,
-        feeRate: 0.25,
-    },
-    {
-        id: "gobiz",
-        label: "GoBiz",
-        shortLabel: "Gojek",
-        icon: Zap,
-        color: "text-emerald-600",
-        bgActive: "bg-emerald-600 text-white border-emerald-600",
-        bgInactive:
-            "bg-background text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-        online: true,
-        feeRate: 0.2,
-    },
-];
-
-function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
+function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove }) {
     const subtotal =
         item.subtotal || (item.unit_price - item.discount) * item.qty;
-    const profitPerItem = item.unit_price - item.capital_price;
     const [discountInput, setDiscountInput] = useState(
         item.discount ? formatNumberInput(item.discount) : "",
     );
     const [discountError, setDiscountError] = useState("");
     const [qtyInput, setQtyInput] = useState(item.qty.toString());
     const [isEditingQty, setIsEditingQty] = useState(false);
-
-    const willBeChargedFee = item.is_using_platform_price === true;
-    const feeRate =
-        CHANNELS.find((c) =>
-            c.id === isOnline ? item._channel || "grabfood" : null,
-        )?.feeRate || 20;
 
     const handleDiscountChange = (e) => {
         const rawValue = e.target.value;
@@ -191,54 +128,21 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
         setQtyInput(item.qty.toString());
     };
 
-    const hasPlatformPrice =
-        item.base_unit_price && item.base_unit_price !== item.unit_price;
-
     return (
         <div className="flex flex-col gap-1.5 py-3">
             <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-sm font-medium leading-tight line-clamp-1">
-                            {item.name}
-                        </p>
-                        {willBeChargedFee && (
-                            <Badge
-                                variant="outline"
-                                className="text-[10px] px-1 py-0 border-red-300 text-red-600 bg-red-50 shrink-0"
-                            >
-                                <Info className="h-2.5 w-2.5 mr-0.5" />
-                                Fee {Math.round(feeRate * 100)}%
-                            </Badge>
-                        )}
-                        {hasPlatformPrice && !willBeChargedFee && (
-                            <Badge
-                                variant="outline"
-                                className="text-[10px] px-1 py-0 border-orange-300 text-orange-600 bg-orange-50 shrink-0"
-                            >
-                                Harga Online
-                            </Badge>
-                        )}
-                    </div>
+                    <p className="text-sm font-medium leading-tight line-clamp-1">
+                        {item.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                         {formatPrice(item.unit_price)}
-                        {hasPlatformPrice && (
-                            <span className="ml-1 text-muted-foreground/60 line-through text-[10px]">
-                                {formatPrice(item.base_unit_price)}
-                            </span>
-                        )}
                         {item.discount > 0 && (
                             <span className="ml-1 text-destructive">
                                 − {formatPrice(item.discount)}
                             </span>
                         )}
                     </p>
-                    {item.is_custom && item.capital_price > 0 && (
-                        <p className="text-[10px] text-emerald-600 mt-0.5">
-                            Modal: {formatPrice(item.capital_price)} |
-                            Laba/item: {formatPrice(profitPerItem)}
-                        </p>
-                    )}
                     {item.is_custom && (
                         <Badge
                             variant="outline"
@@ -336,35 +240,6 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove, isOnline }) {
     );
 }
 
-function ChannelSelector({ orderChannel, onChannelChange }) {
-    return (
-        <div className="px-4 pt-3 pb-2 space-y-1.5 shrink-0">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                Channel Pesanan
-            </p>
-            <div className="grid grid-cols-4 gap-1">
-                {CHANNELS.map((ch) => {
-                    const Icon = ch.icon;
-                    const isActive = orderChannel === ch.id;
-                    return (
-                        <button
-                            key={ch.id}
-                            onClick={() => onChannelChange(ch.id)}
-                            className={cn(
-                                "flex flex-col items-center gap-1 rounded-lg border py-2 px-1 text-[10px] font-semibold transition-all",
-                                isActive ? ch.bgActive : ch.bgInactive,
-                            )}
-                        >
-                            <Icon className="h-3.5 w-3.5" />
-                            <span>{ch.shortLabel}</span>
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
 export function Cart({
     items,
     onUpdateQty,
@@ -376,18 +251,7 @@ export function Cart({
     onGlobalDiscountChange,
     subtotalAfterItemDiscount = 0,
     finalTotal = 0,
-    orderChannel = "dine_in",
-    onChannelChange,
-    platformFee: propPlatformFee = 0,
-    platformItemsCount: propPlatformItemsCount = 0,
-    platformItemsTotalAmount: propPlatformItemsTotalAmount = 0,
-    netRevenue: propNetRevenue = 0,
 }) {
-    const isOnline =
-        CHANNELS.find((c) => c.id === orderChannel)?.online ?? false;
-    const feeRate = CHANNELS.find((c) => c.id === orderChannel)?.feeRate ?? 0;
-    const activeChannel = CHANNELS.find((c) => c.id === orderChannel);
-
     const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
     const [globalDiscountInput, setGlobalDiscountInput] = useState(
         globalDiscount ? formatNumberInput(globalDiscount) : "",
@@ -405,12 +269,6 @@ export function Cart({
         );
     const computedFinalTotal =
         finalTotal || Math.max(0, computedSubtotal - globalDiscount);
-
-    // Gunakan props untuk platform fee
-    const platformFee = propPlatformFee;
-    const platformItemsCount = propPlatformItemsCount;
-    const platformItemsTotalAmount = propPlatformItemsTotalAmount;
-    const netRevenue = propNetRevenue || computedFinalTotal - platformFee;
 
     const handleGlobalDiscountChange = (e) => {
         const rawValue = e.target.value;
@@ -452,19 +310,6 @@ export function Cart({
                             {totalItems}
                         </Badge>
                     )}
-                    {activeChannel && (
-                        <Badge
-                            variant="outline"
-                            className={cn(
-                                "text-[10px] px-1.5 py-0 h-5",
-                                isOnline
-                                    ? "border-orange-300 text-orange-600 bg-orange-50"
-                                    : "border-slate-300 text-slate-600",
-                            )}
-                        >
-                            {activeChannel.label}
-                        </Badge>
-                    )}
                 </div>
                 {items.length > 0 && (
                     <button
@@ -477,16 +322,6 @@ export function Cart({
                 )}
             </div>
 
-            {onChannelChange && (
-                <>
-                    <ChannelSelector
-                        orderChannel={orderChannel}
-                        onChannelChange={onChannelChange}
-                    />
-                    <Separator />
-                </>
-            )}
-
             <ScrollArea className="flex-1 min-h-0 px-4">
                 {items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 gap-2 text-muted-foreground">
@@ -497,29 +332,17 @@ export function Cart({
                         </p>
                     </div>
                 ) : (
-                    <>
-                        {isOnline && platformItemsCount > 0 && (
-                            <div className="mt-2 mb-3 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-[10px] text-red-600 flex items-center gap-1">
-                                    <Info className="h-3 w-3" />
-                                    {platformItemsCount} item akan dikenakan
-                                    biaya platform {Math.round(feeRate * 100)}%
-                                </p>
-                            </div>
-                        )}
-                        <div className="divide-y pb-2">
-                            {items.map((item) => (
-                                <CartItem
-                                    key={item._key}
-                                    item={item}
-                                    onUpdateQty={onUpdateQty}
-                                    onUpdateDiscount={onUpdateDiscount}
-                                    onRemove={onRemoveItem}
-                                    isOnline={isOnline ? orderChannel : null}
-                                />
-                            ))}
-                        </div>
-                    </>
+                    <div className="divide-y pb-2">
+                        {items.map((item) => (
+                            <CartItem
+                                key={item._key}
+                                item={item}
+                                onUpdateQty={onUpdateQty}
+                                onUpdateDiscount={onUpdateDiscount}
+                                onRemove={onRemoveItem}
+                            />
+                        ))}
+                    </div>
                 )}
             </ScrollArea>
 
@@ -573,33 +396,6 @@ export function Cart({
                                 − {formatPrice(globalDiscount)}
                             </span>
                         </div>
-                    )}
-
-                    {isOnline && platformFee > 0 && (
-                        <>
-                            <div className="flex justify-between text-sm text-red-500">
-                                <span className="flex items-center gap-1">
-                                    <Info className="h-3 w-3" />
-                                    Fee Platform ({Math.round(feeRate * 100)}%)
-                                </span>
-                                <span className="tabular-nums">
-                                    − {formatPrice(platformFee)}
-                                </span>
-                            </div>
-                            {platformItemsCount > 0 && (
-                                <div className="text-[10px] text-gray-400 text-right -mt-1">
-                                    *Dari {platformItemsCount} item dengan total{" "}
-                                    {formatPrice(platformItemsTotalAmount)}
-                                </div>
-                            )}
-                            <Separator />
-                            <div className="flex justify-between text-sm font-semibold text-emerald-600">
-                                <span>Pendapatan Bersih</span>
-                                <span className="tabular-nums">
-                                    {formatPrice(netRevenue)}
-                                </span>
-                            </div>
-                        </>
                     )}
 
                     <Separator />

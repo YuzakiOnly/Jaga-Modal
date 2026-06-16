@@ -13,9 +13,6 @@ import {
     Check,
     ChevronsUpDown,
     ExternalLink,
-    Store,
-    Truck,
-    ShoppingBag,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -61,202 +58,6 @@ const formatRupiah = (value) => {
     return `Rp ${rounded.toLocaleString("id-ID")}`;
 };
 
-function OnlineFoodPrices({ form }) {
-    const [enabled, setEnabled] = useState(
-        form.watch("enable_online_food") ?? false,
-    );
-    const sellingPrice = parseFloat(form.watch("selling_price")) || 0;
-
-    useEffect(() => {
-        const subscription = form.watch((value, { name }) => {
-            if (name === "enable_online_food") {
-                setEnabled(value.enable_online_food);
-            }
-        });
-        return () => subscription.unsubscribe();
-    }, [form]);
-
-    const platformConfigs = [
-        {
-            id: "gobiz",
-            name: "GoBiz",
-            icon: Store,
-            color: "text-green-600",
-            bgColor: "bg-green-50",
-            field: "price_gobiz",
-            defaultMargin: 0.2,
-        },
-        {
-            id: "grabfood",
-            name: "GrabFood",
-            icon: Truck,
-            color: "text-green-600",
-            bgColor: "bg-green-50",
-            field: "price_grabfood",
-            defaultMargin: 0.22,
-        },
-        {
-            id: "shopeefood",
-            name: "ShopeeFood",
-            icon: ShoppingBag,
-            color: "text-orange-600",
-            bgColor: "bg-orange-50",
-            field: "price_shopeefood",
-            defaultMargin: 0.18,
-        },
-    ];
-
-    const calculateSuggestedPrice = (platform) => {
-        let suggested = sellingPrice * (1 + platform.defaultMargin);
-
-        if (suggested > 0) {
-            if (suggested < 10000) {
-                suggested = Math.ceil(suggested / 500) * 500;
-            } else {
-                suggested = Math.ceil(suggested / 1000) * 1000;
-            }
-        }
-
-        return Math.round(suggested);
-    };
-
-    const applySuggestedPrice = (platform) => {
-        const suggested = calculateSuggestedPrice(platform);
-        form.setValue(platform.field, String(suggested), {
-            shouldValidate: true,
-        });
-    };
-
-    if (!enabled) return null;
-
-    return (
-        <Card className="shadow-none">
-            <CardHeader className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">
-                        Online Food Platform Prices
-                    </CardTitle>
-                    <Badge variant="outline" className="text-xs">
-                        Optional
-                    </Badge>
-                </div>
-                <CardDescription className="text-xs mt-1">
-                    Set specific prices for each platform. Leave empty to use
-                    regular selling price.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-6 pb-6 pt-0">
-                {platformConfigs.map((platform) => {
-                    const Icon = platform.icon;
-                    const currentValue = form.watch(platform.field);
-
-                    return (
-                        <div key={platform.id} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className={`p-1.5 rounded-lg ${platform.bgColor}`}
-                                    >
-                                        <Icon
-                                            className={`h-4 w-4 ${platform.color}`}
-                                        />
-                                    </div>
-                                    <FormLabel className="text-sm font-medium">
-                                        {platform.name}
-                                    </FormLabel>
-                                </div>
-                                {sellingPrice > 0 && !currentValue && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                            applySuggestedPrice(platform)
-                                        }
-                                        className="h-7 text-xs"
-                                    >
-                                        Suggest Price
-                                    </Button>
-                                )}
-                            </div>
-
-                            <FormField
-                                control={form.control}
-                                name={platform.field}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">
-                                                    Rp
-                                                </span>
-                                                <Input
-                                                    {...field}
-                                                    type="number"
-                                                    inputMode="numeric"
-                                                    placeholder={
-                                                        sellingPrice > 0
-                                                            ? `Same as selling price (${formatRupiah(sellingPrice)})`
-                                                            : "Enter platform price"
-                                                    }
-                                                    className="pl-9"
-                                                    value={field.value ?? ""}
-                                                />
-                                            </div>
-                                        </FormControl>
-                                        <FormDescription className="text-xs">
-                                            {sellingPrice > 0 && (
-                                                <span className="text-muted-foreground">
-                                                    Regular price:{" "}
-                                                    {formatRupiah(sellingPrice)}
-                                                    {field.value &&
-                                                        parseFloat(
-                                                            field.value,
-                                                        ) !== sellingPrice && (
-                                                            <span
-                                                                className={`ml-2 ${parseFloat(field.value) > sellingPrice ? "text-amber-600" : "text-emerald-600"}`}
-                                                            >
-                                                                (
-                                                                {parseFloat(
-                                                                    field.value,
-                                                                ) > sellingPrice
-                                                                    ? "+"
-                                                                    : ""}
-                                                                {Math.round(
-                                                                    ((parseFloat(
-                                                                        field.value,
-                                                                    ) -
-                                                                        sellingPrice) /
-                                                                        sellingPrice) *
-                                                                        100,
-                                                                )}
-                                                                % from regular)
-                                                            </span>
-                                                        )}
-                                                </span>
-                                            )}
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    );
-                })}
-
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-xs text-amber-800">
-                        💡 Tips: Platform online food biasanya mengenakan komisi
-                        15-25%. Sesuaikan harga platform untuk menjaga margin
-                        keuntungan Anda. Gunakan tombol "Suggest Price" untuk
-                        rekomendasi harga otomatis.
-                    </p>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
 export default function ProductForm({ product, categories }) {
     const isEditing = !!product;
     const [processing, setProcessing] = useState(false);
@@ -291,17 +92,6 @@ export default function ProductForm({ product, categories }) {
                 product?.selling_price != null
                     ? String(product.selling_price)
                     : "",
-            price_gobiz:
-                product?.price_gobiz != null ? String(product.price_gobiz) : "",
-            price_grabfood:
-                product?.price_grabfood != null
-                    ? String(product.price_grabfood)
-                    : "",
-            price_shopeefood:
-                product?.price_shopeefood != null
-                    ? String(product.price_shopeefood)
-                    : "",
-            enable_online_food: product?.enable_online_food ?? false,
             stock_type: product?.stock_type ?? "limited",
             stock: product?.stock != null ? String(product.stock) : "",
             minimum_stock:
@@ -366,16 +156,6 @@ export default function ProductForm({ product, categories }) {
         formData.append("description", data.description ?? "");
         formData.append("capital_price", String(data.capital_price));
         formData.append("selling_price", String(data.selling_price));
-        formData.append(
-            "enable_online_food",
-            data.enable_online_food ? "1" : "0",
-        );
-        if (data.price_gobiz != null)
-            formData.append("price_gobiz", String(data.price_gobiz));
-        if (data.price_grabfood != null)
-            formData.append("price_grabfood", String(data.price_grabfood));
-        if (data.price_shopeefood != null)
-            formData.append("price_shopeefood", String(data.price_shopeefood));
         formData.append("stock_type", data.stock_type);
         formData.append(
             "stock",
@@ -810,8 +590,6 @@ export default function ProductForm({ product, categories }) {
                             </CardContent>
                         </Card>
 
-                        <OnlineFoodPrices form={form} />
-
                         <Card className="shadow-none">
                             <CardHeader className="px-6 py-4">
                                 <CardTitle className="text-base">
@@ -1112,36 +890,6 @@ export default function ProductForm({ product, categories }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4 px-6 pb-6 pt-0">
-                                <FormField
-                                    control={form.control}
-                                    name="enable_online_food"
-                                    render={({ field }) => (
-                                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                                            <div className="space-y-0.5 pr-4">
-                                                <FormLabel>
-                                                    Sell on Online Food
-                                                    Platforms
-                                                </FormLabel>
-                                                <FormDescription>
-                                                    Enable to set
-                                                    platform-specific prices for
-                                                    GoBiz, GrabFood, and
-                                                    ShopeeFood.
-                                                </FormDescription>
-                                            </div>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={
-                                                        field.onChange
-                                                    }
-                                                    className="data-[state=checked]:bg-emerald-500"
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-
                                 <FormField
                                     control={form.control}
                                     name="is_active"

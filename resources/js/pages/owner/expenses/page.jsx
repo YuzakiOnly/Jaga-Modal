@@ -25,7 +25,7 @@ import { refreshConfigs } from "@/hooks/refreshConfig";
 
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
-export default function ExpensesPage({ expenses, summary, filters, balances }) {
+export default function ExpensesPage({ expenses, summary, filters, cashBalance }) {
     const { flash } = usePage().props;
     const [formOpen, setFormOpen] = useState(false);
     const [editTarget, setEditTarget] = useState(null);
@@ -114,10 +114,7 @@ export default function ExpensesPage({ expenses, summary, filters, balances }) {
                 open={formOpen}
                 onOpenChange={handleFormClose}
                 editTarget={editTarget}
-                dineInBalance={balances?.dine_in ?? 0}
-                grabfoodBalance={balances?.grabfood ?? 0}
-                shopeefoodBalance={balances?.shopeefood ?? 0}
-                gobizBalance={balances?.gobiz ?? 0}
+                cashBalance={cashBalance}
             />
 
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

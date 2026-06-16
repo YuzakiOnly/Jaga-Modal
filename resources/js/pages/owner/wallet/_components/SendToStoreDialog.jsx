@@ -70,7 +70,7 @@ export function SendToStoreDialog({ open, onOpenChange, currentBalance = 0 }) {
             onSuccess: () => {
                 onOpenChange(false);
                 setProcessing(false);
-                toast.success("Saldo berhasil dikirim ke kas toko (Dine In).");
+                toast.success("Saldo berhasil dikirim ke kas toko.");
             },
             onError: (errs) => {
                 setErrors(errs);
@@ -85,12 +85,10 @@ export function SendToStoreDialog({ open, onOpenChange, currentBalance = 0 }) {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                         <Store className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
-                        Kirim ke Kas Toko (Dine In)
+                        Kirim ke Kas Toko
                     </DialogTitle>
                     <DialogDescription className="text-xs sm:text-sm">
-                        Transfer saldo dari dompet pribadi ke kas toko. Uang
-                        akan masuk ke saldo{" "}
-                        <strong className="text-emerald-600">Dine In</strong>.
+                        Transfer saldo dari dompet pribadi ke kas toko.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -194,9 +192,9 @@ export function SendToStoreDialog({ open, onOpenChange, currentBalance = 0 }) {
                         <div className="flex items-start gap-2">
                             <Banknote className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                             <p className="text-xs text-emerald-700">
-                                Uang akan masuk ke{" "}
-                                <strong>Saldo Dine In</strong> (kas toko). Saldo
-                                dompet akan berkurang sejumlah yang dikirim.
+                                Uang akan masuk ke <strong>Kas Toko</strong>.
+                                Saldo dompet akan berkurang sejumlah yang
+                                dikirim.
                             </p>
                         </div>
                     </div>
@@ -219,7 +217,7 @@ export function SendToStoreDialog({ open, onOpenChange, currentBalance = 0 }) {
                         {processing && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Kirim ke Dine In
+                        Kirim ke Kas Toko
                     </Button>
                 </DialogFooter>
             </DialogContent>

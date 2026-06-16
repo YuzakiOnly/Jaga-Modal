@@ -5,14 +5,9 @@ import {
     QrCode,
     AlertCircle,
     Calendar as CalendarIcon,
-    Store,
-    Bike,
-    ShoppingCart,
-    Zap,
     User,
     Phone,
     ChevronDown,
-    Info,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -31,18 +26,6 @@ const formatRupiah = (num) => {
 
 const QUICK_AMOUNTS = [20000, 50000, 100000, 200000, 500000];
 
-const CHANNEL_CONFIG = {
-    dine_in: { label: "Dine In", icon: Store, color: "slate", feeRate: 0 },
-    grabfood: { label: "GrabFood", icon: Bike, color: "green", feeRate: 0.2 },
-    shopeefood: {
-        label: "ShopeeFood",
-        icon: ShoppingCart,
-        color: "orange",
-        feeRate: 0.25,
-    },
-    gobiz: { label: "GoBiz", icon: Zap, color: "emerald", feeRate: 0.2 },
-};
-
 const PAYMENT_METHODS = [
     { value: "cash", label: "Tunai", icon: Banknote },
     { value: "qris", label: "QRIS", icon: QrCode },
@@ -50,24 +33,16 @@ const PAYMENT_METHODS = [
 
 export default function PaymentModal({
     subtotal,
-    originalSubtotal,
-    platformFee: propPlatformFee,
-    platformItemsCount: propPlatformItemsCount = 0,
-    platformItemsTotalAmount: propPlatformItemsTotalAmount = 0,
-    netRevenue: propNetRevenue,
     discount,
     total,
+    paymentMethod,
     isProcessing,
     onConfirm,
     onClose,
-    orderChannel: propOrderChannel,
-    paymentMethod: propPaymentMethod,
+    onPaymentMethodChange,
 }) {
-    const [selectedChannel, setSelectedChannel] = useState(
-        propOrderChannel || "dine_in",
-    );
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
-        propPaymentMethod || "cash",
+        paymentMethod || "cash",
     );
     const [amountPaid, setAmountPaid] = useState("");
     const [transactionDate, setTransactionDate] = useState(new Date());
@@ -78,38 +53,25 @@ export default function PaymentModal({
     const [customerPhone, setCustomerPhone] = useState("");
     const inputRef = useRef(null);
 
-    const isOnlineChannel = selectedChannel !== "dine_in";
-    const channelCfg = CHANNEL_CONFIG[selectedChannel];
-    const ChannelIcon = channelCfg?.icon;
-    const feeRate = channelCfg?.feeRate ?? 0;
-
-    // Gunakan props untuk platform fee dan items count
-    const platformFee = propPlatformFee !== undefined ? propPlatformFee : 0;
-    const platformItemsCount = propPlatformItemsCount;
-    const platformItemsTotalAmount = propPlatformItemsTotalAmount;
-
-    const netRevenue =
-        propNetRevenue !== undefined ? propNetRevenue : total - platformFee;
-
     const adjustedTotal = total;
 
     useEffect(() => {
-        if (
-            selectedPaymentMethod === "cash" &&
-            inputRef.current &&
-            !isOnlineChannel
-        ) {
-            setTimeout(() => inputRef.current.focus(), 100);
-        }
-    }, [selectedPaymentMethod, isOnlineChannel]);
-
-    useEffect(() => {
-        if (isOnlineChannel || selectedPaymentMethod === "qris") {
+        if (selectedPaymentMethod === "qris") {
             setAmountPaid(adjustedTotal.toString());
         } else {
             setAmountPaid("");
         }
-    }, [isOnlineChannel, selectedPaymentMethod, adjustedTotal]);
+    }, [selectedPaymentMethod, adjustedTotal]);
+
+    useEffect(() => {
+        if (selectedPaymentMethod === "cash" && inputRef.current) {
+            setTimeout(() => inputRef.current.focus(), 100);
+        }
+    }, [selectedPaymentMethod]);
+
+    useEffect(() => {
+        onPaymentMethodChange(selectedPaymentMethod);
+    }, [selectedPaymentMethod, onPaymentMethodChange]);
 
     useEffect(() => {
         const handleEscape = (e) => {
@@ -123,12 +85,10 @@ export default function PaymentModal({
     const changeAmount = Math.max(0, paidAmount - adjustedTotal);
     const isInsufficient =
         selectedPaymentMethod === "cash" &&
-        !isOnlineChannel &&
         paidAmount > 0 &&
         paidAmount < adjustedTotal;
 
     const canConfirm =
-        isOnlineChannel ||
         selectedPaymentMethod === "qris" ||
         (paidAmount >= adjustedTotal && !isProcessing);
 
@@ -147,25 +107,17 @@ export default function PaymentModal({
     const handleConfirmClick = () => {
         if (!canConfirm) return;
         const finalAmount =
-            selectedPaymentMethod === "qris" || isOnlineChannel
-                ? adjustedTotal
-                : paidAmount;
+            selectedPaymentMethod === "qris" ? adjustedTotal : paidAmount;
 
         let formattedDate = null;
         if (useCustomDate && transactionDate) {
             formattedDate = formatDateForBackend(transactionDate);
         }
 
-        onConfirm(
-            finalAmount,
-            formattedDate,
-            {
-                customer_name: customerName.trim() || null,
-                customer_phone: customerPhone.trim() || null,
-            },
-            selectedChannel,
-            selectedPaymentMethod,
-        );
+        onConfirm(finalAmount, formattedDate, {
+            customer_name: customerName.trim() || null,
+            customer_phone: customerPhone.trim() || null,
+        });
     };
 
     const handleExactAmount = () => {
@@ -193,10 +145,6 @@ export default function PaymentModal({
     const handleUseCurrentDate = () => {
         setUseCustomDate(false);
         setTransactionDate(new Date());
-    };
-
-    const getChannelLabel = () => {
-        return channelCfg?.label ?? "Dine In";
     };
 
     return (
@@ -251,91 +199,38 @@ export default function PaymentModal({
                                     {formatRupiah(adjustedTotal)}
                                 </span>
                             </div>
-                            {isOnlineChannel && platformFee > 0 && (
-                                <div className="mt-3 pt-3 border-t border-dashed border-gray-200 space-y-1.5">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-500 flex items-center gap-1">
-                                            <Info className="h-3 w-3" />
-                                            Biaya Platform (
-                                            {Math.round(feeRate * 100)}%)
-                                        </span>
-                                        <span className="font-medium text-red-500">
-                                            − {formatRupiah(platformFee)}
-                                        </span>
-                                    </div>
-                                    {platformItemsCount > 0 && (
-                                        <div className="text-[10px] text-gray-400 text-center pt-1">
-                                            *Fee dikenakan untuk{" "}
-                                            {platformItemsCount} item dengan
-                                            total{" "}
-                                            {formatRupiah(
-                                                platformItemsTotalAmount,
-                                            )}
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-xs pt-1">
-                                        <span className="text-gray-500">
-                                            Diterima Bersih
-                                        </span>
-                                        <span className="font-semibold text-emerald-600">
-                                            {formatRupiah(netRevenue)}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
-                        {isOnlineChannel && (
-                            <div className="mb-4 bg-linear-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-200">
-                                <div className="flex items-center gap-2">
-                                    <ChannelIcon className="h-5 w-5 text-orange-500" />
-                                    <span className="text-sm font-semibold text-orange-700">
-                                        Channel: {getChannelLabel()}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Harga item menggunakan tarif{" "}
-                                    {getChannelLabel()}. Biaya platform{" "}
-                                    {Math.round(feeRate * 100)}% dipotong dari
-                                    pendapatan untuk item yang memiliki harga
-                                    platform.
-                                </p>
+                        <div className="mb-4">
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">
+                                Metode Pembayaran
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {PAYMENT_METHODS.map((method) => {
+                                    const Icon = method.icon;
+                                    const isActive =
+                                        selectedPaymentMethod === method.value;
+                                    return (
+                                        <button
+                                            key={method.value}
+                                            onClick={() =>
+                                                setSelectedPaymentMethod(
+                                                    method.value,
+                                                )
+                                            }
+                                            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition ${
+                                                isActive
+                                                    ? "bg-slate-700 text-white"
+                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            }`}
+                                        >
+                                            <Icon className="h-4 w-4" />
+                                            {method.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                        )}
-
-                        {selectedChannel === "dine_in" && (
-                            <div className="mb-4">
-                                <label className="block text-xs font-semibold text-gray-600 mb-2">
-                                    Metode Pembayaran
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {PAYMENT_METHODS.map((method) => {
-                                        const Icon = method.icon;
-                                        const isActive =
-                                            selectedPaymentMethod ===
-                                            method.value;
-                                        return (
-                                            <button
-                                                key={method.value}
-                                                onClick={() =>
-                                                    setSelectedPaymentMethod(
-                                                        method.value,
-                                                    )
-                                                }
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition ${
-                                                    isActive
-                                                        ? "bg-slate-700 text-white"
-                                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                                }`}
-                                            >
-                                                <Icon className="h-4 w-4" />
-                                                {method.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        </div>
 
                         <div className="mb-4">
                             <button
@@ -479,186 +374,123 @@ export default function PaymentModal({
                             )}
                         </div>
 
-                        {selectedPaymentMethod === "cash" &&
-                            !isOnlineChannel && (
-                                <>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                        Jumlah Dibayar
-                                    </label>
-                                    <div className="relative mb-3">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
-                                            Rp
-                                        </span>
-                                        <input
-                                            ref={inputRef}
-                                            type="number"
-                                            value={amountPaid}
-                                            onChange={(e) =>
-                                                setAmountPaid(e.target.value)
-                                            }
-                                            placeholder="0"
-                                            className={`w-full pl-10 pr-4 py-2.5 text-right text-lg font-bold border-2 rounded-lg outline-none transition-all ${
-                                                isInsufficient
-                                                    ? "border-red-400 text-red-600"
-                                                    : paidAmount >=
-                                                            adjustedTotal &&
-                                                        paidAmount > 0
-                                                      ? "border-emerald-500 text-emerald-700"
-                                                      : "border-gray-200 focus:border-emerald-400"
-                                            }`}
-                                        />
-                                    </div>
+                        {selectedPaymentMethod === "cash" && (
+                            <>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                    Jumlah Dibayar
+                                </label>
+                                <div className="relative mb-3">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
+                                        Rp
+                                    </span>
+                                    <input
+                                        ref={inputRef}
+                                        type="number"
+                                        value={amountPaid}
+                                        onChange={(e) =>
+                                            setAmountPaid(e.target.value)
+                                        }
+                                        placeholder="0"
+                                        className={`w-full pl-10 pr-4 py-2.5 text-right text-lg font-bold border-2 rounded-lg outline-none transition-all ${
+                                            isInsufficient
+                                                ? "border-red-400 text-red-600"
+                                                : paidAmount >= adjustedTotal &&
+                                                    paidAmount > 0
+                                                  ? "border-emerald-500 text-emerald-700"
+                                                  : "border-gray-200 focus:border-emerald-400"
+                                        }`}
+                                    />
+                                </div>
 
-                                    <div className="flex flex-wrap gap-1.5 mb-3">
-                                        {QUICK_AMOUNTS.map((amount) => (
-                                            <button
-                                                key={amount}
-                                                onClick={() =>
-                                                    setAmountPaid(amount)
-                                                }
-                                                className={`py-1.5 px-3 text-xs font-medium rounded-lg border transition-all ${
-                                                    paidAmount === amount
-                                                        ? "bg-emerald-600 text-white border-emerald-600"
-                                                        : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50"
-                                                }`}
-                                            >
-                                                {amount >= 1000
-                                                    ? `${amount / 1000}rb`
-                                                    : amount}
-                                            </button>
-                                        ))}
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                    {QUICK_AMOUNTS.map((amount) => (
                                         <button
-                                            onClick={handleExactAmount}
-                                            className="py-1.5 px-3 text-xs font-medium rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all"
-                                        >
-                                            Uang Pas
-                                        </button>
-                                    </div>
-
-                                    {paidAmount > 0 && (
-                                        <div
-                                            className={`rounded-lg p-2.5 mb-3 ${
-                                                isInsufficient
-                                                    ? "bg-red-50 border border-red-100"
-                                                    : "bg-emerald-50 border border-emerald-100"
+                                            key={amount}
+                                            onClick={() =>
+                                                setAmountPaid(amount)
+                                            }
+                                            className={`py-1.5 px-3 text-xs font-medium rounded-lg border transition-all ${
+                                                paidAmount === amount
+                                                    ? "bg-emerald-600 text-white border-emerald-600"
+                                                    : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50"
                                             }`}
                                         >
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    {isInsufficient && (
-                                                        <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-                                                    )}
-                                                    <span
-                                                        className={`text-xs font-semibold ${
-                                                            isInsufficient
-                                                                ? "text-red-600"
-                                                                : "text-emerald-700"
-                                                        }`}
-                                                    >
-                                                        {isInsufficient
-                                                            ? "Kekurangan"
-                                                            : "Kembalian"}
-                                                    </span>
-                                                </div>
+                                            {amount >= 1000
+                                                ? `${amount / 1000}rb`
+                                                : amount}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={handleExactAmount}
+                                        className="py-1.5 px-3 text-xs font-medium rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all"
+                                    >
+                                        Uang Pas
+                                    </button>
+                                </div>
+
+                                {paidAmount > 0 && (
+                                    <div
+                                        className={`rounded-lg p-2.5 mb-3 ${
+                                            isInsufficient
+                                                ? "bg-red-50 border border-red-100"
+                                                : "bg-emerald-50 border border-emerald-100"
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                {isInsufficient && (
+                                                    <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+                                                )}
                                                 <span
-                                                    className={`text-lg font-bold ${
+                                                    className={`text-xs font-semibold ${
                                                         isInsufficient
                                                             ? "text-red-600"
                                                             : "text-emerald-700"
                                                     }`}
                                                 >
                                                     {isInsufficient
-                                                        ? formatRupiah(
-                                                              adjustedTotal -
-                                                                  paidAmount,
-                                                          )
-                                                        : formatRupiah(
-                                                              changeAmount,
-                                                          )}
+                                                        ? "Kekurangan"
+                                                        : "Kembalian"}
                                                 </span>
                                             </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                        {selectedPaymentMethod === "qris" &&
-                            !isOnlineChannel && (
-                                <div className="text-center py-3 mb-3">
-                                    <div className="bg-gray-100 rounded-xl p-3 inline-block mb-3">
-                                        <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center border-2 border-gray-200">
-                                            <QrCode className="h-20 w-20 text-gray-400" />
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-gray-600">
-                                        Scan QR Code dengan aplikasi payment
-                                    </p>
-                                    <p className="text-xl font-bold text-emerald-700 mt-1">
-                                        {formatRupiah(adjustedTotal)}
-                                    </p>
-                                    <p className="text-[10px] text-gray-400 mt-1">
-                                        QRIS - Semua pembayaran digital
-                                    </p>
-                                </div>
-                            )}
-
-                        {isOnlineChannel && (
-                            <div className="text-center py-3 mb-3">
-                                <div className="bg-linear-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-5 mb-3">
-                                    <ChannelIcon className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
-                                    <p className="text-sm font-bold text-emerald-700">
-                                        {getChannelLabel()}
-                                    </p>
-                                    <div className="mt-3 pt-3 border-t border-emerald-200 space-y-1.5">
-                                        <div className="flex justify-between text-xs text-gray-500">
-                                            <span>Total Tagihan</span>
-                                            <span className="font-semibold text-gray-700">
-                                                {formatRupiah(adjustedTotal)}
+                                            <span
+                                                className={`text-lg font-bold ${
+                                                    isInsufficient
+                                                        ? "text-red-600"
+                                                        : "text-emerald-700"
+                                                }`}
+                                            >
+                                                {isInsufficient
+                                                    ? formatRupiah(
+                                                          adjustedTotal -
+                                                              paidAmount,
+                                                      )
+                                                    : formatRupiah(
+                                                          changeAmount,
+                                                      )}
                                             </span>
                                         </div>
-                                        {platformFee > 0 && (
-                                            <>
-                                                <div className="flex justify-between text-xs text-gray-500">
-                                                    <span>
-                                                        Biaya Platform (
-                                                        {Math.round(
-                                                            feeRate * 100,
-                                                        )}
-                                                        %)
-                                                    </span>
-                                                    <span className="font-semibold text-red-500">
-                                                        −{" "}
-                                                        {formatRupiah(
-                                                            platformFee,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                {platformItemsCount > 0 && (
-                                                    <div className="text-[10px] text-gray-400">
-                                                        *Dari{" "}
-                                                        {platformItemsCount}{" "}
-                                                        item dengan harga
-                                                        platform
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between text-xs pt-1.5 border-t border-emerald-200">
-                                                    <span className="font-semibold text-emerald-700">
-                                                        Diterima Bersih
-                                                    </span>
-                                                    <span className="font-bold text-emerald-600">
-                                                        {formatRupiah(
-                                                            netRevenue,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </>
-                                        )}
                                     </div>
-                                    <p className="text-[10px] text-gray-400 mt-3">
-                                        Pembayaran akan diproses melalui{" "}
-                                        {getChannelLabel()}
-                                    </p>
+                                )}
+                            </>
+                        )}
+
+                        {selectedPaymentMethod === "qris" && (
+                            <div className="text-center py-3 mb-3">
+                                <div className="bg-gray-100 rounded-xl p-3 inline-block mb-3">
+                                    <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center border-2 border-gray-200">
+                                        <QrCode className="h-20 w-20 text-gray-400" />
+                                    </div>
                                 </div>
+                                <p className="text-xs text-gray-600">
+                                    Scan QR Code dengan aplikasi payment
+                                </p>
+                                <p className="text-xl font-bold text-emerald-700 mt-1">
+                                    {formatRupiah(adjustedTotal)}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    QRIS - Semua pembayaran digital
+                                </p>
                             </div>
                         )}
                     </div>

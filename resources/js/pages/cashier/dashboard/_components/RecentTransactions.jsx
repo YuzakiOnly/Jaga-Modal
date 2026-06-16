@@ -1,14 +1,4 @@
-import {
-    ShoppingBag,
-    Receipt,
-    Banknote,
-    QrCode,
-    Smartphone,
-    Store,
-    Coffee,
-    Bike,
-    CreditCard,
-} from "lucide-react";
+import { ShoppingBag, Receipt, Banknote, QrCode, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmt, PERIODS } from "@/lib/cashier/dashboard";
 
@@ -19,41 +9,15 @@ const CHANNEL_CONFIG = {
         iconColor: "text-emerald-600",
         Icon: Store,
     },
-    grabfood: {
-        label: "GrabFood",
-        color: "bg-[#00B14F]/10",
-        iconColor: "text-[#00B14F]",
-        Icon: Bike,
-    },
-    shopeefood: {
-        label: "ShopeeFood",
-        color: "bg-[#EE4D2D]/10",
-        iconColor: "text-[#EE4D2D]",
-        Icon: Coffee,
-    },
-    gobiz: {
-        label: "GoBiz",
-        color: "bg-[#00AA13]/10",
-        iconColor: "text-[#00AA13]",
-        Icon: Smartphone,
-    },
 };
 
 const PAYMENT_LABEL = {
     cash: "Tunai",
     qris: "QRIS",
-    grabfood: "GrabFood",
-    shopeefood: "ShopeeFood",
-    gobiz: "GoBiz",
 };
 
 function getChannelConfig(orderChannel) {
     return CHANNEL_CONFIG[orderChannel] ?? CHANNEL_CONFIG.dine_in;
-}
-
-function formatPlatformFee(fee) {
-    if (!fee || fee <= 0) return null;
-    return `−${fmt(fee)} fee`;
 }
 
 export default function RecentTransactions({
@@ -114,9 +78,6 @@ export default function RecentTransactions({
                         const paymentMethodLabel =
                             PAYMENT_LABEL[trx.payment_method] ??
                             trx.payment_method;
-                        const platformFeeLabel = formatPlatformFee(
-                            trx.platform_fee,
-                        );
 
                         const time = new Date(trx.transacted_at).toLocaleString(
                             "id-ID",
@@ -128,19 +89,6 @@ export default function RecentTransactions({
                                 hour12: false,
                             },
                         );
-
-                        const getBadgeStyle = (channel) => {
-                            switch (channel) {
-                                case "grabfood":
-                                    return "bg-[#00B14F]/10 text-[#00B14F]";
-                                case "shopeefood":
-                                    return "bg-[#EE4D2D]/10 text-[#EE4D2D]";
-                                case "gobiz":
-                                    return "bg-[#00AA13]/10 text-[#00AA13]";
-                                default:
-                                    return "bg-gray-100 text-gray-600";
-                            }
-                        };
 
                         return (
                             <div
@@ -163,39 +111,16 @@ export default function RecentTransactions({
                                         <p className="text-xs font-semibold text-gray-800 truncate">
                                             #{trx.id}
                                         </p>
-                                        {isOnline && (
-                                            <span
-                                                className={cn(
-                                                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0",
-                                                    getBadgeStyle(channel),
-                                                )}
-                                            >
-                                                {channelLabel}
-                                            </span>
-                                        )}
                                     </div>
                                     <p className="text-[10px] text-gray-400 truncate">
-                                        {isOnline
-                                            ? channelLabel
-                                            : paymentMethodLabel}{" "}
-                                        · {time}
-                                        {platformFeeLabel && (
-                                            <span className="text-red-400 ml-1">
-                                                {platformFeeLabel}
-                                            </span>
-                                        )}
+                                        {paymentMethodLabel} · {time}
                                     </p>
                                 </div>
 
                                 <div className="text-right shrink-0">
                                     <p className="text-xs sm:text-sm font-bold text-gray-800">
-                                        {fmt(trx.net_revenue ?? trx.total)}
+                                        {fmt(trx.total)}
                                     </p>
-                                    {trx.platform_fee > 0 && (
-                                        <p className="text-[10px] text-gray-400 line-through">
-                                            {fmt(trx.total)}
-                                        </p>
-                                    )}
                                 </div>
                             </div>
                         );

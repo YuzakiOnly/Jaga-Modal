@@ -66,7 +66,7 @@ Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
         Route::get('/', function () {
             return redirect('/cashier');
         });
-        
+
         Route::get('/dashboard', [CashierDashboardController::class, 'index'])
             ->name('cashier.dashboard');
 
@@ -88,6 +88,9 @@ Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
         Route::post('/expenses', [CashierExpenseController::class, 'store'])
             ->name('cashier.expenses.store');
 
+        Route::put('/expenses/{expense}', [CashierExpenseController::class, 'update'])
+            ->name('cashier.expenses.update');
+
         Route::delete('/expenses/{expense}', [CashierExpenseController::class, 'destroy'])
             ->name('cashier.expenses.destroy');
     });
@@ -102,6 +105,7 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('owner.dashboard');
 
+        // Categories
         Route::get('/categories', [CategoryController::class, 'index'])->name('owner.categories');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('owner.categories.create');
         Route::post('/categories', [CategoryController::class, 'store'])->name('owner.categories.store');
@@ -111,6 +115,7 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('owner.categories.reorder');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('owner.categories.destroy');
 
+        // Products
         Route::get('/products', [ProductController::class, 'index'])->name('owner.products');
         Route::get('/products/create', [ProductController::class, 'create'])->name('owner.products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('owner.products.store');
@@ -120,6 +125,7 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::patch('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('owner.products.toggle');
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('owner.products.destroy');
 
+        // Capital Price Templates
         Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
         Route::get('/capital-prices/options', [CapitalPriceTemplateController::class, 'options'])->name('owner.capital-prices.options');
         Route::get('/capital-prices/create', [CapitalPriceTemplateController::class, 'create'])->name('owner.capital-prices.create');
@@ -129,15 +135,18 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::patch('/capital-prices/{capitalPrice}/toggle', [CapitalPriceTemplateController::class, 'toggleActive'])->name('owner.capital-prices.toggle');
         Route::delete('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'destroy'])->name('owner.capital-prices.destroy');
 
+        // POS (Owner)
         Route::get('/pos', [TransactionController::class, 'index'])->name('owner.pos');
         Route::post('/pos/transactions', [TransactionController::class, 'store'])->name('owner.transactions.store');
         Route::get('/pos/history', [TransactionController::class, 'history'])->name('owner.transactions.history');
 
+        // Expenses (Owner)
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('owner.expenses');
         Route::post('/expenses', [ExpenseController::class, 'store'])->name('owner.expenses.store');
         Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('owner.expenses.update');
         Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('owner.expenses.destroy');
 
+        // Wallet (Owner)
         Route::get('/wallet', [WalletController::class, 'index'])->name('owner.wallet');
         Route::get('/wallet/create', [WalletController::class, 'create'])->name('owner.wallet.create');
         Route::post('/wallet', [WalletController::class, 'store'])->name('owner.wallet.store');
@@ -163,8 +172,10 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
     });
 
+// Language
 Route::post('/language/switch', [LanguageController::class, 'switch'])->name('language.switch');
 
+// Fallback
 Route::fallback(function () {
     return Inertia::render('errors/NotFound');
 });

@@ -23,87 +23,6 @@ const formatNumber = (num) => {
 
 const formatRupiah = (num) => `Rp ${formatNumber(num)}`;
 
-const ONLINE_CHANNELS = ["grabfood", "shopeefood", "gobiz"];
-
-const getPlatformPrice = (product, channel) => {
-    if (!product?.enable_online_food) return product?.selling_price || 0;
-
-    switch (channel) {
-        case "grabfood":
-            return product.price_grabfood && product.price_grabfood > 0
-                ? product.price_grabfood
-                : product.selling_price;
-        case "shopeefood":
-            return product.price_shopeefood && product.price_shopeefood > 0
-                ? product.price_shopeefood
-                : product.selling_price;
-        case "gobiz":
-            return product.price_gobiz && product.price_gobiz > 0
-                ? product.price_gobiz
-                : product.selling_price;
-        default:
-            return product.selling_price;
-    }
-};
-
-const getPlatformFeeRate = (channel) => {
-    switch (channel) {
-        case "grabfood":
-            return 0.2;
-        case "gobiz":
-            return 0.2;
-        case "shopeefood":
-            return 0.25;
-        default:
-            return 0;
-    }
-};
-
-const isProductUsingPlatformPrice = (product, channel) => {
-    if (!product?.enable_online_food) return false;
-    switch (channel) {
-        case "grabfood":
-            return !!(product.price_grabfood && product.price_grabfood > 0);
-        case "shopeefood":
-            return !!(product.price_shopeefood && product.price_shopeefood > 0);
-        case "gobiz":
-            return !!(product.price_gobiz && product.price_gobiz > 0);
-        default:
-            return false;
-    }
-};
-
-// Fungsi untuk menghitung ulang harga item berdasarkan channel
-const recalculateItemPrice = (item, products, channel) => {
-    if (item.is_custom) return item;
-
-    const product = products.find((p) => p.id === item.product_id);
-    if (!product) return item;
-
-    const basePrice = Number(product.selling_price) || 0;
-    const isOnline = ONLINE_CHANNELS.includes(channel);
-    const usePlatformPrice = isOnline && product.enable_online_food;
-    const isUsingPlatform =
-        usePlatformPrice && isProductUsingPlatformPrice(product, channel);
-
-    let newPrice = basePrice;
-    if (usePlatformPrice && isUsingPlatform) {
-        newPrice = getPlatformPrice(product, channel);
-    }
-
-    const currentDiscount = item.discount || 0;
-    const newDiscount = Math.min(currentDiscount, newPrice);
-
-    return {
-        ...item,
-        unit_price: newPrice,
-        base_unit_price: basePrice,
-        is_using_platform_price: isUsingPlatform,
-        discount: newDiscount,
-        subtotal: (newPrice - newDiscount) * (item.qty || 0),
-    };
-};
-
 export default function CashierPage({ products, categories }) {
     const { flash, auth } = usePage().props;
 
@@ -112,16 +31,12 @@ export default function CashierPage({ products, categories }) {
     const [activeCategory, setActiveCategory] = useState(null);
     const [discountAmount, setDiscountAmount] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState("cash");
-    const [orderChannel, setOrderChannel] = useState("dine_in");
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [showSuccessScreen, setShowSuccessScreen] = useState(false);
     const [lastTransactionData, setLastTransactionData] = useState(null);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [showStockDialog, setShowStockDialog] = useState(false);
     const [mobileCartOpen, setMobileCartOpen] = useState(false);
-
-    // Ref untuk mencegah infinite loop
-    const isUpdatingPrice = useRef(false);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -136,38 +51,6 @@ export default function CashierPage({ products, categories }) {
             setDiscountAmount(0);
         }
     }, [cart]);
-
-    // Update harga item saat channel berubah - dengan safety guard
-    useEffect(() => {
-        if (cart.length === 0) return;
-        if (isUpdatingPrice.current) return;
-
-        isUpdatingPrice.current = true;
-
-        const updatedCart = cart.map((item) =>
-            recalculateItemPrice(item, products, orderChannel),
-        );
-
-        // Cek apakah ada perubahan
-        const hasChanges = updatedCart.some((item, index) => {
-            const oldItem = cart[index];
-            return (
-                oldItem &&
-                (item.unit_price !== oldItem.unit_price ||
-                    item.is_using_platform_price !==
-                        oldItem.is_using_platform_price ||
-                    item.subtotal !== oldItem.subtotal)
-            );
-        });
-
-        if (hasChanges) {
-            setCart(updatedCart);
-        }
-
-        setTimeout(() => {
-            isUpdatingPrice.current = false;
-        }, 100);
-    }, [orderChannel, products, cart.length]);
 
     const filteredProducts = useMemo(() => {
         let result = [...products];
@@ -206,121 +89,56 @@ export default function CashierPage({ products, categories }) {
         return Math.max(0, safeSubtotal - safeDiscount);
     }, [subtotalAmount, discountAmount]);
 
-    // originalSubtotal untuk perhitungan platform fee (total sebelum diskon per item)
-    const originalSubtotal = useMemo(() => {
-        if (!cart || cart.length === 0) return 0;
-        return cart.reduce((sum, item) => {
-            const price = item.unit_price || 0;
-            const qty = item.qty || 0;
-            return sum + price * qty;
-        }, 0);
-    }, [cart]);
+    const handleAddToCart = useCallback((product) => {
+        setCart((prevCart) => {
+            const existingIndex = prevCart.findIndex(
+                (item) => item.product_id === product.id,
+            );
 
-    // Hitung platform fee hanya dari item yang menggunakan platform price
-    const platformFeeAmount = useMemo(() => {
-        if (!ONLINE_CHANNELS.includes(orderChannel)) return 0;
-        if (!cart || cart.length === 0) return 0;
+            const basePrice = Number(product.selling_price) || 0;
 
-        const feeRate = getPlatformFeeRate(orderChannel);
-
-        const platformItemsTotal = cart.reduce((sum, item) => {
-            if (item.is_custom) return sum;
-            if (item.is_using_platform_price === true) {
-                const price = item.unit_price || 0;
-                const qty = item.qty || 0;
-                return sum + price * qty;
-            }
-            return sum;
-        }, 0);
-
-        return Math.round(platformItemsTotal * feeRate);
-    }, [cart, orderChannel]);
-
-    const platformItemsCount = useMemo(() => {
-        if (!cart || cart.length === 0) return 0;
-        return cart.filter((item) => item.is_using_platform_price === true)
-            .length;
-    }, [cart]);
-
-    const platformItemsTotalAmount = useMemo(() => {
-        if (!cart || cart.length === 0) return 0;
-        return cart.reduce((sum, item) => {
-            if (item.is_using_platform_price === true) {
-                const price = item.unit_price || 0;
-                const qty = item.qty || 0;
-                return sum + price * qty;
-            }
-            return sum;
-        }, 0);
-    }, [cart]);
-
-    const netRevenueAmount = (totalAmount || 0) - (platformFeeAmount || 0);
-
-    const handleAddToCart = useCallback(
-        (product) => {
-            setCart((prevCart) => {
-                const existingIndex = prevCart.findIndex(
-                    (item) => item.product_id === product.id,
-                );
-
-                const isOnline = ONLINE_CHANNELS.includes(orderChannel);
-                const basePrice = Number(product.selling_price) || 0;
-                const usePlatformPrice = isOnline && product.enable_online_food;
-                const isUsingPlatform =
-                    usePlatformPrice &&
-                    isProductUsingPlatformPrice(product, orderChannel);
-
-                let displayPrice = basePrice;
-                if (usePlatformPrice && isUsingPlatform) {
-                    displayPrice = getPlatformPrice(product, orderChannel);
+            if (existingIndex !== -1) {
+                const existingItem = prevCart[existingIndex];
+                if (
+                    product.stock_type === "limited" &&
+                    existingItem.qty >= product.stock
+                ) {
+                    toast.warning(
+                        `Stok ${product.name} hanya tersisa ${product.stock}`,
+                    );
+                    return prevCart;
                 }
 
-                if (existingIndex !== -1) {
-                    const existingItem = prevCart[existingIndex];
-                    if (
-                        product.stock_type === "limited" &&
-                        existingItem.qty >= product.stock
-                    ) {
-                        toast.warning(
-                            `Stok ${product.name} hanya tersisa ${product.stock}`,
-                        );
-                        return prevCart;
-                    }
+                const newCart = [...prevCart];
+                const newQty = existingItem.qty + 1;
+                const existingDiscount = existingItem.discount || 0;
+                newCart[existingIndex] = {
+                    ...existingItem,
+                    qty: newQty,
+                    unit_price: basePrice,
+                    base_unit_price: basePrice,
+                    subtotal: newQty * (basePrice - existingDiscount),
+                };
+                return newCart;
+            }
 
-                    const newCart = [...prevCart];
-                    const newQty = existingItem.qty + 1;
-                    const existingDiscount = existingItem.discount || 0;
-                    newCart[existingIndex] = {
-                        ...existingItem,
-                        qty: newQty,
-                        unit_price: displayPrice,
-                        base_unit_price: basePrice,
-                        is_using_platform_price: isUsingPlatform,
-                        subtotal: newQty * (displayPrice - existingDiscount),
-                    };
-                    return newCart;
-                }
-
-                return [
-                    ...prevCart,
-                    {
-                        product_id: product.id,
-                        name: product.name,
-                        base_unit_price: basePrice,
-                        unit_price: displayPrice,
-                        is_using_platform_price: isUsingPlatform,
-                        capital_price: Number(product.capital_price) || 0,
-                        qty: 1,
-                        subtotal: displayPrice,
-                        discount: 0,
-                        is_custom: false,
-                        image: product.image || null,
-                    },
-                ];
-            });
-        },
-        [orderChannel],
-    );
+            return [
+                ...prevCart,
+                {
+                    product_id: product.id,
+                    name: product.name,
+                    base_unit_price: basePrice,
+                    unit_price: basePrice,
+                    capital_price: Number(product.capital_price) || 0,
+                    qty: 1,
+                    subtotal: basePrice,
+                    discount: 0,
+                    is_custom: false,
+                    image: product.image || null,
+                },
+            ];
+        });
+    }, []);
 
     const handleAddCustomItem = useCallback((item) => {
         setCart((prev) => [
@@ -328,7 +146,6 @@ export default function CashierPage({ products, categories }) {
             {
                 ...item,
                 image: null,
-                is_using_platform_price: false,
                 subtotal: (item.unit_price || 0) * (item.qty || 1),
             },
         ]);
@@ -384,46 +201,9 @@ export default function CashierPage({ products, categories }) {
         });
     }, []);
 
-    const handleOrderChannelChange = (channel) => {
-        setOrderChannel(channel);
-        setDiscountAmount(0);
-        if (channel !== "dine_in") {
-            setPaymentMethod(channel);
-        } else {
-            setPaymentMethod("cash");
-        }
-    };
-
     const handleProcessPayment = useCallback(
-        (
-            amountPaid,
-            transactedAt = null,
-            customer = null,
-            orderChannelParam,
-            paymentMethodParam,
-        ) => {
+        (amountPaid, transactedAt = null, customer = null) => {
             setIsProcessingPayment(true);
-
-            const isOnline = ONLINE_CHANNELS.includes(orderChannelParam);
-
-            let calculatedPlatformFee = 0;
-            let platformItemsTotal = 0;
-
-            if (isOnline && cart && cart.length > 0) {
-                const feeRate = getPlatformFeeRate(orderChannelParam);
-                platformItemsTotal = cart.reduce((sum, item) => {
-                    if (item.is_custom) return sum;
-                    if (item.is_using_platform_price === true) {
-                        const price = item.unit_price || 0;
-                        const qty = item.qty || 0;
-                        return sum + price * qty;
-                    }
-                    return sum;
-                }, 0);
-                calculatedPlatformFee = Math.round(
-                    platformItemsTotal * feeRate,
-                );
-            }
 
             const safeTotalAmount = totalAmount || 0;
             const safeSubtotalAmount = subtotalAmount || 0;
@@ -431,32 +211,21 @@ export default function CashierPage({ products, categories }) {
             const safeAmountPaid = amountPaid || 0;
 
             const payload = {
-                payment_method: paymentMethodParam,
-                order_channel: orderChannelParam,
+                payment_method: paymentMethod,
                 amount_paid: safeAmountPaid,
                 change_amount: Math.max(0, safeAmountPaid - safeTotalAmount),
                 subtotal: safeSubtotalAmount,
                 discount: safeDiscountAmount,
-                platform_fee: calculatedPlatformFee,
                 total: safeTotalAmount,
                 notes: null,
                 transacted_at: transactedAt,
                 customer_name: customer?.customer_name ?? null,
                 customer_phone: customer?.customer_phone ?? null,
-                platform_items_total: platformItemsTotal,
                 items: (cart || []).map(
-                    ({
-                        _customKey,
-                        base_unit_price,
-                        is_using_platform_price,
-                        ...rest
-                    }) => ({
+                    ({ _customKey, base_unit_price, ...rest }) => ({
                         ...rest,
                         unit_price: rest.unit_price || 0,
                         discount: rest.discount || 0,
-                        original_price: base_unit_price || rest.unit_price || 0,
-                        is_using_platform_price:
-                            is_using_platform_price || false,
                     }),
                 ),
             };
@@ -471,15 +240,7 @@ export default function CashierPage({ products, categories }) {
                         discount: safeDiscountAmount,
                         amountPaid: safeAmountPaid,
                         change: Math.max(0, safeAmountPaid - safeTotalAmount),
-                        orderChannel: orderChannelParam,
-                        paymentMethod: paymentMethodParam,
-                        platformFee: calculatedPlatformFee,
-                        platformItemsTotal: platformItemsTotal,
-                        platformItemsCount: cart.filter(
-                            (i) => i.is_using_platform_price === true,
-                        ).length,
-                        platformFeeRate: getPlatformFeeRate(orderChannelParam),
-                        netRevenue: safeTotalAmount - calculatedPlatformFee,
+                        paymentMethod: paymentMethod,
                         customer_name: customer?.customer_name,
                         customer_phone: customer?.customer_phone,
                         transaction_number: transactionData.transaction_number,
@@ -491,8 +252,6 @@ export default function CashierPage({ products, categories }) {
                             discount: item.discount || 0,
                             subtotal: item.subtotal,
                             is_custom: item.is_custom,
-                            is_using_platform_price:
-                                item.is_using_platform_price,
                         })),
                     });
                     setIsPaymentModalOpen(false);
@@ -507,14 +266,20 @@ export default function CashierPage({ products, categories }) {
                 },
             });
         },
-        [cart, subtotalAmount, discountAmount, totalAmount, auth],
+        [
+            cart,
+            subtotalAmount,
+            discountAmount,
+            totalAmount,
+            paymentMethod,
+            auth,
+        ],
     );
 
     const handleResetTransaction = useCallback(() => {
         setCart([]);
         setDiscountAmount(0);
         setPaymentMethod("cash");
-        setOrderChannel("dine_in");
         setShowSuccessScreen(false);
         setLastTransactionData(null);
         setMobileCartOpen(false);
@@ -562,9 +327,7 @@ export default function CashierPage({ products, categories }) {
                             subtotal={subtotalAmount}
                             total={totalAmount}
                             discount={discountAmount}
-                            orderChannel={orderChannel}
                             onDiscountChange={setDiscountAmount}
-                            onOrderChannelChange={handleOrderChannelChange}
                             onUpdateQuantity={handleUpdateQuantity}
                             onUpdateDiscount={handleUpdateDiscount}
                             onRemoveItem={handleRemoveItem}
@@ -648,9 +411,7 @@ export default function CashierPage({ products, categories }) {
                         subtotal={subtotalAmount}
                         total={totalAmount}
                         discount={discountAmount}
-                        orderChannel={orderChannel}
                         onDiscountChange={setDiscountAmount}
-                        onOrderChannelChange={handleOrderChannelChange}
                         onUpdateQuantity={handleUpdateQuantity}
                         onUpdateDiscount={handleUpdateDiscount}
                         onRemoveItem={handleRemoveItem}
@@ -665,18 +426,13 @@ export default function CashierPage({ products, categories }) {
             {isPaymentModalOpen && (
                 <PaymentModal
                     subtotal={subtotalAmount}
-                    originalSubtotal={originalSubtotal}
-                    platformFee={platformFeeAmount}
-                    platformItemsCount={platformItemsCount}
-                    platformItemsTotalAmount={platformItemsTotalAmount}
-                    netRevenue={netRevenueAmount}
                     discount={discountAmount}
                     total={totalAmount}
                     paymentMethod={paymentMethod}
-                    orderChannel={orderChannel}
                     isProcessing={isProcessingPayment}
                     onConfirm={handleProcessPayment}
                     onClose={() => setIsPaymentModalOpen(false)}
+                    onPaymentMethodChange={setPaymentMethod}
                 />
             )}
 

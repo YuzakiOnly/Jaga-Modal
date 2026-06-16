@@ -9,10 +9,6 @@ import {
     Wallet,
     Calendar as CalendarIcon,
     AlertTriangle,
-    Store,
-    Bike,
-    ShoppingCart,
-    Zap,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -42,55 +38,16 @@ const EXPENSE_TYPES = [
     { value: "owner_withdrawal", label: "Penarikan Owner", icon: Wallet },
 ];
 
-const PAYMENT_SOURCES = [
-    {
-        value: "dine_in",
-        label: "Dine In",
-        icon: Store,
-        color: "text-slate-600",
-        bgActive: "bg-slate-100 border-slate-300",
-        bgHover: "hover:bg-slate-50",
-    },
-    {
-        value: "grabfood",
-        label: "GrabFood",
-        icon: Bike,
-        color: "text-green-600",
-        bgActive: "bg-green-100 border-green-300",
-        bgHover: "hover:bg-green-50",
-    },
-    {
-        value: "shopeefood",
-        label: "ShopeeFood",
-        icon: ShoppingCart,
-        color: "text-orange-500",
-        bgActive: "bg-orange-100 border-orange-300",
-        bgHover: "hover:bg-orange-50",
-    },
-    {
-        value: "gobiz",
-        label: "GoBiz",
-        icon: Zap,
-        color: "text-emerald-600",
-        bgActive: "bg-emerald-100 border-emerald-300",
-        bgHover: "hover:bg-emerald-50",
-    },
-];
-
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 export function ExpenseFormDialog({
     open,
     onOpenChange,
     editTarget,
-    dineInBalance,
-    grabfoodBalance,
-    shopeefoodBalance,
-    gobizBalance,
+    cashBalance,
 }) {
     const isEdit = !!editTarget;
     const [type, setType] = useState("simple");
-    const [paymentSource, setPaymentSource] = useState("dine_in");
     const [form, setForm] = useState({
         description: "",
         amount: "",
@@ -105,46 +62,10 @@ export function ExpenseFormDialog({
     const [processing, setProcessing] = useState(false);
     const [balanceWarning, setBalanceWarning] = useState(null);
 
-    const getCurrentBalance = () => {
-        switch (paymentSource) {
-            case "dine_in":
-                return dineInBalance || 0;
-            case "grabfood":
-                return grabfoodBalance || 0;
-            case "shopeefood":
-                return shopeefoodBalance || 0;
-            case "gobiz":
-                return gobizBalance || 0;
-            default:
-                return 0;
-        }
-    };
-
-    const getCurrentBalanceLabel = () => {
-        switch (paymentSource) {
-            case "dine_in":
-                return "Saldo Dine In";
-            case "grabfood":
-                return "Saldo GrabFood";
-            case "shopeefood":
-                return "Saldo ShopeeFood";
-            case "gobiz":
-                return "Saldo GoBiz";
-            default:
-                return "";
-        }
-    };
-
-    const getPaymentSourceColor = (source) => {
-        const src = PAYMENT_SOURCES.find((s) => s.value === source);
-        return src?.color || "text-slate-600";
-    };
-
     useEffect(() => {
         if (open) {
             if (editTarget) {
                 setType(editTarget.type || "simple");
-                setPaymentSource(editTarget.payment_source || "dine_in");
                 setForm({
                     description: editTarget.description || "",
                     amount: editTarget.amount?.toString() || "",
@@ -159,7 +80,6 @@ export function ExpenseFormDialog({
                 });
             } else {
                 setType("simple");
-                setPaymentSource("dine_in");
                 setForm({
                     description: "",
                     amount: "",
@@ -191,14 +111,13 @@ export function ExpenseFormDialog({
             amountToCheck = parseFloat(form.amount) || 0;
         }
 
-        const currentBalance = getCurrentBalance();
+        const currentBalance = cashBalance || 0;
 
         if (amountToCheck > 0 && !isEdit && amountToCheck > currentBalance) {
             setBalanceWarning({
                 amount: amountToCheck,
                 balance: currentBalance,
                 deficit: amountToCheck - currentBalance,
-                sourceLabel: getCurrentBalanceLabel(),
             });
         } else {
             setBalanceWarning(null);
@@ -213,7 +132,6 @@ export function ExpenseFormDialog({
         form.quantity,
         form.unit_price,
         type,
-        paymentSource,
         open,
         isEdit,
     ]);
@@ -232,7 +150,7 @@ export function ExpenseFormDialog({
         const newErrors = {};
         const amountNum = parseFloat(form.amount) || 0;
         let expenseAmount = 0;
-        const currentBalance = getCurrentBalance();
+        const currentBalance = cashBalance || 0;
 
         if (!form.description.trim()) {
             newErrors.description = "Deskripsi wajib diisi";
@@ -267,8 +185,7 @@ export function ExpenseFormDialog({
         }
 
         if (!isEdit && expenseAmount > currentBalance) {
-            const sourceLabel = getCurrentBalanceLabel();
-            newErrors.amount = `Saldo ${sourceLabel} tidak mencukupi! Saldo saat ini: ${fmt(currentBalance)}`;
+            newErrors.amount = `Saldo kas toko tidak mencukupi! Saldo saat ini: ${fmt(currentBalance)}`;
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -279,7 +196,6 @@ export function ExpenseFormDialog({
 
         const payload = {
             type,
-            payment_source: paymentSource,
             description: form.description,
             expensed_at: format(form.expensed_at, "yyyy-MM-dd"),
             notes: form.notes,
@@ -319,10 +235,7 @@ export function ExpenseFormDialog({
     const showAmountField = type === "simple" || type === "owner_withdrawal";
     const showDetailLabel =
         type === "owner_withdrawal" ? "Jumlah Penarikan" : "Jumlah";
-    const currentBalance = getCurrentBalance();
-    const currentBalanceLabel = getCurrentBalanceLabel();
-
-    const isOnlinePayment = paymentSource !== "dine_in";
+    const currentBalance = cashBalance || 0;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -352,17 +265,15 @@ export function ExpenseFormDialog({
                             <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             <AlertDescription className="space-y-1 text-xs sm:text-sm">
                                 <p className="font-semibold">
-                                    Saldo Tidak Cukup!
+                                    Saldo Kas Tidak Cukup!
                                 </p>
                                 <p>
                                     Pengeluaran: {fmt(balanceWarning.amount)}
                                     <br />
-                                    Saldo {balanceWarning.sourceLabel}:{" "}
-                                    {fmt(balanceWarning.balance)}
+                                    Saldo Kas Toko: {fmt(balanceWarning.balance)}
                                     <br />
                                     <span className="text-red-600">
-                                        Kekurangan:{" "}
-                                        {fmt(balanceWarning.deficit)}
+                                        Kekurangan: {fmt(balanceWarning.deficit)}
                                     </span>
                                 </p>
                             </AlertDescription>
@@ -397,55 +308,6 @@ export function ExpenseFormDialog({
                                     </button>
                                 ),
                             )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-xs sm:text-sm">
-                            Sumber Dana
-                        </Label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {PAYMENT_SOURCES.map((source) => {
-                                const Icon = source.icon;
-                                const sourceBalance =
-                                    source.value === "dine_in"
-                                        ? dineInBalance || 0
-                                        : source.value === "grabfood"
-                                          ? grabfoodBalance || 0
-                                          : source.value === "shopeefood"
-                                            ? shopeefoodBalance || 0
-                                            : source.value === "gobiz"
-                                              ? gobizBalance || 0
-                                              : 0;
-                                const isActive = paymentSource === source.value;
-                                const isDisabled =
-                                    !isEdit && sourceBalance <= 0;
-
-                                return (
-                                    <button
-                                        key={source.value}
-                                        type="button"
-                                        onClick={() => {
-                                            setPaymentSource(source.value);
-                                            setBalanceWarning(null);
-                                        }}
-                                        disabled={isDisabled}
-                                        className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-all ${
-                                            isActive
-                                                ? `${source.bgActive} ${source.color} border-primary/30`
-                                                : `border-border bg-background text-muted-foreground ${source.bgHover}`
-                                        } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                                    >
-                                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                                        <span className="text-[10px] sm:text-xs font-medium text-center">
-                                            {source.label}
-                                        </span>
-                                        <span className="text-[9px] sm:text-[10px] text-muted-foreground">
-                                            {fmt(sourceBalance)}
-                                        </span>
-                                    </button>
-                                );
-                            })}
                         </div>
                     </div>
 
@@ -542,8 +404,7 @@ export function ExpenseFormDialog({
                                     {totalAmount > currentBalance &&
                                         !isEdit && (
                                             <span className="block text-xs text-red-600 mt-1">
-                                                Melebihi saldo{" "}
-                                                {currentBalanceLabel}!
+                                                Melebihi saldo kas toko!
                                             </span>
                                         )}
                                 </div>
@@ -715,7 +576,7 @@ export function ExpenseFormDialog({
 
                     <div className="bg-slate-50 border rounded-lg p-2.5 sm:p-3">
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                            Saldo {currentBalanceLabel} saat ini:{" "}
+                            Saldo Kas Toko saat ini:{" "}
                             <strong
                                 className={
                                     currentBalance <= 0
@@ -728,15 +589,8 @@ export function ExpenseFormDialog({
                         </p>
                         {type === "owner_withdrawal" && (
                             <p className="text-xs text-amber-600 mt-1">
-                                Penarikan akan mengurangi saldo{" "}
-                                {currentBalanceLabel} dan menambah saldo dompet
-                                owner.
-                            </p>
-                        )}
-                        {isOnlinePayment && (
-                            <p className="text-xs text-blue-600 mt-1">
-                                Pengeluaran dari saldo {currentBalanceLabel}{" "}
-                                akan mengurangi saldo channel tersebut.
+                                Penarikan akan mengurangi saldo kas toko dan
+                                menambah saldo dompet owner.
                             </p>
                         )}
                     </div>
@@ -767,9 +621,7 @@ export function ExpenseFormDialog({
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={
-                            processing || (!isEdit && currentBalance <= 0)
-                        }
+                        disabled={processing || (!isEdit && currentBalance <= 0)}
                         className="w-full sm:w-auto h-9 sm:h-10 text-sm"
                     >
                         {processing && (

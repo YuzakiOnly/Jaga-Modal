@@ -57,21 +57,21 @@ export function AppSidebar({
 
     useEffect(() => {
         if (isMobile) setOpenMobile(false);
-    }, [url]);
+    }, [url, isMobile, setOpenMobile]);
 
     return (
         <Sidebar collapsible="icon" className="border-none" {...props}>
-            <SidebarHeader className="px-3.5 pt-4 group-data-[collapsible=icon]:px-2.5">
+            <SidebarHeader className="px-3.5 pt-4 group-data-[collapsible=icon]:px-2.5 shrink-0">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-primary/5">
                                     <Logo />
-                                    <span className="font-semibold">
+                                    <span className="font-semibold truncate">
                                         {appName}
                                     </span>
-                                    <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
+                                    <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden shrink-0" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -113,13 +113,13 @@ export function AppSidebar({
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="flex-1 min-h-0">
                 <ScrollArea className="h-full">
                     <NavMain navItems={filteredNavItems} />
                 </ScrollArea>
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className="shrink-0">
                 <NavUser user={user} />
             </SidebarFooter>
         </Sidebar>

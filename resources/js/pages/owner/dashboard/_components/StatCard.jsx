@@ -1,3 +1,4 @@
+// _components/StatCard.jsx
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,9 +78,14 @@ export default function StatCard({
                     </p>
                 )}
                 {comparisonValue !== undefined && comparisonLabel && (
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5">
-                        {comparisonLabel}: {displayComparison}
-                    </p>
+                    <div className="mt-2 pt-1 border-t border-border/50">
+                        <p className="text-[10px] text-muted-foreground">
+                            Dibanding {comparisonLabel.toLowerCase()}
+                        </p>
+                        <p className="text-xs font-semibold text-foreground mt-0.5">
+                            {displayComparison}
+                        </p>
+                    </div>
                 )}
             </div>
         </div>

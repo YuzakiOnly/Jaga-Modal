@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import {
     Card,
     CardContent,
@@ -65,39 +65,17 @@ function CustomTooltip({ active, payload, label }) {
     if (!active || !payload || !payload.length) return null;
     const data = payload[0]?.payload;
     return (
-        <div className="rounded-lg border border-border bg-background shadow-md px-3 py-2 text-xs min-w-[220px]">
+        <div className="rounded-lg border border-border bg-background shadow-md px-3 py-2 text-xs min-w-[200px]">
             <p className="font-semibold text-foreground mb-1.5">
                 {data?.monthLabel}
             </p>
             <div className="space-y-1">
                 <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">
-                        Omzet (Bersih)
-                    </span>
+                    <span className="text-muted-foreground">Omzet</span>
                     <span className="font-bold text-foreground tabular-nums">
                         {formatRp(data?.revenue ?? 0)}
                     </span>
                 </div>
-                {data?.platform_fee > 0 && (
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground text-red-500">
-                            Biaya Platform
-                        </span>
-                        <span className="font-medium text-red-500 tabular-nums">
-                            − {formatRp(data?.platform_fee ?? 0)}
-                        </span>
-                    </div>
-                )}
-                {data?.gross_revenue > 0 && data?.platform_fee > 0 && (
-                    <div className="flex items-center justify-between gap-3 border-t border-dashed border-border pt-1 mt-1">
-                        <span className="text-muted-foreground">
-                            Omzet Kotor
-                        </span>
-                        <span className="font-medium text-muted-foreground tabular-nums line-through">
-                            {formatRp(data?.gross_revenue ?? 0)}
-                        </span>
-                    </div>
-                )}
                 <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">Laba Bersih</span>
                     <span className="font-medium text-emerald-600 tabular-nums">
@@ -118,11 +96,11 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 const chartConfig = {
-    revenue: { label: "Omzet Bersih", color: "#10b981" },
+    revenue: { label: "Omzet", color: "#10b981" },
     net_profit: { label: "Laba Bersih", color: "#3b82f6" },
 };
 
-export default function MonthlyRevenueChart({ data }) {
+function MonthlyRevenueChartComponent({ data }) {
     const years = useMemo(() => {
         if (!data || data.length === 0) return [new Date().getFullYear()];
         const ys = [...new Set(data.map((d) => d.year))].sort((a, b) => b - a);
@@ -148,8 +126,6 @@ export default function MonthlyRevenueChart({ data }) {
                 monthLabel: `${MONTH_NAMES[i]} ${selectedYear}`,
                 shortLabel: MONTH_NAMES[i],
                 revenue: row?.revenue ?? 0,
-                gross_revenue: row?.gross_revenue ?? 0,
-                platform_fee: row?.platform_fee ?? 0,
                 net_profit: row?.net_profit ?? 0,
                 transactions: row?.transactions ?? 0,
             };
@@ -158,10 +134,6 @@ export default function MonthlyRevenueChart({ data }) {
 
     const yearTotal = useMemo(
         () => filteredData.reduce((sum, d) => sum + d.revenue, 0),
-        [filteredData],
-    );
-    const yearPlatformFee = useMemo(
-        () => filteredData.reduce((sum, d) => sum + (d.platform_fee || 0), 0),
         [filteredData],
     );
     const yearProfit = useMemo(
@@ -181,140 +153,147 @@ export default function MonthlyRevenueChart({ data }) {
     const isEmpty = yearTotal === 0;
 
     return (
-        <Card className="border-border">
-            <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                    <CardTitle className="text-base">
-                        Grafik Omzet Bulanan
-                    </CardTitle>
-                    <CardDescription className="mt-0.5">
-                        Omzet bersih per bulan ·{" "}
-                        <span className="font-medium text-foreground">
-                            {formatRp(yearTotal)}
-                        </span>{" "}
-                        total {selectedYear}
-                        {yearPlatformFee > 0 && (
-                            <span className="text-red-500 ml-1">
-                                (Fee: {formatRp(yearPlatformFee)})
-                            </span>
-                        )}
-                    </CardDescription>
-                </div>
-                {years.length > 0 && (
-                    <Select
-                        value={selectedYear}
-                        onValueChange={setSelectedYear}
-                    >
-                        <SelectTrigger className="w-full sm:w-[130px] shrink-0 text-sm">
-                            <SelectValue placeholder="Pilih tahun" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {years.map((y) => (
-                                <SelectItem key={y} value={String(y)}>
-                                    {y}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
-            </CardHeader>
-
-            <CardContent className="pt-2 pb-4 px-2 sm:px-6">
-                <div className="flex gap-3 flex-wrap mb-4">
-                    <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-muted/30 px-4 py-2.5 min-w-[120px]">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
-                            Total Omzet {selectedYear}
-                        </p>
-                        <p className="text-base font-bold tabular-nums">
-                            {formatRp(yearTotal)}
-                        </p>
+        <div className="chart-container">
+            <Card className="border-border">
+                <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                        <CardTitle className="text-base">
+                            Grafik Omzet Bulanan
+                        </CardTitle>
+                        <CardDescription className="mt-0.5">
+                            Omzet per bulan ·{" "}
+                            <span className="font-medium text-foreground">
+                                {formatRp(yearTotal)}
+                            </span>{" "}
+                            total {selectedYear}
+                        </CardDescription>
                     </div>
-                    <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-muted/30 px-4 py-2.5 min-w-[120px]">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
-                            Laba {selectedYear}
-                        </p>
-                        <p className="text-base font-bold tabular-nums text-emerald-600">
-                            {formatRp(yearProfit)}
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-muted/30 px-4 py-2.5 min-w-[120px]">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
-                            Total Semua Waktu
-                        </p>
-                        <p className="text-base font-bold tabular-nums">
-                            {formatRp(allTimeTotal)}
-                        </p>
-                    </div>
-                </div>
-
-                {isEmpty ? (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
-                        Belum ada data omset untuk {selectedYear}
-                    </div>
-                ) : (
-                    <ChartContainer
-                        config={chartConfig}
-                        className="h-[300px] w-full select-none!"
-                    >
-                        <BarChart
-                            data={filteredData}
-                            margin={{ top: 10, right: 8, left: 0, bottom: 5 }}
-                            barGap={3}
-                            barCategoryGap="25%"
+                    {years.length > 0 && (
+                        <Select
+                            value={selectedYear}
+                            onValueChange={setSelectedYear}
                         >
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                vertical={false}
-                                stroke="var(--border)"
-                            />
-                            <XAxis
-                                dataKey="shortLabel"
-                                tick={{ fontSize: 11 }}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 10 }}
-                                tickFormatter={formatRpShort}
-                                tickLine={false}
-                                axisLine={false}
-                                width={48}
-                            />
-                            <Tooltip
-                                cursor={{ fill: "var(--muted)", opacity: 0.5 }}
-                                content={<CustomTooltip />}
-                            />
-                            <ChartLegend content={<ChartLegendContent />} />
-                            <Bar
-                                dataKey="revenue"
-                                name="Omzet Bersih"
-                                fill="#10b981"
-                                radius={[4, 4, 0, 0]}
-                                maxBarSize={40}
-                            >
-                                {filteredData.map((entry, index) => (
-                                    <Cell
-                                        key={index}
-                                        fill={
-                                            entry.revenue === maxRevenue &&
-                                            entry.revenue > 0
-                                                ? "#059669"
-                                                : "#10b981"
-                                        }
-                                    />
+                            <SelectTrigger className="w-full sm:w-[130px] shrink-0 text-sm">
+                                <SelectValue placeholder="Pilih tahun" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {years.map((y) => (
+                                    <SelectItem key={y} value={String(y)}>
+                                        {y}
+                                    </SelectItem>
                                 ))}
-                            </Bar>
-                            <Bar
-                                dataKey="net_profit"
-                                name="Laba Bersih"
-                                fill="#3b82f6"
-                                radius={[4, 4, 0, 0]}
-                                maxBarSize={40}
-                            />
-                        </BarChart>
-                    </ChartContainer>
-                )}
-            </CardContent>
-        </Card>
+                            </SelectContent>
+                        </Select>
+                    )}
+                </CardHeader>
+
+                <CardContent className="pt-2 pb-4 px-2 sm:px-6">
+                    <div className="flex gap-3 flex-wrap mb-4">
+                        <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-muted/30 px-4 py-2.5 min-w-[120px]">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                                Total Omzet {selectedYear}
+                            </p>
+                            <p className="text-base font-bold tabular-nums">
+                                {formatRp(yearTotal)}
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-muted/30 px-4 py-2.5 min-w-[120px]">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                                Laba {selectedYear}
+                            </p>
+                            <p className="text-base font-bold tabular-nums text-emerald-600">
+                                {formatRp(yearProfit)}
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-muted/30 px-4 py-2.5 min-w-[120px]">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                                Total Semua Waktu
+                            </p>
+                            <p className="text-base font-bold tabular-nums">
+                                {formatRp(allTimeTotal)}
+                            </p>
+                        </div>
+                    </div>
+
+                    {isEmpty ? (
+                        <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                            Belum ada data omset untuk {selectedYear}
+                        </div>
+                    ) : (
+                        <ChartContainer
+                            config={chartConfig}
+                            className="h-[300px] w-full select-none! chart-container"
+                        >
+                            <BarChart
+                                data={filteredData}
+                                margin={{
+                                    top: 10,
+                                    right: 8,
+                                    left: 0,
+                                    bottom: 5,
+                                }}
+                                barGap={3}
+                                barCategoryGap="25%"
+                            >
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="var(--border)"
+                                />
+                                <XAxis
+                                    dataKey="shortLabel"
+                                    tick={{ fontSize: 11 }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 10 }}
+                                    tickFormatter={formatRpShort}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    width={48}
+                                />
+                                <Tooltip
+                                    cursor={{
+                                        fill: "var(--muted)",
+                                        opacity: 0.5,
+                                    }}
+                                    content={CustomTooltip}
+                                />
+                                <ChartLegend content={<ChartLegendContent />} />
+                                <Bar
+                                    dataKey="revenue"
+                                    name="Omzet"
+                                    fill="#10b981"
+                                    radius={[4, 4, 0, 0]}
+                                    maxBarSize={40}
+                                >
+                                    {filteredData.map((entry, index) => (
+                                        <Cell
+                                            key={index}
+                                            fill={
+                                                entry.revenue === maxRevenue &&
+                                                entry.revenue > 0
+                                                    ? "#059669"
+                                                    : "#10b981"
+                                            }
+                                        />
+                                    ))}
+                                </Bar>
+                                <Bar
+                                    dataKey="net_profit"
+                                    name="Laba Bersih"
+                                    fill="#3b82f6"
+                                    radius={[4, 4, 0, 0]}
+                                    maxBarSize={40}
+                                />
+                            </BarChart>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }
+
+export default memo(MonthlyRevenueChartComponent);

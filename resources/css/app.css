@@ -220,3 +220,32 @@
         @apply bg-black/20! backdrop-blur-sm;
     }
 }
+
+/* Isolasi grafik agar tidak mempengaruhi layout */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-legend-wrapper,
+.recharts-tooltip-wrapper {
+    contain: strict !important;
+    will-change: auto !important;
+    isolation: isolate !important;
+}
+
+/* Force GPU acceleration untuk semua grafik */
+.recharts-wrapper svg {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* Chart container */
+.chart-container {
+    contain: layout style paint;
+    isolation: isolate;
+}
+
+/* Sidebar transition - disable saat ada grafik */
+.sidebar-transition {
+    transition: none !important;
+}

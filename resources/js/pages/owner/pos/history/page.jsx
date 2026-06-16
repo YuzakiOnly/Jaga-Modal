@@ -7,8 +7,6 @@ import {
     Banknote,
     QrCode,
     ArrowLeft,
-    Bike,
-    Zap,
     Users,
     Receipt,
 } from "lucide-react";
@@ -31,27 +29,6 @@ const formatPrice = (price) =>
         minimumFractionDigits: 0,
     }).format(price);
 
-const ONLINE_CHANNEL_CONFIG = {
-    grabfood: {
-        label: "GrabFood",
-        icon: Bike,
-        color: "text-green-600",
-        bg: "bg-green-50 border-green-200",
-    },
-    shopeefood: {
-        label: "ShopeFood",
-        icon: Bike,
-        color: "text-orange-500",
-        bg: "bg-orange-50 border-orange-200",
-    },
-    gobiz: {
-        label: "GoBiz",
-        icon: Zap,
-        color: "text-emerald-600",
-        bg: "bg-emerald-50 border-emerald-200",
-    },
-};
-
 const TABS = [
     { id: "transactions", label: "Transaksi", icon: Receipt },
     { id: "customers", label: "Pelanggan", icon: Users },
@@ -62,21 +39,17 @@ export default function TransactionHistoryPage({
     summary,
     customers = [],
     filters,
-    online_channels = [],
 }) {
     const [period, setPeriod] = useState(filters?.period ?? "daily");
     const [date, setDate] = useState(
         filters?.date ?? new Date().toISOString().slice(0, 10),
     );
-    const [channel, setChannel] = useState(filters?.channel ?? "");
     const [activeTab, setActiveTab] = useState("transactions");
-
 
     useSmartRefresh({ ...refreshConfigs.owner_history });
 
-    const applyFilter = (newPeriod, newDate, newChannel) => {
+    const applyFilter = (newPeriod, newDate) => {
         const params = { period: newPeriod, date: newDate };
-        if (newChannel) params.channel = newChannel;
         router.get(route("owner.transactions.history"), params, {
             preserveState: true,
             replace: true,
@@ -85,21 +58,13 @@ export default function TransactionHistoryPage({
 
     const handlePeriodChange = (val) => {
         setPeriod(val);
-        applyFilter(val, date, channel);
+        applyFilter(val, date);
     };
 
     const handleDateChange = (e) => {
         setDate(e.target.value);
-        applyFilter(period, e.target.value, channel);
+        applyFilter(period, e.target.value);
     };
-
-    const handleChannelChange = (val) => {
-        const newChannel = val === channel ? "" : val;
-        setChannel(newChannel);
-        applyFilter(period, date, newChannel);
-    };
-
-    const revenueByChannel = summary?.revenue_by_channel ?? {};
 
     return (
         <>
@@ -118,7 +83,7 @@ export default function TransactionHistoryPage({
                             Riwayat Transaksi
                         </h1>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                            Lihat semua transaksi berdasarkan periode & channel
+                            Lihat semua transaksi berdasarkan periode
                         </p>
                     </div>
                 </div>
@@ -127,19 +92,17 @@ export default function TransactionHistoryPage({
                 <TransactionFilter
                     period={period}
                     date={date}
-                    channel={channel}
                     onPeriodChange={handlePeriodChange}
                     onDateChange={handleDateChange}
-                    onChannelChange={handleChannelChange}
                 />
 
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <SummaryCard
                         icon={TrendingUp}
-                        label="Pendapatan Bersih"
-                        value={formatPrice(summary.total_net_revenue)}
-                        sub={`Fee Platform: ${formatPrice(summary.total_platform_fee)}`}
+                        label="Total Pendapatan"
+                        value={formatPrice(summary.total_revenue)}
+                        sub={`${summary.total_count} transaksi`}
                         accent="text-primary"
                     />
                     <SummaryCard
@@ -161,68 +124,6 @@ export default function TransactionHistoryPage({
                         sub="transaksi"
                     />
                 </div>
-
-                {/* Online channel cards */}
-                {online_channels.length > 0 && (
-                    <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                            Saldo Channel Online
-                        </p>
-                        <div className="grid grid-cols-3 gap-3">
-                            {online_channels.map((ch) => {
-                                const cfg = ONLINE_CHANNEL_CONFIG[ch];
-                                if (!cfg) return null;
-                                const Icon = cfg.icon;
-                                const count = summary[`${ch}_count`] ?? 0;
-                                const revenue = revenueByChannel[ch] ?? 0;
-                                return (
-                                    <button
-                                        key={ch}
-                                        onClick={() => handleChannelChange(ch)}
-                                        className={`rounded-xl border p-4 flex flex-col gap-2 text-left transition-all ${
-                                            channel === ch
-                                                ? `${cfg.bg} ring-2 ring-offset-1 ring-current ${cfg.color}`
-                                                : "bg-card hover:bg-muted/40"
-                                        }`}
-                                    >
-                                        <div
-                                            className={`flex items-center gap-2 ${cfg.color}`}
-                                        >
-                                            <Icon className="h-4 w-4" />
-                                            <span className="text-xs font-medium uppercase tracking-wide">
-                                                {cfg.label}
-                                            </span>
-                                        </div>
-                                        <p
-                                            className={`text-xl font-bold tabular-nums ${cfg.color}`}
-                                        >
-                                            {formatPrice(revenue)}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {count} transaksi
-                                        </p>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {channel && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Menampilkan transaksi{" "}
-                                <span className="font-semibold">
-                                    {ONLINE_CHANNEL_CONFIG[channel]?.label ??
-                                        channel}
-                                </span>{" "}
-                                saja.{" "}
-                                <button
-                                    onClick={() => handleChannelChange("")}
-                                    className="text-primary underline"
-                                >
-                                    Tampilkan semua
-                                </button>
-                            </p>
-                        )}
-                    </div>
-                )}
 
                 {/* Tabs */}
                 <div className="flex gap-1 border-b">

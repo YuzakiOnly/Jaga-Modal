@@ -53,10 +53,6 @@ export const productSchema = z.object({
         .or(z.literal("")),
     capital_price: coerceNumber(0),
     selling_price: coerceNumber(0),
-    price_gobiz: coerceOptionalNumber(0),
-    price_grabfood: coerceOptionalNumber(0),
-    price_shopeefood: coerceOptionalNumber(0),
-    enable_online_food: z.boolean().default(false),
     stock_type: z.enum(["limited", "unlimited"], {
         required_error: "Stock type is required",
     }),

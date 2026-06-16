@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar-v1/AppSidebar";
-import { PosHeader } from "./PosHeader";
+import { AppHeader } from "../dashboard/AppHeader";
 
 export default function PosLayout({
     children,
@@ -19,7 +19,7 @@ export default function PosLayout({
             />
             <SidebarInset className="bg-sidebar overflow-hidden">
                 <div className="flex flex-col h-screen md:mt-2.5 md:mr-2.5 md:rounded-tl-xl md:rounded-tr-xl bg-background">
-                    <PosHeader />
+                    <AppHeader />
                     <main className="flex-1 min-h-0 overflow-hidden">
                         {children}
                     </main>

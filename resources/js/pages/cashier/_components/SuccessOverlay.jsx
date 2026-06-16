@@ -9,35 +9,18 @@ import {
     Package,
     Banknote,
     QrCode,
-    Store,
-    Bike,
-    ShoppingCart,
-    Zap,
 } from "lucide-react";
 
 const formatRupiah = (num) => "Rp " + Math.round(num).toLocaleString("id-ID");
 
-const CHANNEL_ICONS = {
-    dine_in: Store,
-    grabfood: Bike,
-    shopeefood: ShoppingCart,
-    gobiz: Zap,
-};
-
 const PAYMENT_ICONS = {
     cash: Banknote,
     qris: QrCode,
-    grabfood: Bike,
-    shopeefood: ShoppingCart,
-    gobiz: Zap,
 };
 
 const PAYMENT_LABELS = {
     cash: "TUNAI",
     qris: "QRIS",
-    grabfood: "GRABFOOD",
-    shopeefood: "SHOPEEFOOD",
-    gobiz: "GOBIZ",
 };
 
 export default function SuccessOverlay({ transaction, onNewTransaction }) {
@@ -94,7 +77,6 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
 
     if (!show) return null;
 
-    const ChannelIcon = CHANNEL_ICONS[transaction.orderChannel] || Store;
     const PaymentIcon = PAYMENT_ICONS[transaction.paymentMethod] || Banknote;
 
     return (
@@ -265,22 +247,6 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                                     </span>
                                 </div>
                             </>
-                        )}
-                        {transaction.orderChannel !== "dine_in" && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Channel</span>
-                                <div className="flex items-center gap-1">
-                                    <ChannelIcon className="h-3 w-3" />
-                                    <span className="font-medium">
-                                        {transaction.orderChannel ===
-                                            "grabfood" && "GrabFood"}
-                                        {transaction.orderChannel ===
-                                            "shopeefood" && "ShopeeFood"}
-                                        {transaction.orderChannel === "gobiz" &&
-                                            "GoBiz"}
-                                    </span>
-                                </div>
-                            </div>
                         )}
                     </div>
 

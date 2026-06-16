@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { memo, useState, useMemo } from "react";
 import { Head, router } from "@inertiajs/react";
 import AppLayout from "@/layouts/dashboard/AppLayout";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
     DollarSign,
     TrendingUp,
@@ -9,15 +10,7 @@ import {
     Landmark,
     Wallet,
     ArrowLeftRight,
-    Store,
 } from "lucide-react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 import StatCard from "./_components/StatCard";
 import MiniStatCard from "./_components/MiniStatCard";
@@ -30,24 +23,7 @@ import ExpenseBreakdown from "./_components/ExpenseBreakdown";
 import RecentTransactions from "./_components/RecentTransactions";
 import ProductSummaryCards from "./_components/ProductSummaryCards";
 import CustomerStatCard from "./_components/CustomerStatCard";
-import CurrencyCards from "./_components/CurrencyCards";
-import OnlineChannelCards from "./_components/OnlineChannelCards";
 import MonthlyRevenueChart from "./_components/MonthlyRevenueChart";
-
-import { useSmartRefresh } from "@/hooks/useSmartRefresh";
-import { refreshConfigs } from "@/hooks/refreshConfig";
-
-const PERIODS = [
-    { key: "hari_ini", label: "Hari Ini" },
-    { key: "minggu_ini", label: "Minggu Ini" },
-    { key: "bulan_ini", label: "Bulan Ini" },
-];
-
-const COMPARISONS = [
-    { key: "yesterday", label: "Kemarin" },
-    { key: "last_week", label: "Minggu Lalu" },
-    { key: "last_month", label: "Bulan Lalu" },
-];
 
 const currentMonth = new Date().toISOString().slice(0, 7);
 
@@ -66,11 +42,10 @@ function formatNum(value) {
     return new Intl.NumberFormat("id-ID").format(value);
 }
 
-export default function Dashboard({
+const Dashboard = memo(function Dashboard({
     store,
     stats,
-    comparisons,
-    period: initialPeriod,
+    period_label,
     customer_stats,
     sales_chart,
     daily_product_data,
@@ -88,12 +63,27 @@ export default function Dashboard({
 }) {
     const params = new URLSearchParams(window.location.search);
 
-    const [period, setPeriod] = useState(
-        initialPeriod ?? params.get("period") ?? "hari_ini",
-    );
-    const [comparison, setComparison] = useState(
-        params.get("comparison") ?? "yesterday",
-    );
+    const getInitialValue = () => {
+        const startDate = params.get("start_date");
+        const endDate = params.get("end_date");
+        const comparison = params.get("comparison");
+        if (startDate && endDate) {
+            return {
+                range: {
+                    from: new Date(startDate),
+                    to: new Date(endDate),
+                },
+                comparison: comparison || "last_7_days",
+            };
+        }
+        const today = new Date();
+        return {
+            range: { from: today, to: today },
+            comparison: "last_7_days",
+        };
+    };
+
+    const [datePickerValue, setDatePickerValue] = useState(getInitialValue());
     const [salesMonth, setSalesMonth] = useState(
         initialSalesMonth ?? params.get("sales_month") ?? currentMonth,
     );
@@ -104,23 +94,52 @@ export default function Dashboard({
         initialCustomerMonth ?? params.get("customer_month") ?? currentMonth,
     );
 
-    useSmartRefresh({ ...refreshConfigs.owner_dashboard });
-
-    const activeComparison =
-        comparisons?.[comparison] ?? comparisons?.last_month;
+    // Memoize semua data
+    const memoizedSalesChart = useMemo(() => sales_chart, [sales_chart]);
+    const memoizedMonthlyRevenue = useMemo(
+        () => monthly_revenue_chart,
+        [monthly_revenue_chart],
+    );
+    const memoizedDailyProduct = useMemo(
+        () => daily_product_data,
+        [daily_product_data],
+    );
+    const memoizedCustomerTransaction = useMemo(
+        () => customer_transaction_data,
+        [customer_transaction_data],
+    );
+    const memoizedTopProducts = useMemo(() => top_products, [top_products]);
+    const memoizedLowStock = useMemo(
+        () => low_stock_products,
+        [low_stock_products],
+    );
+    const memoizedExpenses = useMemo(() => expense_by_type, [expense_by_type]);
+    const memoizedRecentTransactions = useMemo(
+        () => recent_transactions,
+        [recent_transactions],
+    );
+    const memoizedAvailableMonths = useMemo(
+        () => available_months,
+        [available_months],
+    );
 
     const refreshData = (updates = {}) => {
         const url = new URL(window.location.href);
         const current = {
-            period,
-            comparison,
+            start_date: datePickerValue.range?.from?.toISOString(),
+            end_date: datePickerValue.range?.to?.toISOString(),
+            comparison: datePickerValue.comparison,
             sales_month: salesMonth,
             product_month: productMonth,
             customer_month: customerMonth,
             ...updates,
         };
         Object.entries(current).forEach(([key, value]) => {
-            url.searchParams.set(key, value);
+            if (value) {
+                url.searchParams.set(key, value);
+            } else {
+                url.searchParams.delete(key);
+            }
         });
         router.get(
             url.pathname + url.search,
@@ -129,14 +148,13 @@ export default function Dashboard({
         );
     };
 
-    const handlePeriodChange = (value) => {
-        setPeriod(value);
-        refreshData({ period: value });
-    };
-
-    const handleComparisonChange = (value) => {
-        setComparison(value);
-        refreshData({ comparison: value });
+    const handleDateRangeChange = (value) => {
+        setDatePickerValue(value);
+        refreshData({
+            start_date: value.range?.from?.toISOString(),
+            end_date: value.range?.to?.toISOString(),
+            comparison: value.comparison,
+        });
     };
 
     const handleSalesMonthChange = (value) => {
@@ -154,51 +172,40 @@ export default function Dashboard({
         refreshData({ customer_month: value });
     };
 
-    const periodLabel =
-        {
-            hari_ini: "Hari Ini",
-            minggu_ini: "Minggu Ini",
-            bulan_ini: "Bulan Ini",
-        }[period] ?? "Periode ini";
-
     const summaryCards = [
         {
             title: "Omzet",
-            value: stats.net_revenue,
-            trend: activeComparison?.trends?.revenue ?? null,
-            comparisonValue: activeComparison?.revenue,
-            comparisonLabel: activeComparison?.label,
+            value: stats.total_revenue,
+            trend: stats.revenue_trend,
+            comparisonValue: stats.comparison_revenue,
+            comparisonLabel: stats.comparison_label,
             icon: DollarSign,
             isCurrency: true,
-            subtitle:
-                stats.total_platform_fee > 0
-                    ? `Fee platform: ${formatRp(stats.total_platform_fee)}`
-                    : null,
         },
         {
             title: "Laba Bersih",
             value: stats.net_profit,
-            trend: activeComparison?.trends?.net_profit ?? null,
-            comparisonValue: activeComparison?.net_profit,
-            comparisonLabel: activeComparison?.label,
+            trend: stats.net_profit_trend,
+            comparisonValue: stats.comparison_net_profit,
+            comparisonLabel: stats.comparison_label,
             icon: TrendingUp,
             isCurrency: true,
         },
         {
             title: "Produk Terjual",
             value: stats.products_sold,
-            trend: activeComparison?.trends?.products_sold ?? null,
-            comparisonValue: activeComparison?.products_sold,
-            comparisonLabel: activeComparison?.label,
+            trend: stats.products_sold_trend,
+            comparisonValue: stats.comparison_products_sold,
+            comparisonLabel: stats.comparison_label,
             icon: Package,
             isCurrency: false,
         },
         {
             title: "Rata-rata Transaksi",
             value: stats.avg_transaction,
-            trend: activeComparison?.trends?.avg_transaction ?? null,
-            comparisonValue: activeComparison?.avg_transaction,
-            comparisonLabel: activeComparison?.label,
+            trend: stats.avg_transaction_trend,
+            comparisonValue: stats.comparison_avg_transaction,
+            comparisonLabel: stats.comparison_label,
             icon: ReceiptText,
             isCurrency: true,
         },
@@ -208,34 +215,34 @@ export default function Dashboard({
         {
             label: "Saldo Kas Toko",
             value: stats.cash_balance,
-            subValue: "Total semua channel (bersih)",
+            subValue: "Total pendapatan bersih",
             isCurrency: true,
             icon: Landmark,
             iconColor: "text-slate-600 dark:text-slate-400",
         },
         {
-            label: "Saldo Dine In",
-            value: stats.dine_in_balance,
-            subValue: "Uang tunai dari transaksi dine in",
+            label: "Saldo Dompet Owner",
+            value: stats.wallet_balance,
+            subValue: "Saldo yang bisa ditarik",
             isCurrency: true,
-            icon: Store,
+            icon: Wallet,
             iconColor: "text-emerald-600 dark:text-emerald-400",
         },
         {
-            label: "Saldo Online Total",
-            value: stats.online_balance_total,
-            subValue: "Grab + Shopee + GoBiz",
-            isCurrency: true,
-            icon: Wallet,
-            iconColor: "text-orange-500 dark:text-orange-400",
-        },
-        {
-            label: "Total Pengeluaran",
+            label: "Total Pengeluaran Bulan Ini",
             value: stats.monthly_expense,
-            subValue: "Bulan ini",
+            subValue: "Termasuk semua jenis pengeluaran",
             isCurrency: true,
             icon: ArrowLeftRight,
             iconColor: "text-red-500 dark:text-red-400",
+        },
+        {
+            label: "Total Penarikan Owner",
+            value: stats.total_withdrawal,
+            subValue: "Bulan ini",
+            isCurrency: true,
+            icon: ArrowLeftRight,
+            iconColor: "text-orange-500 dark:text-orange-400",
         },
     ];
 
@@ -244,52 +251,20 @@ export default function Dashboard({
             <Head title="Dashboard | Owner" />
 
             <div className="space-y-5 p-4 lg:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight lg:text-2xl text-foreground">
-                            Selamat datang, {store?.name ?? "Owner"}!
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            Ringkasan performa toko
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground hidden sm:block">
-                            Bandingkan:
-                        </span>
-                        <Select
-                            value={comparison}
-                            onValueChange={handleComparisonChange}
-                        >
-                            <SelectTrigger className="w-36 h-8 text-sm font-normal border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {COMPARISONS.map((c) => (
-                                    <SelectItem key={c.key} value={c.key}>
-                                        {c.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div>
+                    <h1 className="text-xl font-bold tracking-tight lg:text-2xl text-foreground">
+                        Selamat datang, {store?.name ?? "Owner"}!
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                        Ringkasan performa toko
+                    </p>
                 </div>
 
-                <div className="flex gap-1 p-1 bg-muted/30 border border-border rounded-xl w-fit">
-                    {PERIODS.map((p) => (
-                        <button
-                            key={p.key}
-                            onClick={() => handlePeriodChange(p.key)}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
-                                period === p.key
-                                    ? "bg-emerald-600 text-white shadow-sm dark:bg-emerald-700"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                            }`}
-                        >
-                            {p.label}
-                        </button>
-                    ))}
+                <div>
+                    <DateRangePicker
+                        value={datePickerValue}
+                        onChange={handleDateRangeChange}
+                    />
                 </div>
 
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -304,59 +279,48 @@ export default function Dashboard({
                     ))}
                 </div>
 
-                <OnlineChannelCards
-                    balances={stats.online_channel_balances}
-                    periodRevenues={stats.online_channel_period}
-                    periodLabel={periodLabel}
-                />
-
-                <div className="grid gap-3 grid-cols-1 lg:grid-cols-4">
+                <div className="grid gap-3 grid-cols-1">
                     <CustomerStatCard
-                        customerStats={customer_stats?.[period]}
-                        period={period}
+                        customerStats={customer_stats}
+                        period={period_label}
                     />
-                    <div className="lg:col-span-3">
-                        <CurrencyCards />
-                    </div>
                 </div>
 
-                <MonthlyRevenueChart data={monthly_revenue_chart} />
+                <MonthlyRevenueChart data={memoizedMonthlyRevenue} />
 
                 <SalesChart
-                    data={sales_chart}
+                    data={memoizedSalesChart}
                     selectedMonth={salesMonth}
-                    availableMonths={available_months}
+                    availableMonths={memoizedAvailableMonths}
                     onMonthChange={handleSalesMonthChange}
                 />
 
-                <div className="grid gap-4 md:grid-cols-2">
                     <DailyProductChart
-                        data={daily_product_data}
+                        data={memoizedDailyProduct}
                         selectedMonth={productMonth}
-                        availableMonths={available_months}
+                        availableMonths={memoizedAvailableMonths}
                         onMonthChange={handleProductMonthChange}
                     />
                     <CustomerTransactionChart
-                        data={customer_transaction_data}
+                        data={memoizedCustomerTransaction}
                         selectedMonth={customerMonth}
-                        availableMonths={available_months}
+                        availableMonths={memoizedAvailableMonths}
                         onMonthChange={handleCustomerMonthChange}
                     />
-                </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <TopProducts products={top_products} />
+                    <TopProducts products={memoizedTopProducts} />
                     <LowStockAlert
-                        products={low_stock_products}
+                        products={memoizedLowStock}
                         totalLowStock={product_stats.total_low_stock}
                     />
                     <ExpenseBreakdown
-                        expenses={expense_by_type}
+                        expenses={memoizedExpenses}
                         totalExpense={stats.monthly_expense}
                     />
                 </div>
 
-                <RecentTransactions transactions={recent_transactions} />
+                <RecentTransactions transactions={memoizedRecentTransactions} />
 
                 <ProductSummaryCards
                     productStats={product_stats}
@@ -366,6 +330,8 @@ export default function Dashboard({
             </div>
         </>
     );
-}
+});
+
+export default Dashboard;
 
 Dashboard.layout = (page) => <AppLayout>{page}</AppLayout>;

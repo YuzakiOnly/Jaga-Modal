@@ -1,14 +1,8 @@
+// _components/CustomerStatCard.jsx
 import { Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function CustomerStatCard({ customerStats, period }) {
-    const periodLabel =
-        {
-            hari_ini: "Hari Ini",
-            minggu_ini: "Minggu Ini",
-            bulan_ini: "Bulan Ini",
-        }[period] ?? "Periode ini";
-
     const total = customerStats?.total ?? 0;
 
     return (
@@ -25,7 +19,7 @@ export default function CustomerStatCard({ customerStats, period }) {
                         {total}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                        {periodLabel}
+                        {period}
                     </p>
                 </div>
             </CardContent>

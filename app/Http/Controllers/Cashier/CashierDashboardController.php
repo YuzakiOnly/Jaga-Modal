@@ -27,7 +27,7 @@ class CashierDashboardController extends Controller
         $todayStats = Transaction::forStore($storeId)
             ->completed()
             ->whereDate('transacted_at', today())
-            ->selectRaw('SUM(net_revenue) as today_revenue, COUNT(*) as today_transactions, AVG(net_revenue) as avg_transaction')
+            ->selectRaw('SUM(total) as today_revenue, COUNT(*) as today_transactions, AVG(total) as avg_transaction')
             ->first();
 
         $todayProductsSold = TransactionItem::whereHas(
@@ -37,7 +37,6 @@ class CashierDashboardController extends Controller
 
         $todayExpense = Expense::forStore($storeId)
             ->whereDate('expensed_at', today())
-            ->where('payment_source', 'cash')
             ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
@@ -48,7 +47,7 @@ class CashierDashboardController extends Controller
         $weeklyStats = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$weekStart, $weekEnd])
-            ->selectRaw('SUM(net_revenue) as weekly_revenue, COUNT(*) as weekly_transactions')
+            ->selectRaw('SUM(total) as weekly_revenue, COUNT(*) as weekly_transactions')
             ->first();
 
         $weeklyProductsSold = TransactionItem::whereHas(
@@ -58,7 +57,6 @@ class CashierDashboardController extends Controller
 
         $weeklyExpense = Expense::forStore($storeId)
             ->whereBetween('expensed_at', [$weekStart, $weekEnd])
-            ->where('payment_source', 'cash')
             ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
@@ -67,7 +65,7 @@ class CashierDashboardController extends Controller
             ->completed()
             ->whereMonth('transacted_at', now()->month)
             ->whereYear('transacted_at', now()->year)
-            ->selectRaw('SUM(net_revenue) as monthly_revenue, COUNT(*) as monthly_transactions')
+            ->selectRaw('SUM(total) as monthly_revenue, COUNT(*) as monthly_transactions')
             ->first();
 
         $monthlyProductsSold = TransactionItem::whereHas(
@@ -80,7 +78,6 @@ class CashierDashboardController extends Controller
         $monthlyExpense = Expense::forStore($storeId)
             ->whereMonth('expensed_at', now()->month)
             ->whereYear('expensed_at', now()->year)
-            ->where('payment_source', 'cash')
             ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
@@ -98,7 +95,7 @@ class CashierDashboardController extends Controller
             ->whereBetween('transacted_at', [$periodStart, $periodEnd])
             ->latest('transacted_at')
             ->limit(20)
-            ->get(['id', 'total', 'net_revenue', 'platform_fee', 'payment_method', 'order_channel', 'transacted_at']);
+            ->get(['id', 'total', 'payment_method', 'transacted_at']);
 
         $todayRevenue = (float) ($todayStats->today_revenue ?? 0);
         $weeklyRevenue = (float) ($weeklyStats->weekly_revenue ?? 0);
@@ -107,7 +104,7 @@ class CashierDashboardController extends Controller
         $yesterdayRevenue = Transaction::forStore($storeId)
             ->completed()
             ->whereDate('transacted_at', today()->subDay())
-            ->sum('net_revenue');
+            ->sum('total');
 
         $trendHariIni = $this->calcTrend($todayRevenue, (float) $yesterdayRevenue);
 
@@ -116,7 +113,7 @@ class CashierDashboardController extends Controller
         $lastWeekRevenue = (float) Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$lastWeekStart, $lastWeekEnd])
-            ->sum('net_revenue');
+            ->sum('total');
 
         $trendMingguIni = $this->calcTrend($weeklyRevenue, $lastWeekRevenue);
 
@@ -125,7 +122,7 @@ class CashierDashboardController extends Controller
         $lastMonthRevenue = (float) Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$lastMonthStart, $lastMonthEnd])
-            ->sum('net_revenue');
+            ->sum('total');
 
         $trendBulanIni = $this->calcTrend($monthlyRevenue, $lastMonthRevenue);
 
@@ -142,21 +139,18 @@ class CashierDashboardController extends Controller
 
         $yesterdayExpense = Expense::forStore($storeId)
             ->whereDate('expensed_at', today()->subDay())
-            ->where('payment_source', 'cash')
             ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
         $lastWeekExpense = Expense::forStore($storeId)
             ->whereBetween('expensed_at', [$lastWeekStart, $lastWeekEnd])
-            ->where('payment_source', 'cash')
             ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
 
         $lastMonthExpense = Expense::forStore($storeId)
             ->whereBetween('expensed_at', [$lastMonthStart, $lastMonthEnd])
-            ->where('payment_source', 'cash')
             ->where('type', '!=', 'store_transfer_in')
             ->get()
             ->sum(fn($e) => $e->total_amount);
@@ -230,7 +224,7 @@ class CashierDashboardController extends Controller
         $transactions = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$startDate, $endDate])
-            ->selectRaw('DAY(transacted_at) as day, SUM(net_revenue) as revenue, COUNT(*) as count')
+            ->selectRaw('DAY(transacted_at) as day, SUM(total) as revenue, COUNT(*) as count')
             ->groupBy('day')
             ->orderBy('day')
             ->get()
@@ -252,7 +246,7 @@ class CashierDashboardController extends Controller
     {
         $months = Transaction::forStore($storeId)
             ->completed()
-            ->where('net_revenue', '>', 0)
+            ->where('total', '>', 0)
             ->where('transacted_at', '<=', now())
             ->selectRaw('DISTINCT DATE_FORMAT(transacted_at, "%Y-%m") as month_value')
             ->orderBy('month_value', 'desc')

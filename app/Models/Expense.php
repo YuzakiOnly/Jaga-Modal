@@ -16,7 +16,6 @@ class Expense extends Model
         'store_id',
         'user_id',
         'type',
-        'payment_source',
         'description',
         'amount',
         'quantity',
@@ -44,37 +43,6 @@ class Expense extends Model
         return (float) ($this->amount ?? 0);
     }
 
-    public function getPaymentSourceLabelAttribute(): string
-    {
-        $labels = [
-            'cash' => 'Kas Toko',
-            'dine_in' => 'Saldo Dine In',
-            'grabfood' => 'Saldo GrabFood',
-            'shopeefood' => 'Saldo ShopeeFood',
-            'gobiz' => 'Saldo GoBiz',
-            'online' => 'Saldo Online',
-        ];
-        return $labels[$this->payment_source] ?? 'Kas Toko';
-    }
-
-    protected static function booted(): void
-    {
-        static::created(function (Expense $expense) {
-            if (in_array($expense->payment_source, ['grabfood', 'shopeefood', 'gobiz'])) {
-                OnlineBalance::deductBalance($expense->store_id, $expense->total_amount);
-            }
-        });
-
-        static::deleted(function (Expense $expense) {
-            if (in_array($expense->payment_source, ['grabfood', 'shopeefood', 'gobiz'])) {
-                OnlineBalance::addRevenue(
-                    $expense->store_id,
-                    $expense->payment_source,
-                    $expense->total_amount
-                );
-            }
-        });
-    }
 
     public function store()
     {
@@ -95,11 +63,6 @@ class Expense extends Model
     {
         $storeId = $storeId ?? auth()->user()?->store_id;
         return $query->where('store_id', $storeId);
-    }
-
-    public function scopeForPaymentSource($query, $source)
-    {
-        return $query->where('payment_source', $source);
     }
 
     public function scopeOfType($query, $type)
