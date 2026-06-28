@@ -19,17 +19,19 @@ class TransactionItem extends Model
         'qty',
         'discount',
         'subtotal',
+        'variant_details',
     ];
 
     protected $casts = [
-        'is_custom' => 'boolean',
         'unit_price' => 'decimal:2',
         'capital_price' => 'decimal:2',
+        'qty' => 'integer',
         'discount' => 'decimal:2',
         'subtotal' => 'decimal:2',
-        'qty' => 'integer',
+        'is_custom' => 'boolean',
+        'variant_details' => 'array',
     ];
-    
+
     public function transaction()
     {
         return $this->belongsTo(Transaction::class);
@@ -37,6 +39,6 @@ class TransactionItem extends Model
 
     public function product()
     {
-        return $this->belongsTo(Product::class)->withTrashed();
+        return $this->belongsTo(Product::class);
     }
 }

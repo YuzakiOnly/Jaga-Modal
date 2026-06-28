@@ -23,6 +23,7 @@ class User extends Authenticatable
         'role',
         'is_primary',
         'phone_verified_at',
+        'store_id',
     ];
 
     protected $hidden = [
@@ -34,6 +35,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_primary' => 'boolean',
         ];
@@ -53,6 +55,7 @@ class User extends Authenticatable
     {
         return $this->role === 'cashier';
     }
+
     public function isPrimary(): bool
     {
         return (bool) $this->is_primary;

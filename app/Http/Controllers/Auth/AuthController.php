@@ -17,7 +17,6 @@ use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-
     public function showLogin()
     {
         return Inertia::render('auth/Login', [
@@ -36,6 +35,7 @@ class AuthController extends Controller
         return Inertia::render('auth/Register', [
             'titlePage' => 'Register',
             'waLink' => $waLink,
+            'waNumber' => $waNumber,
         ]);
     }
 
@@ -306,8 +306,9 @@ class AuthController extends Controller
         $digits = preg_replace('/^\+\d{1,3}/', '', $fullPhone);
         $len = strlen($digits);
 
-        if ($len <= 4)
+        if ($len <= 4) {
             return str_repeat('*', $len);
+        }
 
         return str_repeat('*', $len - 4) . substr($digits, -4);
     }

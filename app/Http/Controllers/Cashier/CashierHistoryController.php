@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class CashierHistoryController extends Controller
 {
@@ -14,23 +15,40 @@ class CashierHistoryController extends Controller
     {
         $storeId = auth()->user()->store_id;
 
+        // Ambil parameter filter
         $period = $request->input('period', 'daily');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
         $date = $request->input('date', today()->toDateString());
 
         $summaryQuery = Transaction::forStore($storeId)->completed();
 
-        $parsedDate = now()->parse($date);
+        // 🔥 PRIORITAS: Gunakan range jika tersedia
+        if ($dateFrom && $dateTo) {
+            $parsedFrom = Carbon::parse($dateFrom)->startOfDay();
+            $parsedTo = Carbon::parse($dateTo)->endOfDay();
 
-        $summaryQuery = match ($period) {
-            'weekly' => $summaryQuery->whereBetween('transacted_at', [
-                $parsedDate->copy()->startOfWeek(),
-                $parsedDate->copy()->endOfWeek(),
-            ]),
-            'monthly' => $summaryQuery
-                ->whereMonth('transacted_at', $parsedDate->month)
-                ->whereYear('transacted_at', $parsedDate->year),
-            default => $summaryQuery->whereDate('transacted_at', $parsedDate),
-        };
+            $summaryQuery->whereBetween('transacted_at', [$parsedFrom, $parsedTo]);
+        }
+        // 🔥 FALLBACK: Gunakan period + single date
+        else {
+            $parsedDate = Carbon::parse($date);
+
+            switch ($period) {
+                case 'weekly':
+                    $start = $parsedDate->copy()->startOfWeek();
+                    $end = $parsedDate->copy()->endOfWeek();
+                    $summaryQuery->whereBetween('transacted_at', [$start, $end]);
+                    break;
+                case 'monthly':
+                    $summaryQuery
+                        ->whereMonth('transacted_at', $parsedDate->month)
+                        ->whereYear('transacted_at', $parsedDate->year);
+                    break;
+                default: // daily
+                    $summaryQuery->whereDate('transacted_at', $parsedDate);
+            }
+        }
 
         $summary = [
             'total_revenue' => (float) (clone $summaryQuery)->sum('total'),
@@ -63,10 +81,11 @@ class CashierHistoryController extends Controller
                         'id' => $item->id,
                         'name' => $item->name,
                         'qty' => $item->qty,
-                        'unit_price' => $item->unit_price,
-                        'subtotal' => $item->subtotal,
-                        'discount' => $item->discount,
+                        'unit_price' => (float) $item->unit_price,
+                        'subtotal' => (float) $item->subtotal,
+                        'discount' => (float) $item->discount,
                         'is_custom' => $item->is_custom,
+                        'variant_details' => $item->variant_details ? json_decode($item->variant_details, true) : null,
                     ]),
                 ];
             })
@@ -75,7 +94,7 @@ class CashierHistoryController extends Controller
         return Inertia::render('cashier/history/page', [
             'transactions' => $transactions,
             'summary' => $summary,
-            'filters' => $request->only(['period', 'date']),
+            'filters' => $request->only(['period', 'date', 'date_from', 'date_to']),
         ]);
     }
 }

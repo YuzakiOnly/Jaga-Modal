@@ -1,12 +1,14 @@
+// page.jsx - MODIFIED
 import { useState, useEffect, useMemo } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import { toast, Toaster } from "sonner";
 import { ShoppingCart } from "lucide-react";
-import AppPosLayout from "@/layouts/pos/AppPosLayout";
+import PosLayout from "@/layouts/sidebar-v1/PosLayout";
 
 import { ProductGrid } from "./_components/ProductGrid";
 import { Cart } from "./_components/Cart";
 import { PaymentDialog } from "./_components/PaymentDialog";
+import { VariantSelector } from "./_components/VariantSelector";
 import { Badge } from "@/components/ui/badge";
 import { AddStockDialog } from "@/components/shared/AddStockDialog";
 
@@ -21,6 +23,8 @@ export default function PosPage({ products, categories }) {
     const [cartOpen, setCartOpen] = useState(false);
     const [globalDiscount, setGlobalDiscount] = useState(0);
     const [addStockOpen, setAddStockOpen] = useState(false);
+    const [variantSelectorOpen, setVariantSelectorOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -32,51 +36,94 @@ export default function PosPage({ products, categories }) {
     const handleAddProduct = (product) => {
         if (product.stock_type === "limited" && product.stock <= 0) return;
 
+        const hasVariants =
+            product.variant_groups && product.variant_groups.length > 0;
+
+        if (hasVariants) {
+            setSelectedProduct(product);
+            setVariantSelectorOpen(true);
+            return;
+        }
+
+        addToCart(product, null, null, 0);
+    };
+
+    const addToCart = (
+        product,
+        selectedOptions,
+        optionNames,
+        modifierTotal,
+    ) => {
         const basePrice = parseFloat(product.selling_price) || 0;
+        const finalPrice = basePrice + modifierTotal;
+        const displayName =
+            optionNames && optionNames.length > 0
+                ? `${product.name} (${optionNames.join(", ")})`
+                : product.name;
 
         setCartItems((prev) => {
             const existing = prev.find(
-                (item) => item.product_id === product.id && !item.is_custom,
+                (item) =>
+                    item.product_id === product.id &&
+                    !item.is_custom &&
+                    JSON.stringify(item.selectedOptions || {}) ===
+                        JSON.stringify(selectedOptions || {}),
             );
-            if (
-                existing &&
-                product.stock_type === "limited" &&
-                existing.qty >= product.stock
-            )
-                return prev;
+
             if (existing) {
+                if (
+                    product.stock_type === "limited" &&
+                    existing.qty >= product.stock
+                ) {
+                    return prev;
+                }
                 return prev.map((item) =>
-                    item.product_id === product.id && !item.is_custom
+                    item.product_id === product.id &&
+                    !item.is_custom &&
+                    JSON.stringify(item.selectedOptions || {}) ===
+                        JSON.stringify(selectedOptions || {})
                         ? {
                               ...item,
                               qty: item.qty + 1,
-                              unit_price: basePrice,
+                              unit_price: finalPrice,
                               base_unit_price: basePrice,
-                              subtotal:
-                                  (item.qty + 1) *
-                                  (basePrice - (item.discount || 0)),
+                              modifier_total: modifierTotal,
+                              subtotal: (item.qty + 1) * finalPrice,
                           }
                         : item,
                 );
             }
+
             return [
                 ...prev,
                 {
                     _key: crypto.randomUUID(),
                     product_id: product.id,
-                    name: product.name,
+                    name: displayName,
                     base_unit_price: basePrice,
-                    unit_price: basePrice,
+                    unit_price: finalPrice,
+                    modifier_total: modifierTotal,
                     capital_price: parseFloat(product.capital_price ?? 0),
                     qty: 1,
                     discount: 0,
-                    subtotal: basePrice,
+                    subtotal: finalPrice,
                     is_custom: false,
                     stock_type: product.stock_type,
                     max_stock: product.stock,
+                    selectedOptions: selectedOptions || {},
+                    optionNames: optionNames || [],
                 },
             ];
         });
+    };
+
+    const handleVariantConfirm = (data) => {
+        addToCart(
+            data,
+            data.selectedOptions,
+            data.selectedOptionNames,
+            data.modifierTotal,
+        );
     };
 
     const handleAddCustom = ({ name, selling_price, capital_price }) => {
@@ -93,6 +140,8 @@ export default function PosPage({ products, categories }) {
                 discount: 0,
                 subtotal: selling_price,
                 is_custom: true,
+                selectedOptions: {},
+                optionNames: [],
             },
         ]);
     };
@@ -239,6 +288,13 @@ export default function PosPage({ products, categories }) {
                 subtotalAfterItemDiscount={subtotalAfterItemDiscount}
             />
 
+            <VariantSelector
+                open={variantSelectorOpen}
+                onOpenChange={setVariantSelectorOpen}
+                product={selectedProduct}
+                onConfirm={handleVariantConfirm}
+            />
+
             <AddStockDialog
                 open={addStockOpen}
                 onOpenChange={setAddStockOpen}
@@ -250,4 +306,4 @@ export default function PosPage({ products, categories }) {
     );
 }
 
-PosPage.layout = (page) => <AppPosLayout>{page}</AppPosLayout>;
+PosPage.layout = (page) => <PosLayout>{page}</PosLayout>;

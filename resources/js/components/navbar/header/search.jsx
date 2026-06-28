@@ -35,85 +35,28 @@ export default function Search() {
         return () => document.removeEventListener("keydown", down);
     }, []);
 
-    const checkItemPermission = (item, role) => {
-        const href = item.href || "";
-
-        const adminOnlyRoutes = [
-            "/admin",
-            "/admin/users",
-            "/admin/invite-codes",
-            "/admin/stores",
-            "/admin/settings",
-        ];
-
-        const ownerOnlyRoutes = [
-            "/owner",
-            "/owner/dashboard",
-            "/owner/products",
-            "/owner/categories",
-            "/owner/capital-prices",
-            "/owner/transactions",
-            "/owner/expenses",
-            "/owner/wallet",
-            "/owner/reports",
-            "/owner/settings",
-        ];
-
-        const cashierOnlyRoutes = [
-            "/cashier",
-            "/cashier/pos",
-            "/cashier/transactions",
-        ];
-
-        if (adminOnlyRoutes.some((route) => href.startsWith(route))) {
-            return role === "super_admin";
+    const hasPermission = (permission, role) => {
+        if (!permission || permission.length === 0) {
+            return true;
         }
-
-        if (ownerOnlyRoutes.some((route) => href.startsWith(route))) {
-            return ["super_admin", "owner"].includes(role);
-        }
-
-        if (cashierOnlyRoutes.some((route) => href.startsWith(route))) {
-            return ["super_admin", "owner", "cashier"].includes(role);
-        }
-
-        return true;
+        return permission.includes(role);
     };
 
     const getFilteredNavItems = () => {
-        const adminRoles = ["super_admin"];
-
-        const ownerRoles = ["owner"];
-
-        const cashierRoles = ["owner", "cashier"];
-
         const filtered = [];
 
         for (const route of navItems) {
-            let isRouteVisible = false;
-
-            if (route.title === "Admin") {
-                isRouteVisible = adminRoles.includes(userRole);
-            } else if (route.title === "Owner") {
-                isRouteVisible = ownerRoles.includes(userRole);
-            } else if (route.title === "Cashier") {
-                isRouteVisible = cashierRoles.includes(userRole);
-            } else {
-                isRouteVisible = true;
-            }
-
-            if (!isRouteVisible) continue;
+            if (!hasPermission(route.permission, userRole)) continue;
 
             const filteredItems = [];
 
             for (const item of route.items) {
+                if (!hasPermission(item.permission, userRole)) continue;
+
                 if (item.items) {
-                    const filteredSubItems = [];
-                    for (const subItem of item.items) {
-                        if (checkItemPermission(subItem, userRole)) {
-                            filteredSubItems.push(subItem);
-                        }
-                    }
+                    const filteredSubItems = item.items.filter((subItem) =>
+                        hasPermission(subItem.permission, userRole),
+                    );
 
                     if (filteredSubItems.length > 0) {
                         filteredItems.push({
@@ -122,9 +65,7 @@ export default function Search() {
                         });
                     }
                 } else {
-                    if (checkItemPermission(item, userRole)) {
-                        filteredItems.push(item);
-                    }
+                    filteredItems.push(item);
                 }
             }
 

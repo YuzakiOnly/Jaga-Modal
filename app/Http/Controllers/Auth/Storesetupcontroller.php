@@ -36,8 +36,11 @@ class StoreSetupController extends Controller
         $request->validate([
             'business_type' => ['required', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'logo' => ['nullable', 'image', 'max:2048'],
             'country' => ['required', 'string', 'max:10'],
             'province' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:500'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
@@ -48,16 +51,25 @@ class StoreSetupController extends Controller
         try {
             $user = User::findOrFail($userId);
 
-            $store = Store::create([
+            $storeData = [
                 'user_id' => $user->id,
                 'name' => $request->name,
                 'business_type' => $request->business_type,
+                'phone' => $request->phone,
                 'country' => $request->country,
                 'province' => $request->province,
+                'city' => $request->city,
                 'address' => $request->address,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-            ]);
+            ];
+
+            if ($request->hasFile('logo')) {
+                $logoPath = $request->file('logo')->store('stores/logos', 'public');
+                $storeData['logo'] = $logoPath;
+            }
+
+            $store = Store::create($storeData);
 
             $user->store_id = $store->id;
             $user->save();

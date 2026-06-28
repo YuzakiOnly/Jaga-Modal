@@ -1,3 +1,4 @@
+// resources/js/pages/cashier/expenses/_components/ExpenseFormModal.jsx
 import { useState, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 import {
@@ -316,8 +317,8 @@ export default function ExpenseFormModal({
                                         }
                                         className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                                             type === value
-                                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50"
+                                                ? "border-rose-500 bg-rose-50 text-rose-700"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:bg-rose-50/50"
                                         } ${!isEdit && currentBalance <= 0 && value !== "owner_withdrawal" ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         <Icon className="w-5 h-5" />
@@ -596,7 +597,7 @@ export default function ExpenseFormModal({
                             isSubmitting ||
                             (!isEdit && (currentBalance <= 0 || balanceWarning))
                         }
-                        className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto text-sm"
+                        className="bg-rose-600 hover:bg-rose-700 w-full sm:w-auto text-sm"
                     >
                         {isSubmitting && (
                             <Loader2 className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />

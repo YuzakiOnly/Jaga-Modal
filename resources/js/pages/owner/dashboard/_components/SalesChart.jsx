@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
     Card,
     CardContent,
@@ -25,6 +25,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
+    ResponsiveContainer,
 } from "recharts";
 
 function formatRp(value) {
@@ -35,6 +36,13 @@ function formatRp(value) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }).format(value);
+}
+
+function formatRpShort(value) {
+    if (!value && value !== 0) return "0";
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}jt`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}rb`;
+    return value.toString();
 }
 
 const PAYMENT_METHODS = [
@@ -52,26 +60,29 @@ function CustomTooltip({ active, payload, label }) {
     const items = PAYMENT_METHODS.map((ch) => {
         const entry = payload.find((p) => p.dataKey === ch.key);
         return { ...ch, value: entry?.value ?? 0 };
-    }).filter((item) => item.value > 0);
-
-    if (!items.length) return null;
+    });
 
     const total = items.reduce((sum, item) => sum + item.value, 0);
 
+    const dateObj = new Date();
+    dateObj.setDate(parseInt(label));
+    const monthName = dateObj.toLocaleDateString("id-ID", { month: "long" });
+    const dayName = dateObj.toLocaleDateString("id-ID", { weekday: "long" });
+
     return (
-        <div className="rounded-lg border border-border bg-background shadow-md px-3 py-2 text-xs min-w-[200px]">
-            <p className="font-semibold text-foreground mb-1.5">
-                Tanggal {label}
+        <div className="rounded-lg border border-border bg-background shadow-lg px-4 py-3 text-xs min-w-[220px] transition-all duration-200 hover:shadow-xl">
+            <p className="font-semibold text-foreground text-sm mb-2">
+                {dayName}, {label} {monthName}
             </p>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
                 {items.map(({ key, label: name, color, value }) => (
                     <div
                         key={key}
-                        className="flex items-center justify-between gap-3"
+                        className="flex items-center justify-between gap-4 hover:bg-muted/50 px-1 py-0.5 rounded transition-colors duration-150"
                     >
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                             <span
-                                className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
+                                className="inline-block w-3 h-3 rounded-sm shrink-0"
                                 style={{ backgroundColor: color }}
                             />
                             <span className="text-muted-foreground">
@@ -83,12 +94,12 @@ function CustomTooltip({ active, payload, label }) {
                         </span>
                     </div>
                 ))}
-                <div className="border-t border-border my-1 pt-1">
-                    <div className="flex items-center justify-between gap-3">
+                <div className="border-t border-border my-1.5 pt-1.5">
+                    <div className="flex items-center justify-between gap-4 hover:bg-muted/50 px-1 py-0.5 rounded transition-colors duration-150">
                         <span className="font-semibold text-foreground">
-                            Total
+                            Total Omzet
                         </span>
-                        <span className="font-bold text-emerald-600 tabular-nums">
+                        <span className="font-bold text-emerald-600 tabular-nums text-sm">
                             {formatRp(total)}
                         </span>
                     </div>
@@ -134,22 +145,16 @@ function SalesChartComponent({
         year: "numeric",
     });
 
-    const paymentPercentages = PAYMENT_METHODS.map(({ key, label, color }) => {
-        const total = chartData.reduce((sum, d) => sum + (d[key] || 0), 0);
-        const percentage = totalRevenue > 0 ? (total / totalRevenue) * 100 : 0;
-        return { key, label, color, total, percentage };
-    }).filter((item) => item.total > 0);
-
     return (
-        <Card className="border-border">
+        <Card className="border-border hover:shadow-md transition-shadow duration-300">
             <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                    <CardTitle className="text-base">
+                    <CardTitle className="text-base hover:text-primary transition-colors duration-200">
                         Grafik Penjualan
                     </CardTitle>
                     <CardDescription className="mt-0.5">
                         Per hari ·{" "}
-                        <span className="font-medium text-foreground">
+                        <span className="font-medium text-foreground hover:text-emerald-600 transition-colors duration-200">
                             {formatRp(totalRevenue)}
                         </span>{" "}
                         pendapatan {monthName.toLowerCase()}
@@ -157,12 +162,16 @@ function SalesChartComponent({
                 </div>
                 {availableMonths?.length > 0 && (
                     <Select value={selectedMonth} onValueChange={onMonthChange}>
-                        <SelectTrigger className="w-full sm:w-[160px] shrink-0 text-sm">
+                        <SelectTrigger className="w-full sm:w-[160px] shrink-0 text-sm hover:border-primary transition-colors duration-200">
                             <SelectValue placeholder="Pilih bulan" />
                         </SelectTrigger>
                         <SelectContent>
                             {availableMonths.map((m) => (
-                                <SelectItem key={m.value} value={m.value}>
+                                <SelectItem
+                                    key={m.value}
+                                    value={m.value}
+                                    className="hover:bg-primary/10 transition-colors duration-150"
+                                >
                                     {m.label}
                                 </SelectItem>
                             ))}
@@ -176,11 +185,11 @@ function SalesChartComponent({
                         Belum ada data penjualan
                     </div>
                 ) : (
-                    <div>
-                        <ChartContainer
-                            config={chartConfig}
-                            className="h-[320px] w-full"
-                        >
+                    <ChartContainer
+                        config={chartConfig}
+                        className="h-[320px] w-full"
+                    >
+                        <ResponsiveContainer width="100%" height="100%">
                             <AreaChart
                                 data={chartData}
                                 margin={{
@@ -230,13 +239,7 @@ function SalesChartComponent({
                                 />
                                 <YAxis
                                     tick={{ fontSize: 10 }}
-                                    tickFormatter={(v) =>
-                                        v >= 1_000_000
-                                            ? `${(v / 1_000_000).toFixed(1)}jt`
-                                            : v >= 1_000
-                                              ? `${(v / 1_000).toFixed(0)}rb`
-                                              : v
-                                    }
+                                    tickFormatter={formatRpShort}
                                     tickLine={false}
                                     axisLine={false}
                                     width={44}
@@ -258,44 +261,12 @@ function SalesChartComponent({
                                         strokeWidth={2}
                                         fill={`url(#gradient-${key})`}
                                         dot={false}
-                                        activeDot={{
-                                            r: 4,
-                                            strokeWidth: 0,
-                                            fill: color,
-                                        }}
+                                        activeDot={false}
                                     />
                                 ))}
                             </AreaChart>
-                        </ChartContainer>
-
-                        {paymentPercentages.length > 0 && (
-                            <div className="flex justify-center gap-4 mt-4 flex-wrap">
-                                {paymentPercentages.map(
-                                    ({ key, label, color, percentage }) => (
-                                        <div
-                                            key={key}
-                                            className="flex items-center gap-1.5"
-                                        >
-                                            <div
-                                                className="w-3 h-3 rounded-full"
-                                                style={{
-                                                    backgroundColor: color,
-                                                }}
-                                            />
-                                            <span className="text-xs text-muted-foreground">
-                                                {label}: {percentage.toFixed(1)}
-                                                %
-                                            </span>
-                                        </div>
-                                    ),
-                                )}
-                            </div>
-                        )}
-
-                        <div className="text-center text-xs text-muted-foreground mt-3">
-                            *Data penjualan per tanggal {monthName}
-                        </div>
-                    </div>
+                        </ResponsiveContainer>
+                    </ChartContainer>
                 )}
             </CardContent>
         </Card>

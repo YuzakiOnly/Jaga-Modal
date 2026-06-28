@@ -23,7 +23,7 @@ export default function ComparisonSelector({ value, onChange }) {
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
                     <Calendar className="h-4 w-4" />
-                    Dibandingkan: {currentLabel}
+                    {currentLabel}
                     <ChevronDown className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>

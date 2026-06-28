@@ -33,12 +33,7 @@ class LanguageController extends Controller
             }
         }
 
-        if ($request->header('X-Inertia')) {
-            return redirect()->back()->with([
-                'success' => 'Language changed successfully',
-            ]);
-        }
-
-        return back()->with('success', 'Language changed successfully');
+        // Redirect back dengan flash message
+        return redirect()->back()->with('success', 'Language changed successfully');
     }
 }

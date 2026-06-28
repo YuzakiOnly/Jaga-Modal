@@ -70,7 +70,7 @@ export default function TransactionHistoryPage({
         <>
             <Head title="Riwayat Transaksi" />
 
-            <div className="mx-auto max-w-6xl px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+            <div className="space-y-5 p-4 lg:p-6">
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <Link href={route("owner.pos")}>

@@ -1,53 +1,52 @@
-import { Calendar, ChevronDown } from "lucide-react";
+// PeriodFilter.jsx
 import { router } from "@inertiajs/react";
 import { route } from "ziggy-js";
-import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import { DatePicker } from "@/components/date-range-picker";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import { useState } from "react";
 
-const PERIODS = [
-    { value: "daily", label: "Harian" },
-    { value: "weekly", label: "Mingguan" },
-    { value: "monthly", label: "Bulanan" },
-];
-
 export function PeriodFilter({ filters }) {
-    const currentPeriod = filters?.period || "monthly";
-    const currentDate = filters?.date || new Date().toISOString().split("T")[0];
-    const [date, setDate] = useState(
-        currentDate ? new Date(currentDate) : new Date(),
-    );
+    const dateFrom = filters?.date_from;
+    const dateTo = filters?.date_to;
 
-    const currentPeriodLabel =
-        PERIODS.find((p) => p.value === currentPeriod)?.label || "Bulanan";
+    const [selectedDate, setSelectedDate] = useState(() => {
+        if (dateFrom && dateTo) {
+            return {
+                from: new Date(dateFrom),
+                to: new Date(dateTo),
+            };
+        }
+        const today = new Date();
+        return {
+            from: today,
+            to: today,
+        };
+    });
 
-    const handlePeriodChange = (period) => {
-        router.get(
-            route("owner.wallet"),
-            { period, date: format(date, "yyyy-MM-dd") },
-            { preserveState: true },
-        );
-    };
+    const initialDate =
+        dateFrom && dateTo
+            ? {
+                  from: new Date(dateFrom),
+                  to: new Date(dateTo),
+              }
+            : undefined;
 
-    const handleDateChange = (newDate) => {
-        if (newDate) {
-            setDate(newDate);
+    const handleDateChange = (dateRange) => {
+        if (dateRange?.from) {
+            const from = dateRange.from;
+            const to = dateRange.to || from;
+
+            setSelectedDate({
+                from: from,
+                to: to,
+            });
+
             router.get(
                 route("owner.wallet"),
-                { period: currentPeriod, date: format(newDate, "yyyy-MM-dd") },
+                {
+                    date_from: format(from, "yyyy-MM-dd"),
+                    date_to: format(to, "yyyy-MM-dd"),
+                },
                 { preserveState: true },
             );
         }
@@ -55,53 +54,12 @@ export function PeriodFilter({ filters }) {
 
     return (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        variant="outline"
-                        className="gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
-                    >
-                        {currentPeriodLabel}
-                        <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    {PERIODS.map((period) => (
-                        <DropdownMenuItem
-                            key={period.value}
-                            onClick={() => handlePeriodChange(period.value)}
-                            className="text-sm"
-                        >
-                            {period.label}
-                        </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        className="justify-start text-left font-normal h-9 sm:h-10 text-xs sm:text-sm px-3 sm:px-4 gap-1.5 sm:gap-2"
-                    >
-                        <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        {date ? (
-                            format(date, "PPP", { locale: id })
-                        ) : (
-                            <span>Pilih tanggal</span>
-                        )}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                        mode="single"
-                        selected={date}
-                        onSelect={handleDateChange}
-                        initialFocus
-                        locale={id}
-                    />
-                </PopoverContent>
-            </Popover>
+            <DatePicker
+                onChange={handleDateChange}
+                initialDate={initialDate || selectedDate}
+                align="start"
+                sideOffset={8}
+            />
         </div>
     );
 }

@@ -9,7 +9,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
-import { Separator } from "@/Components/ui/separator";
 import AuthLayout from "@/Layouts/AuthLayout";
 import { Head } from "@inertiajs/react";
 import { AuthHeader } from "@/components/auth/LoginPage";
@@ -24,12 +23,17 @@ import {
     Mail,
     Phone,
     Lock,
+    ArrowRight,
+    ShieldCheck,
+    Loader2,
+    Sparkles,
 } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 import { countryCodes, getCountryByValue } from "@/lib/auth/countryCodes";
 import { useTranslation } from "@/hooks/useTranslation";
 import { validateRegister } from "@/lib/validation";
 import { useValidation } from "@/hooks/useAuthValidation";
+import axios from "axios";
 
 const REGISTER_FIELDS = [
     "name",
@@ -54,15 +58,15 @@ function Field({ label, htmlFor, hint, error, children, className = "" }) {
         <div className={`space-y-1.5 ${className}`}>
             <Label
                 htmlFor={htmlFor}
-                className="text-sm font-medium text-foreground"
+                className="text-sm font-medium text-[#1a1110]"
             >
                 {label}
             </Label>
             {children}
             {error ? (
-                <p className="text-xs text-destructive">{error}</p>
+                <p className="text-xs text-red-600">{error}</p>
             ) : hint ? (
-                <p className="text-xs text-muted-foreground">{hint}</p>
+                <p className="text-xs text-[#c2a89c]">{hint}</p>
             ) : null}
         </div>
     );
@@ -71,20 +75,25 @@ function Field({ label, htmlFor, hint, error, children, className = "" }) {
 function InputIcon({ children, side = "left" }) {
     return (
         <span
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground ${side === "left" ? "left-3" : "right-3"}`}
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[#c2a89c] ${side === "left" ? "left-3" : "right-3"}`}
         >
             {children}
         </span>
     );
 }
 
+const inputBase =
+    "border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] placeholder:text-[#c2a89c] focus-visible:border-[#fe5e00] focus-visible:ring-[#fe5e00]/20";
+
 function RegisterContent({
     titlePage,
     showDescription = false,
     waLink = null,
+    waNumber = null,
 }) {
     const [showPassword, setShowPassword] = useState(false);
     const [usernameEdited, setUsernameEdited] = useState(false);
+    const [loadingCode, setLoadingCode] = useState(false);
     const { lang, locale } = useTranslation();
 
     const {
@@ -137,6 +146,32 @@ function RegisterContent({
         post("/register");
     };
 
+    const handleGetWhatsAppLink = async () => {
+        setLoadingCode(true);
+        try {
+            const response = await axios.get("/api/whatsapp-link");
+
+            if (response.data.success && response.data.wa_link) {
+                window.open(response.data.wa_link, "_blank");
+
+                if (response.data.invite_code) {
+                    update("invite_code", response.data.invite_code);
+                }
+            } else {
+                if (waLink) {
+                    window.open(waLink, "_blank");
+                }
+            }
+        } catch (error) {
+            console.error("Error getting WhatsApp link:", error);
+            if (waLink) {
+                window.open(waLink, "_blank");
+            }
+        } finally {
+            setLoadingCode(false);
+        }
+    };
+
     return (
         <>
             <Head title={titlePage} />
@@ -146,7 +181,7 @@ function RegisterContent({
                 showDescription={showDescription}
             />
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-2 font-inter" noValidate>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field
                         label={lang("name")}
@@ -165,10 +200,7 @@ function RegisterContent({
                                 id="name"
                                 name="name"
                                 type="text"
-                                className={valueError.inputClass(
-                                    "name",
-                                    "pl-9",
-                                )}
+                                className={`pl-9 ${inputBase} ${valueError.inputClass("name", "")}`}
                                 placeholder={lang("enter_full_name")}
                                 value={data.name}
                                 onChange={(e) => update("name", e.target.value)}
@@ -195,10 +227,7 @@ function RegisterContent({
                                 name="email"
                                 type="email"
                                 autoComplete="email"
-                                className={valueError.inputClass(
-                                    "email",
-                                    "pl-9",
-                                )}
+                                className={`pl-9 ${inputBase} ${valueError.inputClass("email", "")}`}
                                 placeholder={lang("enter_email")}
                                 value={data.email}
                                 onChange={(e) =>
@@ -218,11 +247,6 @@ function RegisterContent({
                             ? valueError.errors.username
                             : null
                     }
-                    hint={
-                        !valueError.showError("username")
-                            ? lang("username_hint")
-                            : null
-                    }
                 >
                     <div className="relative">
                         <InputIcon>
@@ -232,17 +256,14 @@ function RegisterContent({
                             id="username"
                             name="username"
                             type="text"
-                            className={valueError.inputClass(
-                                "username",
-                                "pl-9 pr-14",
-                            )}
+                            className={`pl-9 pr-14 ${inputBase} ${valueError.inputClass("username", "")}`}
                             placeholder={lang("username_placeholder")}
                             value={data.username}
                             onChange={handleUsernameChange}
                             onBlur={() => valueError.onBlur("username", data)}
                         />
                         {!usernameEdited && data.name && (
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full bg-[#fe5e00]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#fe5e00]">
                                 auto
                             </span>
                         )}
@@ -257,18 +278,13 @@ function RegisterContent({
                             ? valueError.errors.phone
                             : null
                     }
-                    hint={
-                        !valueError.showError("phone")
-                            ? `${lang("phone_example")}: ${data.country_code} 81234567890`
-                            : null
-                    }
                 >
                     <div className="flex gap-2">
                         <Select
                             value={data.country_code}
                             onValueChange={(val) => update("country_code", val)}
                         >
-                            <SelectTrigger className="w-22 shrink-0 px-2 gap-1">
+                            <SelectTrigger className="w-22 shrink-0 px-2 gap-1 border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] hover:bg-[#fff3e8] focus:ring-[#fe5e00]/20">
                                 <SelectValue>
                                     <div className="flex items-center gap-1.5">
                                         <ReactCountryFlag
@@ -278,14 +294,14 @@ function RegisterContent({
                                             svg
                                             style={{ width: 18, height: 18 }}
                                         />
-                                        <span className="text-sm">
+                                        <span className="text-sm text-[#1a1110]">
                                             {selectedCountry.value}
                                         </span>
                                     </div>
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent
-                                className="max-h-60"
+                                className="max-h-60 border-[#e8d9ce] bg-white text-[#1a1110]"
                                 position="popper"
                                 sideOffset={4}
                             >
@@ -315,10 +331,7 @@ function RegisterContent({
                                 id="phone"
                                 name="phone"
                                 type="tel"
-                                className={valueError.inputClass(
-                                    "phone",
-                                    "pl-9",
-                                )}
+                                className={`pl-9 ${inputBase} ${valueError.inputClass("phone", "")}`}
                                 placeholder="81234567890"
                                 value={data.phone}
                                 onChange={(e) =>
@@ -333,118 +346,134 @@ function RegisterContent({
                     </div>
                 </Field>
 
-                    <Field
-                        label={lang("password")}
-                        htmlFor="password"
-                        error={
-                            valueError.showError("password")
-                                ? valueError.errors.password
-                                : null
-                        }
-                    >
-                        <div className="relative">
-                            <InputIcon>
-                                <Lock className="h-4 w-4" />
-                            </InputIcon>
-                            <Input
-                                id="password"
-                                name="password"
-                                type={showPassword ? "text" : "password"}
-                                autoComplete="new-password"
-                                className={valueError.inputClass(
-                                    "password",
-                                    "pl-9 pr-10",
-                                )}
-                                placeholder={lang("create_password")}
-                                value={data.password}
-                                onChange={(e) =>
-                                    update("password", e.target.value)
-                                }
-                                onBlur={() =>
-                                    valueError.onBlur("password", data)
-                                }
-                            />
-                            <button
-                                type="button"
-                                tabIndex={-1}
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
-                            >
-                                {showPassword ? (
-                                    <Eye className="h-4 w-4" />
-                                ) : (
-                                    <EyeOff className="h-4 w-4" />
-                                )}
-                            </button>
-                        </div>
-                    </Field>
+                <Field
+                    label={lang("password")}
+                    htmlFor="password"
+                    error={
+                        valueError.showError("password")
+                            ? valueError.errors.password
+                            : null
+                    }
+                >
+                    <div className="relative">
+                        <InputIcon>
+                            <Lock className="h-4 w-4" />
+                        </InputIcon>
+                        <Input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            className={`pl-9 pr-10 ${inputBase} ${valueError.inputClass("password", "")}`}
+                            placeholder={lang("create_password")}
+                            value={data.password}
+                            onChange={(e) => update("password", e.target.value)}
+                            onBlur={() => valueError.onBlur("password", data)}
+                        />
+                        <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c2a89c] hover:text-[#1a1110] transition-colors focus:outline-none cursor-pointer"
+                        >
+                            {showPassword ? (
+                                <Eye className="h-4 w-4" />
+                            ) : (
+                                <EyeOff className="h-4 w-4" />
+                            )}
+                        </button>
+                    </div>
+                </Field>
 
-                    <Field
-                        label={lang("invite_code") ?? "Kode Invite"}
-                        htmlFor="invite_code"
-                        error={
-                            valueError.showError("invite_code")
-                                ? valueError.errors.invite_code
-                                : null
-                        }
-                    >
-                        <div className="relative">
-                            <InputIcon>
-                                <KeyRound className="h-4 w-4" />
-                            </InputIcon>
-                            <Input
-                                id="invite_code"
-                                name="invite_code"
-                                type="text"
-                                className={valueError.inputClass(
+                <Field
+                    label={lang("invite_code") ?? "Kode Invite"}
+                    htmlFor="invite_code"
+                    error={
+                        valueError.showError("invite_code")
+                            ? valueError.errors.invite_code
+                            : null
+                    }
+                >
+                    <div className="relative">
+                        <InputIcon>
+                            <KeyRound className="h-4 w-4" />
+                        </InputIcon>
+                        <Input
+                            id="invite_code"
+                            name="invite_code"
+                            type="text"
+                            className={`pl-9 font-mono tracking-[0.2em] uppercase ${inputBase} ${valueError.inputClass("invite_code", "")}`}
+                            placeholder="XXXXXXXX"
+                            value={data.invite_code}
+                            onChange={(e) =>
+                                update(
                                     "invite_code",
-                                    "pl-9 font-mono tracking-[0.2em] uppercase",
-                                )}
-                                placeholder="XXXXXXXX"
-                                value={data.invite_code}
-                                onChange={(e) =>
-                                    update(
-                                        "invite_code",
-                                        e.target.value.toUpperCase(),
-                                    )
-                                }
-                                onBlur={() =>
-                                    valueError.onBlur("invite_code", data)
-                                }
-                            />
-                        </div>
-                        {waLink && (
-                            <a
-                                href={waLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-                            >
+                                    e.target.value.toUpperCase(),
+                                )
+                            }
+                            onBlur={() =>
+                                valueError.onBlur("invite_code", data)
+                            }
+                        />
+                    </div>
+                    {waLink && (
+                        <button
+                            type="button"
+                            onClick={handleGetWhatsAppLink}
+                            disabled={loadingCode}
+                            className={`mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                                loadingCode
+                                    ? "text-[#c2a89c] cursor-not-allowed"
+                                    : "text-emerald-600 hover:text-emerald-700"
+                            }`}
+                        >
+                            {loadingCode ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
                                 <MessageCircle className="h-3.5 w-3.5" />
-                                Belum punya kode? Minta via WhatsApp
-                            </a>
-                        )}
-                    </Field>
+                            )}
+                            {loadingCode
+                                ? "Memproses..."
+                                : "Belum punya kode? Minta via WhatsApp"}
+                        </button>
+                    )}
+                </Field>
 
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-[#fe5e00] hover:bg-[#e55400] text-white border-0 shadow-md shadow-[#fe5e00]/25 transition-colors"
                     size="lg"
                     disabled={processing}
                 >
-                    {processing ? lang("creating_account") : lang("sign_up")}
+                    {processing ? (
+                        <span className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {lang("creating_account")}
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            {lang("sign_up")}
+                            <ArrowRight className="h-4 w-4" />
+                        </span>
+                    )}
                 </Button>
             </form>
 
-            <p className="mt-2 text-center text-sm text-muted-foreground">
+            <p className="mt-2 text-center text-sm text-[#8a6a62]">
                 {lang("already_have_account")}{" "}
                 <Link
                     href="/login"
-                    className="font-medium text-primary underline-offset-4 hover:underline"
+                    className="font-semibold text-[#fe5e00] underline-offset-4 hover:underline"
                 >
                     {lang("sign_in")}
                 </Link>
             </p>
+
+            <div className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[#c2a89c]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Data Anda aman dan terlindungi</span>
+            </div>
         </>
     );
 }

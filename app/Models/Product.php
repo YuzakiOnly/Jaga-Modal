@@ -131,4 +131,12 @@ class Product extends Model
     {
         return $this->belongsTo(Store::class);
     }
+
+    public function variantGroups()
+    {
+        return $this->belongsToMany(VariantGroup::class, 'product_variant_group')
+            ->withPivot('sort_order')
+            ->withTimestamps()
+            ->orderBy('product_variant_group.sort_order');
+    }
 }

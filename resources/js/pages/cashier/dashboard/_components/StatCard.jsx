@@ -1,3 +1,4 @@
+// resources/js/pages/cashier/dashboard/_components/StatCard.jsx
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,41 +13,35 @@ export default function StatCard({
     return (
         <div
             className={cn(
-                "rounded-2xl border p-4 sm:p-5 flex flex-col gap-3 transition-shadow hover:shadow-md",
+                "bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md transition-all duration-200",
                 accent
-                    ? "bg-emerald-600 border-emerald-600 text-white"
-                    : "bg-white border-gray-100 text-gray-900",
+                    ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
+                    : "border-slate-200/80",
             )}
         >
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between mb-3">
                 <div
                     className={cn(
-                        "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center",
-                        accent ? "bg-emerald-500/40" : "bg-emerald-50",
+                        "w-11 h-11 rounded-2xl flex items-center justify-center",
+                        accent ? "bg-emerald-100" : "bg-emerald-50",
                     )}
                 >
                     <Icon
                         className={cn(
-                            "w-4 h-4 sm:w-5 sm:h-5",
-                            accent ? "text-white" : "text-emerald-600",
+                            "w-5 h-5",
+                            accent ? "text-emerald-600" : "text-emerald-600",
                         )}
                     />
                 </div>
                 {trend != null && (
                     <span
                         className={cn(
-                            "flex items-center gap-0.5 text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1 rounded-full",
+                            "flex items-center gap-0.5 text-xs font-semibold px-2 py-1 rounded-full",
                             trend > 0
-                                ? accent
-                                    ? "bg-white/20 text-white"
-                                    : "bg-emerald-50 text-emerald-700"
+                                ? "bg-emerald-50 text-emerald-700"
                                 : trend < 0
-                                  ? accent
-                                      ? "bg-white/20 text-white"
-                                      : "bg-red-50 text-red-600"
-                                  : accent
-                                    ? "bg-white/20 text-white"
-                                    : "bg-slate-100 text-gray-500",
+                                  ? "bg-red-50 text-red-600"
+                                  : "bg-slate-100 text-slate-500",
                         )}
                     >
                         {trend > 0 ? (
@@ -61,32 +56,11 @@ export default function StatCard({
                 )}
             </div>
             <div>
-                <p
-                    className={cn(
-                        "text-[10px] sm:text-[11px] font-medium uppercase tracking-widest mb-1",
-                        accent ? "text-emerald-100" : "text-gray-400",
-                    )}
-                >
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
                     {label}
                 </p>
-                <p
-                    className={cn(
-                        "text-lg sm:text-2xl font-bold leading-none",
-                        accent ? "text-white" : "text-gray-900",
-                    )}
-                >
-                    {value}
-                </p>
-                {sub && (
-                    <p
-                        className={cn(
-                            "text-[10px] sm:text-xs mt-1.5",
-                            accent ? "text-emerald-100" : "text-gray-400",
-                        )}
-                    >
-                        {sub}
-                    </p>
-                )}
+                <p className="text-2xl font-black text-slate-800">{value}</p>
+                {sub && <p className="text-xs text-slate-400 mt-1.5">{sub}</p>}
             </div>
         </div>
     );

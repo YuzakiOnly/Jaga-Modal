@@ -25,7 +25,7 @@ import {
 import { Toaster, toast } from "sonner";
 import { DeleteDialog } from "@/components/shared/DeleteDialog";
 import { AddStockDialog } from "@/components/shared/AddStockDialog";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useDeviceType } from "@/hooks/use-mobile";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
@@ -35,7 +35,7 @@ export default function ProductsPage({ products, categories, filters }) {
     const [addStockOpen, setAddStockOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const { flash } = usePage().props;
-    const isMobile = useMediaQuery("(max-width: 768px)");
+    const deviceType = useDeviceType();
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -184,7 +184,7 @@ export default function ProductsPage({ products, categories, filters }) {
                 </div>
 
                 <div className="pt-2 sm:pt-4">
-                    {isMobile ? (
+                    {deviceType !== "desktop" ? (
                         <ProductList
                             products={products}
                             categories={categories}
@@ -193,6 +193,7 @@ export default function ProductsPage({ products, categories, filters }) {
                             onSearch={handleSearch}
                             onFilterChange={handleStatusChange}
                             onCategoryChange={handleCategoryChange}
+                            deviceType={deviceType}
                         />
                     ) : (
                         <ProductTable

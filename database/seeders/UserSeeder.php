@@ -33,7 +33,6 @@ class UserSeeder extends Seeder
                 'user_id' => $superAdmin->id,
                 'name' => 'Super Admin Store',
                 'business_type' => 'retail',
-                'country' => 'ID',
                 'province' => 'DKI Jakarta',
                 'address' => 'Jl. Admin No. 1, Jakarta Pusat',
                 'is_active' => 'active',
@@ -55,7 +54,7 @@ class UserSeeder extends Seeder
                 'phone' => env('OWNER_PHONE', '085607322468'),
                 'locale' => 'id',
                 'role' => 'owner',
-                'is_primary' => true,
+                'is_primary' => false,
             ]
         );
 
@@ -65,7 +64,6 @@ class UserSeeder extends Seeder
                 'user_id' => $owner1->id,
                 'name' => 'Toko Owner 1 - JagaModal',
                 'business_type' => 'retail',
-                'country' => 'ID',
                 'province' => 'Jawa Barat',
                 'address' => 'Jl. Merdeka No. 123, Bandung',
                 'is_active' => 'active',
@@ -97,7 +95,6 @@ class UserSeeder extends Seeder
                 'user_id' => $owner2->id,
                 'name' => 'Toko Owner 2 - JagaModal',
                 'business_type' => 'grocery',
-                'country' => 'ID',
                 'province' => 'Jawa Timur',
                 'address' => 'Jl. Sudirman No. 45, Surabaya',
                 'is_active' => 'active',

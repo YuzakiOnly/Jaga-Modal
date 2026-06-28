@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { qtyInputSchema } from "@/schemas/posSchema";
+import { qtyInputSchema } from "@/schemas/owner/posSchema";
 
 const formatPrice = (price) =>
     new Intl.NumberFormat("id-ID", {
@@ -135,6 +135,11 @@ function CartItem({ item, onUpdateQty, onUpdateDiscount, onRemove }) {
                     <p className="text-sm font-medium leading-tight line-clamp-1">
                         {item.name}
                     </p>
+                    {item.optionNames && item.optionNames.length > 0 && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                            {item.optionNames.join(" • ")}
+                        </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                         {formatPrice(item.unit_price)}
                         {item.discount > 0 && (

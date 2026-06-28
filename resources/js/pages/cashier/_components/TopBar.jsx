@@ -33,7 +33,7 @@ export default function TopBar({ onMenuClick }) {
             </button>
 
             <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
+                <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center shadow-sm">
                     <ShieldCheck
                         size={15}
                         className="text-white"
@@ -41,7 +41,7 @@ export default function TopBar({ onMenuClick }) {
                     />
                 </div>
                 <div className="flex flex-col leading-none">
-                    <span className="text-[10px] font-semibold text-emerald-600 tracking-widest uppercase">
+                    <span className="text-[10px] font-semibold text-orange-600 tracking-widest uppercase">
                         JagaModal
                     </span>
                     <span className="text-sm font-bold text-slate-800 leading-tight">

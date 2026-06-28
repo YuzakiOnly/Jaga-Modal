@@ -1,3 +1,4 @@
+// resources/js/pages/cashier/dashboard/_components/MiniBarChart.jsx
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmt, fmtNum } from "@/lib/cashier/dashboard";
@@ -46,27 +47,27 @@ export default function MiniBarChart({
         currentMonthName || formatBulanIndonesia(selectedMonth);
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-2 mb-5 sm:mb-6">
-                <div className="shrink-0">
-                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gray-400">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+            <div className="flex items-center justify-between gap-2 mb-5">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                         Grafik Penjualan
                     </p>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-800 mt-0.5">
+                    <p className="text-sm font-semibold text-slate-800 mt-0.5">
                         Per Hari
                     </p>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={handlePrevMonth}
-                        className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                        <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                        <ChevronLeft className="w-4 h-4 text-slate-500" />
                     </button>
 
                     <Select value={selectedMonth} onValueChange={onMonthChange}>
-                        <SelectTrigger className="w-32 sm:w-40 h-7.5! text-xs sm:text-sm ring-0! focus:ring-0! border-gray-200! bg-white! hover:bg-gray-50! cursor-pointer">
+                        <SelectTrigger className="w-32 sm:w-40 h-8 text-sm ring-0 focus:ring-0 border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
                             <SelectValue>{displayMonthName}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -92,28 +93,28 @@ export default function MiniBarChart({
 
                     <button
                         onClick={handleNextMonth}
-                        className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                         disabled={new Date(selectedMonth + "-01") >= new Date()}
                     >
-                        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                        <ChevronRight className="w-4 h-4 text-slate-500" />
                     </button>
                 </div>
             </div>
 
-            <div className="flex gap-3 sm:gap-4 mb-4 pb-3 border-b border-gray-100">
+            <div className="flex gap-6 mb-4 pb-3 border-b border-slate-100">
                 <div>
-                    <p className="text-[10px] text-gray-400">
+                    <p className="text-xs text-slate-400">
                         Total Omzet {displayMonthName}
                     </p>
-                    <p className="text-base sm:text-lg font-bold text-emerald-600">
+                    <p className="text-lg font-bold text-emerald-600">
                         {fmt(totalRevenue)}
                     </p>
                 </div>
                 <div>
-                    <p className="text-[10px] text-gray-400">
+                    <p className="text-xs text-slate-400">
                         Total Transaksi {displayMonthName}
                     </p>
-                    <p className="text-base sm:text-lg font-bold text-gray-800">
+                    <p className="text-lg font-bold text-slate-800">
                         {fmtNum(totalTransactions)}
                     </p>
                 </div>
@@ -133,16 +134,16 @@ export default function MiniBarChart({
                             style={{ height: `${Math.max(pct, 3)}%` }}
                         >
                             <div className="absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-10 pointer-events-none whitespace-nowrap">
-                                <div className="bg-gray-900 text-white text-[10px] rounded-lg px-2.5 py-1.5 shadow-lg text-center">
+                                <div className="bg-slate-900 text-white text-xs rounded-lg px-3 py-1.5 shadow-lg text-center">
                                     <span className="font-bold">
                                         {fmt(d.revenue)}
                                     </span>
                                     <br />
-                                    <span className="text-gray-400">
+                                    <span className="text-slate-400">
                                         {d.count} transaksi
                                     </span>
                                 </div>
-                                <div className="w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+                                <div className="w-2 h-2 bg-slate-900 rotate-45 -mt-1" />
                             </div>
 
                             <div
@@ -163,7 +164,7 @@ export default function MiniBarChart({
                 {data.map((d, i) => {
                     return (
                         <div key={i} className="flex-1 text-center">
-                            <span className="text-[7px] sm:text-[9px] font-medium text-gray-500">
+                            <span className="text-[8px] sm:text-[10px] font-medium text-slate-500">
                                 {d.date}
                             </span>
                         </div>

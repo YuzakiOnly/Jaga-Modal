@@ -23,9 +23,6 @@ class InviteCode extends Model
         return !$this->is_used;
     }
 
-    /**
-     * Tandai kode sudah dipakai oleh user tertentu
-     */
     public function markAsUsed(int $userId): void
     {
         $this->update([

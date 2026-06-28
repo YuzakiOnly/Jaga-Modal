@@ -2,10 +2,10 @@ import { Link, useForm } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
 import AuthLayout from "@/Layouts/AuthLayout";
 import { Head } from "@inertiajs/react";
-import { AuthHeader, GoogleAccount } from "@/components/auth/LoginPage";
+import { AuthHeader } from "@/components/auth/LoginPage";
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { validateLogin } from "@/lib/validation";
@@ -16,12 +16,12 @@ function Field({ label, htmlFor, error, children }) {
         <div className="space-y-1.5">
             <Label
                 htmlFor={htmlFor}
-                className="text-sm font-medium text-foreground"
+                className="text-sm font-medium text-[#1a1110]"
             >
                 {label}
             </Label>
             {children}
-            {error && <p className="text-xs text-destructive">{error}</p>}
+            {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
     );
 }
@@ -73,7 +73,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                 showDescription={showDescription}
             />
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
+            <form onSubmit={handleSubmit} className="mt-7 space-y-4 font-inter" noValidate>
                 <Field
                     label={lang("email_address")}
                     htmlFor="email"
@@ -84,7 +84,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                     }
                 >
                     <div className="relative">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c2a89c]">
                             <Mail className="h-4 w-4" />
                         </span>
                         <Input
@@ -92,7 +92,10 @@ function LoginContent({ titlePage, showDescription = true }) {
                             name="email"
                             type="email"
                             autoComplete="email"
-                            className={valueError.inputClass("email", "pl-9")}
+                            className={`pl-9 border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] placeholder:text-[#c2a89c] focus-visible:border-[#fe5e00] focus-visible:ring-[#fe5e00]/20 ${valueError.inputClass(
+                                "email",
+                                "",
+                            )}`}
                             placeholder={lang("email_address")}
                             value={data.email}
                             onChange={(e) => {
@@ -118,7 +121,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                     }
                 >
                     <div className="relative">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c2a89c]">
                             <Lock className="h-4 w-4" />
                         </span>
                         <Input
@@ -126,10 +129,10 @@ function LoginContent({ titlePage, showDescription = true }) {
                             name="password"
                             type={showPassword ? "text" : "password"}
                             autoComplete="current-password"
-                            className={valueError.inputClass(
+                            className={`pl-9 pr-10 border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] placeholder:text-[#c2a89c] focus-visible:border-[#fe5e00] focus-visible:ring-[#fe5e00]/20 ${valueError.inputClass(
                                 "password",
-                                "pl-9 pr-10",
-                            )}
+                                "",
+                            )}`}
                             placeholder={lang("password")}
                             value={data.password}
                             onChange={(e) => {
@@ -145,7 +148,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                             type="button"
                             tabIndex={-1}
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c2a89c] hover:text-[#1a1110] transition-colors focus:outline-none cursor-pointer"
                         >
                             {showPassword ? (
                                 <Eye className="h-4 w-4" />
@@ -159,7 +162,7 @@ function LoginContent({ titlePage, showDescription = true }) {
                 <div className="flex justify-end">
                     <Link
                         href="/forgot-password"
-                        className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline transition-colors"
+                        className="text-sm text-[#a8665a] underline-offset-4 hover:text-[#fe5e00] hover:underline transition-colors"
                     >
                         {lang("forgot_password")}
                     </Link>
@@ -167,25 +170,40 @@ function LoginContent({ titlePage, showDescription = true }) {
 
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-[#fe5e00] hover:bg-[#e55400] text-white border-0 shadow-md shadow-[#fe5e00]/25 transition-colors"
                     size="lg"
                     disabled={processing}
                 >
-                    {processing ? lang("signing_in") : lang("sign_in")}
+                    {processing ? (
+                        <span className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {lang("signing_in")}
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            {lang("sign_in")}
+                            <ArrowRight className="h-4 w-4" />
+                        </span>
+                    )}
                 </Button>
             </form>
 
             <div className="mt-6 space-y-4">
-                <GoogleAccount />
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-sm text-[#8a6a62]">
                     {lang("dont_have_account")}{" "}
                     <Link
                         href="/register"
-                        className="font-medium text-primary underline-offset-4 hover:underline"
+                        className="font-semibold text-[#fe5e00] underline-offset-4 hover:underline"
                     >
                         {lang("sign_up")}
                     </Link>
                 </p>
+            </div>
+
+            <div className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[#c2a89c]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Keamanan data terjamin</span>
             </div>
         </>
     );

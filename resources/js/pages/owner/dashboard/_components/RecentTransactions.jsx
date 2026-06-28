@@ -1,5 +1,5 @@
 import { Link } from "@inertiajs/react";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronRight, Eye, Printer } from "lucide-react";
 import {
     Card,
     CardContent,
@@ -17,12 +17,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 function formatRp(value) {
     if (!value && value !== 0) return "Rp 0";
@@ -37,28 +31,26 @@ function formatRp(value) {
 const PAYMENT_METHOD_CONFIG = {
     cash: {
         label: "Tunai",
-        color: "#3b82f6",
-        bg: "bg-blue-50",
-        text: "text-blue-600",
+        bg: "bg-blue-50 dark:bg-blue-950/30",
+        text: "text-blue-600 dark:text-blue-400",
     },
     qris: {
         label: "QRIS",
-        color: "#a855f7",
-        bg: "bg-purple-50",
-        text: "text-purple-600",
+        bg: "bg-purple-50 dark:bg-purple-950/30",
+        text: "text-purple-600 dark:text-purple-400",
     },
 };
 
 function PaymentBadge({ method }) {
     const config = PAYMENT_METHOD_CONFIG[method] ?? {
         label: method,
-        bg: "bg-gray-50",
-        text: "text-gray-600",
+        bg: "bg-gray-50 dark:bg-gray-950/30",
+        text: "text-gray-600 dark:text-gray-400",
     };
     return (
         <Badge
             variant="outline"
-            className={`${config.bg} ${config.text} border-none text-xs whitespace-nowrap`}
+            className={`${config.bg} ${config.text} border-none text-xs whitespace-nowrap px-2.5 py-0.5`}
         >
             {config.label}
         </Badge>
@@ -68,15 +60,20 @@ function PaymentBadge({ method }) {
 export default function RecentTransactions({ transactions }) {
     if (transactions.length === 0) {
         return (
-            <Card>
+            <Card className="hover:shadow-md transition-shadow duration-300">
                 <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
                     <div>
-                        <CardTitle className="text-base">
+                        <CardTitle className="text-base hover:text-primary transition-colors duration-200">
                             Transaksi Terbaru
                         </CardTitle>
                         <CardDescription>10 transaksi terakhir</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="hover:bg-primary/10 transition-colors duration-200"
+                    >
                         <Link href="/owner/pos/history">
                             Lihat semua{" "}
                             <ChevronRight className="ml-1 h-4 w-4" />
@@ -88,7 +85,10 @@ export default function RecentTransactions({ transactions }) {
                         <p className="text-muted-foreground text-sm mb-4">
                             Belum ada transaksi
                         </p>
-                        <Button asChild>
+                        <Button
+                            asChild
+                            className="hover:scale-105 transition-transform duration-200"
+                        >
                             <Link href="/owner/pos">Mulai Transaksi</Link>
                         </Button>
                     </div>
@@ -98,15 +98,20 @@ export default function RecentTransactions({ transactions }) {
     }
 
     return (
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-300">
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 pb-3">
                 <div>
-                    <CardTitle className="text-base">
+                    <CardTitle className="text-base hover:text-primary transition-colors duration-200">
                         Transaksi Terbaru
                     </CardTitle>
                     <CardDescription>10 transaksi terakhir</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" asChild>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="hover:bg-primary/10 transition-colors duration-200"
+                >
                     <Link href="/owner/pos/history">
                         Lihat semua <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
@@ -116,22 +121,33 @@ export default function RecentTransactions({ transactions }) {
                 <div className="rounded-md border overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[60px]">ID</TableHead>
-                                <TableHead>Waktu</TableHead>
-                                <TableHead>Metode</TableHead>
-                                <TableHead className="hidden md:table-cell">
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-[60px] text-xs font-medium text-muted-foreground">
+                                    ID
+                                </TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground">
+                                    Waktu
+                                </TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground">
+                                    Metode
+                                </TableHead>
+                                <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">
                                     Item
                                 </TableHead>
-                                <TableHead className="text-right">
+                                <TableHead className="text-right text-xs font-medium text-muted-foreground">
                                     Total
                                 </TableHead>
-                                <TableHead className="w-[40px]" />
+                                <TableHead className="w-[90px] text-center text-xs font-medium text-muted-foreground">
+                                    Aksi
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {transactions.map((trx) => (
-                                <TableRow key={trx.id}>
+                                <TableRow
+                                    key={trx.id}
+                                    className="hover:bg-muted/50 transition-colors duration-150 group"
+                                >
                                     <TableCell className="font-mono text-xs text-muted-foreground">
                                         #{trx.id}
                                     </TableCell>
@@ -162,25 +178,24 @@ export default function RecentTransactions({ transactions }) {
                                         {formatRp(trx.total)}
                                     </TableCell>
                                     <TableCell className="px-1">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7"
-                                                >
-                                                    <MoreHorizontal className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>
-                                                    Detail transaksi
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem>
-                                                    Cetak struk
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex items-center justify-center gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                                                title="Detail transaksi"
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 rounded-full hover:bg-emerald-50 hover:text-emerald-600 transition-colors duration-200"
+                                                title="Cetak struk"
+                                            >
+                                                <Printer className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

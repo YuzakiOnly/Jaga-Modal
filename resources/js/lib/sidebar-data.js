@@ -18,6 +18,7 @@ import {
     ClipboardList,
     CreditCard,
     TrendingUp,
+    SlidersHorizontal,
 } from "lucide-react";
 
 export const sharedProjects = [
@@ -91,68 +92,75 @@ export const superAdminItems = [
 export const ownerItems = [
     {
         title: "Overview",
-        permission: ["owner"],
+        permission: ["owner", "super_admin"],
         items: [
             {
                 title: "Dashboard",
                 href: "/owner/dashboard",
                 icon: LayoutDashboard,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Business overview"
             },
             {
                 title: "POS Cashier",
                 href: "/cashier",
                 icon: ShoppingBag,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Point of Sale cashier system"
             },
         ],
     },
     {
         title: "Store Management",
-        permission: ["owner"],
+        permission: ["owner", "super_admin"],
         items: [
             {
                 title: "Categories",
                 href: "/owner/categories",
                 icon: Tags,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Manage product categories"
             },
             {
                 title: "Products",
                 href: "/owner/products",
                 icon: Boxes,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Manage your products"
+            },
+            {
+                title: "Variant Groups",
+                href: "/owner/variant-groups",
+                icon: SlidersHorizontal,
+                permission: ["owner", "super_admin"],
+                description: "Manage product variant options"
             },
             {
                 title: "Capital Prices (HPP)",
                 href: "/owner/capital-prices",
                 icon: Banknote,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Manage capital prices"
             },
             {
                 title: "Point of Sale",
                 href: "/owner/pos",
                 icon: ShoppingCart,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Process sales",
                 items: [
                     {
                         title: "Cashier",
                         href: "/owner/pos",
                         icon: Receipt,
-                        permission: ["owner"],
+                        permission: ["owner", "super_admin"],
                         description: "Make a sale"
                     },
                     {
                         title: "Transaction History",
                         href: "/owner/pos/history",
                         icon: History,
-                        permission: ["owner"],
+                        permission: ["owner", "super_admin"],
                         description: "View transaction history"
                     },
                 ],
@@ -161,47 +169,47 @@ export const ownerItems = [
                 title: "Expenses",
                 href: "/owner/expenses",
                 icon: Wallet,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Manage expenses"
             },
         ],
     },
     {
         title: "Finance",
-        permission: ["owner"],
+        permission: ["owner", "super_admin"],
         items: [
             {
                 title: "Wallet",
                 href: "/owner/wallet",
                 icon: CreditCard,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Manage your wallet"
             },
             {
                 title: "Financial Reports",
                 href: "/owner/reports",
                 icon: TrendingUp,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "View financial reports"
             },
         ],
     },
     {
         title: "Account",
-        permission: ["owner"],
+        permission: ["owner", "super_admin"],
         items: [
             {
                 title: "Settings",
                 href: "/settings",
                 icon: Settings,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Account settings"
             },
             {
                 title: "Profile",
                 href: "/profile",
                 icon: Users,
-                permission: ["owner"],
+                permission: ["owner", "super_admin"],
                 description: "Manage your profile"
             },
         ],

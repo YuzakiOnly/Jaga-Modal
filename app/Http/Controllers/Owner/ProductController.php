@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -21,7 +22,7 @@ class ProductController extends Controller
                 ->with('error', 'Please setup your store first.');
         }
 
-        $query = Product::with('category')->where('store_id', $storeId);
+        $query = Product::with(['category', 'variantGroups'])->where('store_id', $storeId);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -71,9 +72,14 @@ class ProductController extends Controller
         $storeId = auth()->user()->store_id;
 
         $categories = Category::where('store_id', $storeId)->active()->ordered()->get(['id', 'name']);
+        $variantGroups = \App\Models\VariantGroup::where('store_id', $storeId)
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'name', 'min_select', 'max_select']);
 
         return Inertia::render('owner/product/create/page', [
             'categories' => $categories,
+            'variantGroups' => $variantGroups,
         ]);
     }
 
@@ -87,6 +93,8 @@ class ProductController extends Controller
         }
 
         $validated = $this->validateProduct($request, $storeId);
+        $variantGroupIds = $request->input('variant_group_ids', []);
+        unset($validated['variant_group_ids']);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
@@ -94,10 +102,22 @@ class ProductController extends Controller
 
         $validated['store_id'] = $storeId;
 
-        Product::create($validated);
+        $product = DB::transaction(function () use ($validated, $variantGroupIds) {
+            $product = Product::create($validated);
+
+            if (!empty($variantGroupIds)) {
+                $syncData = [];
+                foreach ($variantGroupIds as $i => $groupId) {
+                    $syncData[$groupId] = ['sort_order' => $i];
+                }
+                $product->variantGroups()->sync($syncData);
+            }
+
+            return $product;
+        });
 
         return redirect()->route('owner.products')
-            ->with('success', "Product \"{$validated['name']}\" created successfully.");
+            ->with('success', "Product \"{$product->name}\" created successfully.");
     }
 
     public function edit(Product $product)
@@ -108,10 +128,15 @@ class ProductController extends Controller
 
         $storeId = auth()->user()->store_id;
         $categories = Category::where('store_id', $storeId)->active()->ordered()->get(['id', 'name']);
+        $variantGroups = \App\Models\VariantGroup::where('store_id', $storeId)
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'name', 'min_select', 'max_select']);
 
         return Inertia::render('owner/product/edit/page', [
-            'product' => $product->load('category'),
+            'product' => $product->load(['category', 'variantGroups']),
             'categories' => $categories,
+            'variantGroups' => $variantGroups,
         ]);
     }
 
@@ -124,6 +149,8 @@ class ProductController extends Controller
         }
 
         $validated = $this->validateProduct($request, $storeId, $product->id);
+        $variantGroupIds = $request->input('variant_group_ids', []);
+        unset($validated['variant_group_ids']);
 
         if ($request->hasFile('image')) {
             if ($product->image) {
@@ -134,7 +161,15 @@ class ProductController extends Controller
 
         $validated['enable_online_food'] = $request->boolean('enable_online_food', false);
 
-        $product->update($validated);
+        DB::transaction(function () use ($product, $validated, $variantGroupIds) {
+            $product->update($validated);
+
+            $syncData = [];
+            foreach ($variantGroupIds as $i => $groupId) {
+                $syncData[$groupId] = ['sort_order' => $i];
+            }
+            $product->variantGroups()->sync($syncData);
+        });
 
         return redirect()->route('owner.products')
             ->with('success', "Product \"{$product->name}\" updated successfully.");
@@ -241,6 +276,8 @@ class ProductController extends Controller
             'minimum_stock' => ['nullable', 'integer', 'min:0'],
             'unit' => ['required', 'string', 'max:20'],
             'is_active' => ['boolean'],
+            'variant_group_ids' => ['nullable', 'array'],
+            'variant_group_ids.*' => ['integer', Rule::exists('variant_groups', 'id')->where('store_id', $storeId)],
         ]);
     }
 }

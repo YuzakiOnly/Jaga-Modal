@@ -26,7 +26,16 @@ class TransactionController extends Controller
 
         $products = Product::where('store_id', $storeId)
             ->where('is_active', true)
-            ->with('category:id,name')
+            ->with([
+                'category:id,name',
+                'variantGroups' => function ($query) {
+                    $query->with([
+                        'options' => function ($q) {
+                            $q->where('is_active', true)->orderBy('sort_order');
+                        }
+                    ])->where('is_active', true)->orderBy('name');
+                }
+            ])
             ->orderBy('name')
             ->get([
                 'id',
@@ -80,6 +89,7 @@ class TransactionController extends Controller
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'items.*.is_custom' => ['required', 'boolean'],
+            'items.*.variant_details' => ['nullable', 'array'],
         ]);
 
         DB::transaction(function () use ($validated, $storeId) {
@@ -120,6 +130,7 @@ class TransactionController extends Controller
                     'qty' => $item['qty'],
                     'discount' => $item['discount'] ?? 0,
                     'subtotal' => $item['subtotal'],
+                    'variant_details' => $item['variant_details'] ?? null,
                 ]);
 
                 if (!$item['is_custom'] && $item['product_id']) {

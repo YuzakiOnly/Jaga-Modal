@@ -1,32 +1,41 @@
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+"use client";
 
+import { PanelLeftIcon } from "lucide-react";
+
+import { Separator } from "@/components/ui/separator";
 import Notifications from "@/components/navbar/header/notifications";
 import Search from "@/components/navbar/header/search";
 import ThemeSwitch from "@/components/navbar/header/theme-switch";
 import UserMenu from "@/components/navbar/header/user-menu";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export function AppHeader() {
-    return (
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/40 backdrop-blur-md">
-            <div className="flex w-full items-center gap-1 px-4 lg:gap-2">
-                <SidebarTrigger className="h-9 w-9 shrink-0" />
+    const { toggleSidebar, isMobile } = useSidebar();
 
+    return (
+        <header className="bg-background/40 sticky top-0 z-50 flex h-(--header-height) shrink-0 items-center gap-2 border-b backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) md:rounded-tl-xl md:rounded-tr-xl">
+            <div className="flex w-full items-center gap-1 px-4 lg:gap-2">
+                <Button
+                    onClick={toggleSidebar}
+                    size="icon"
+                    variant="ghost"
+                    className="hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                    <PanelLeftIcon className="h-5 w-5" />
+                </Button>
                 <Separator
                     orientation="vertical"
-                    className="mx-2 data-[orientation=vertical]:h-4 shrink-0"
+                    className="mx-2 data-[orientation=vertical]:h-4"
                 />
+                <Search />
 
-                <div className="flex-1 min-w-0">
-                    <Search />
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="ml-auto flex items-center gap-2">
                     <Notifications />
                     <ThemeSwitch />
                     <Separator
                         orientation="vertical"
-                        className="mx-2 data-[orientation=vertical]:h-4 shrink-0"
+                        className="mx-2 data-[orientation=vertical]:h-4"
                     />
                     <UserMenu />
                 </div>

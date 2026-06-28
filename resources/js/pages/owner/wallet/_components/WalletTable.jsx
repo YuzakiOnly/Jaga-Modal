@@ -31,17 +31,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { EditDialog } from "./EditDialog";
+import { DeleteDialog } from "@/components/shared/DeleteDialog";
 
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
@@ -59,7 +50,18 @@ const SOURCE_LABELS = {
     store_transfer: "Transfer ke Toko",
 };
 
-const FlowBadge = ({ flow }) => {
+const FlowBadge = ({ flow, source }) => {
+    if (source === "store_transfer") {
+        return (
+            <Badge
+                variant="outline"
+                className="border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40"
+            >
+                Transfer ke Toko
+            </Badge>
+        );
+    }
+
     if (flow === "in") {
         return (
             <Badge variant="success" className="gap-1 text-xs">
@@ -79,45 +81,54 @@ const FlowBadge = ({ flow }) => {
 const SourceLabel = ({ source }) => (
     <div className="flex items-center gap-1">
         <Wallet className="h-3 w-3 text-muted-foreground shrink-0" />
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground truncate max-w-30">
             {SOURCE_LABELS[source] || source}
         </span>
     </div>
 );
 
-const ActionMenu = ({ transaction, onEdit, onDelete }) => (
-    <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-            </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-            <DropdownMenuItem
-                onClick={() => onEdit(transaction)}
-                className="cursor-pointer"
-                disabled={
-                    transaction.source === "withdrawal" ||
-                    transaction.source === "store_transfer"
-                }
-            >
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-                onClick={() => onDelete(transaction)}
-                className="cursor-pointer text-destructive focus:text-destructive"
-                disabled={
-                    transaction.source === "withdrawal" ||
-                    transaction.source === "store_transfer"
-                }
-            >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Hapus
-            </DropdownMenuItem>
-        </DropdownMenuContent>
-    </DropdownMenu>
-);
+const ActionMenu = ({ transaction, onEdit, onDelete }) => {
+    const isWithdrawal = transaction.source === "withdrawal";
+    const isStoreTransfer = transaction.source === "store_transfer";
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                    onClick={() => onEdit(transaction)}
+                    className="cursor-pointer"
+                    disabled={isWithdrawal}
+                >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                    {isStoreTransfer && (
+                        <span className="ml-2 text-[10px] text-muted-foreground">
+                            (update Kas Toko)
+                        </span>
+                    )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    onClick={() => onDelete(transaction)}
+                    className={`cursor-pointer ${!isWithdrawal ? "text-destructive focus:text-destructive" : ""}`}
+                    disabled={isWithdrawal}
+                >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Hapus
+                    {isStoreTransfer && (
+                        <span className="ml-2 text-[10px] text-muted-foreground">
+                            (hapus data toko)
+                        </span>
+                    )}
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+};
 
 export function WalletTable({ transactions }) {
     const { data, links, meta } = transactions;
@@ -126,15 +137,10 @@ export function WalletTable({ transactions }) {
     const [editItem, setEditItem] = useState(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteItem, setDeleteItem] = useState(null);
-    const [deleteProcessing, setDeleteProcessing] = useState(false);
 
     const handleEditClick = (transaction) => {
         if (transaction.source === "withdrawal") {
             toast.error("Transaksi dari penarikan toko tidak bisa diedit.");
-            return;
-        }
-        if (transaction.source === "store_transfer") {
-            toast.error("Transaksi transfer ke toko tidak bisa diedit.");
             return;
         }
         setEditItem(transaction);
@@ -148,30 +154,8 @@ export function WalletTable({ transactions }) {
             );
             return;
         }
-        if (transaction.source === "store_transfer") {
-            toast.error("Transaksi transfer ke toko tidak bisa dihapus.");
-            return;
-        }
         setDeleteItem(transaction);
         setDeleteOpen(true);
-    };
-
-    const confirmDelete = () => {
-        if (!deleteItem) return;
-        setDeleteProcessing(true);
-        router.delete(route("owner.wallet.destroy", deleteItem.id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setDeleteOpen(false);
-                setDeleteItem(null);
-                setDeleteProcessing(false);
-                toast.success("Transaksi berhasil dihapus.");
-            },
-            onError: () => {
-                setDeleteProcessing(false);
-                toast.error("Gagal menghapus transaksi.");
-            },
-        });
     };
 
     if (data.length === 0) {
@@ -225,78 +209,55 @@ export function WalletTable({ transactions }) {
             </div>
         ) : null;
 
+    const deleteMeta = deleteItem ? (
+        <>
+            <p className="text-sm">
+                <span className="font-semibold">Deskripsi:</span>{" "}
+                {deleteItem.description}
+            </p>
+            <p className="text-sm">
+                <span className="font-semibold">Jumlah:</span>{" "}
+                <span
+                    className={
+                        deleteItem.flow === "in"
+                            ? "text-green-600"
+                            : "text-rose-600"
+                    }
+                >
+                    {deleteItem.flow === "in" ? "+" : "-"}{" "}
+                    {fmt(deleteItem.amount)}
+                </span>
+            </p>
+            <p className="text-sm">
+                <span className="font-semibold">Tanggal:</span>{" "}
+                {formatDate(deleteItem.transacted_at)}
+            </p>
+            {deleteItem.source === "store_transfer" && (
+                <p className="text-sm text-amber-600">
+                    ⚠️ Data di Kas Toko juga akan dihapus.
+                </p>
+            )}
+        </>
+    ) : null;
+
     return (
         <>
-            <div className="sm:hidden border rounded-lg bg-card overflow-hidden">
-                <div className="divide-y">
-                    {data.map((transaction) => (
-                        <div
-                            key={transaction.id}
-                            className="p-3 flex items-start justify-between gap-2"
-                        >
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <FlowBadge flow={transaction.flow} />
-                                    <span className="text-xs text-muted-foreground">
-                                        {formatDate(transaction.transacted_at)}
-                                    </span>
-                                </div>
-                                <p className="font-medium text-sm mt-1 truncate">
-                                    {transaction.description}
-                                </p>
-                                {transaction.notes && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                                        {transaction.notes}
-                                    </p>
-                                )}
-                                <div className="flex items-center gap-1 mt-1">
-                                    <SourceLabel source={transaction.source} />
-                                    {transaction.expense_id && (
-                                        <Link
-                                            href={route("owner.expenses")}
-                                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                                        >
-                                            <LinkIcon className="h-3 w-3" />
-                                            Lihat
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1 shrink-0">
-                                <span
-                                    className={`font-semibold tabular-nums text-sm whitespace-nowrap ${
-                                        transaction.flow === "in"
-                                            ? "text-green-600"
-                                            : "text-rose-600"
-                                    }`}
-                                >
-                                    {transaction.flow === "in" ? "+" : "-"}
-                                    {fmt(transaction.amount)}
-                                </span>
-                                <ActionMenu
-                                    transaction={transaction}
-                                    onEdit={handleEditClick}
-                                    onDelete={handleDeleteClick}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <Pagination />
-            </div>
-
-            <div className="hidden sm:block border bg-card overflow-hidden rounded-lg">
+            <div className="border overflow-hidden bg-background">
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-28">Tanggal</TableHead>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-24 sm:w-28">
+                                    Tanggal
+                                </TableHead>
                                 <TableHead>Tipe</TableHead>
-                                <TableHead>Deskripsi</TableHead>
+                                <TableHead className="min-w-25">
+                                    Deskripsi
+                                </TableHead>
                                 <TableHead className="hidden md:table-cell">
                                     Sumber
                                 </TableHead>
-                                <TableHead className="text-right">
+                                <TableHead className="text-right whitespace-nowrap">
                                     Jumlah
                                 </TableHead>
                                 <TableHead className="text-right w-16">
@@ -306,20 +267,30 @@ export function WalletTable({ transactions }) {
                         </TableHeader>
                         <TableBody>
                             {data.map((transaction) => (
-                                <TableRow key={transaction.id}>
+                                <TableRow
+                                    key={transaction.id}
+                                    className={
+                                        transaction.source === "store_transfer"
+                                            ? "bg-blue-50/30 dark:bg-blue-950/20"
+                                            : ""
+                                    }
+                                >
                                     <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
                                         {formatDate(transaction.transacted_at)}
                                     </TableCell>
                                     <TableCell>
-                                        <FlowBadge flow={transaction.flow} />
+                                        <FlowBadge
+                                            flow={transaction.flow}
+                                            source={transaction.source}
+                                        />
                                     </TableCell>
                                     <TableCell>
                                         <div>
-                                            <p className="font-medium text-sm">
+                                            <p className="font-medium text-sm truncate max-w-45">
                                                 {transaction.description}
                                             </p>
                                             {transaction.notes && (
-                                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                                <p className="text-xs text-muted-foreground truncate max-w-45 mt-0.5">
                                                     {transaction.notes}
                                                 </p>
                                             )}
@@ -343,8 +314,8 @@ export function WalletTable({ transactions }) {
                                         <span
                                             className={`font-semibold tabular-nums whitespace-nowrap text-sm ${
                                                 transaction.flow === "in"
-                                                    ? "text-green-600"
-                                                    : "text-rose-600"
+                                                    ? "text-emerald-600 dark:text-emerald-400"
+                                                    : "text-rose-600 dark:text-rose-400"
                                             }`}
                                         >
                                             {transaction.flow === "in"
@@ -374,73 +345,19 @@ export function WalletTable({ transactions }) {
                 transaction={editItem}
             />
 
-            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md rounded-xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-base sm:text-lg">
-                            Hapus Transaksi
-                        </AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            <div className="space-y-2">
-                                <p className="text-sm">
-                                    Transaksi ini akan dihapus secara permanen
-                                    dan tidak dapat dikembalikan.
-                                </p>
-                                {deleteItem && (
-                                    <div className="mt-2 pt-3 border-t space-y-1">
-                                        <p className="text-sm text-foreground">
-                                            <span className="font-semibold">
-                                                Deskripsi:
-                                            </span>{" "}
-                                            {deleteItem.description}
-                                        </p>
-                                        <p className="text-sm text-foreground">
-                                            <span className="font-semibold">
-                                                Jumlah:
-                                            </span>{" "}
-                                            <span
-                                                className={
-                                                    deleteItem.flow === "in"
-                                                        ? "text-green-600"
-                                                        : "text-rose-600"
-                                                }
-                                            >
-                                                {deleteItem.flow === "in"
-                                                    ? "+"
-                                                    : "-"}
-                                                {fmt(deleteItem.amount)}
-                                            </span>
-                                        </p>
-                                        <p className="text-sm text-foreground">
-                                            <span className="font-semibold">
-                                                Tanggal:
-                                            </span>{" "}
-                                            {formatDate(
-                                                deleteItem.transacted_at,
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
-                        <AlertDialogCancel
-                            disabled={deleteProcessing}
-                            className="w-full sm:w-auto"
-                        >
-                            Batal
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={confirmDelete}
-                            disabled={deleteProcessing}
-                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
-                        >
-                            Hapus
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <DeleteDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                item={deleteItem}
+                routeName="owner.wallet.destroy"
+                title={
+                    deleteItem?.source === "store_transfer"
+                        ? "Hapus Transfer ke Toko"
+                        : "Hapus Transaksi"
+                }
+                label="Hapus"
+                meta={deleteMeta}
+            />
         </>
     );
 }

@@ -23,7 +23,7 @@ import { Toaster, toast } from "sonner";
 import { CapitalTable } from "./_components/CapitalTable";
 import { CapitalList } from "./_components/CapitalList";
 import { DeleteDialog } from "@/components/shared/DeleteDialog";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useDeviceType } from "@/hooks/use-mobile";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
@@ -32,7 +32,7 @@ export default function CapitalPricePage({ templates, filters }) {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [loading, setLoading] = useState(false);
     const { flash } = usePage().props;
-    const isMobile = useMediaQuery("(max-width: 768px)");
+    const deviceType = useDeviceType();
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -179,13 +179,14 @@ export default function CapitalPricePage({ templates, filters }) {
                 </div>
 
                 <div className="pt-2 sm:pt-4">
-                    {isMobile ? (
+                    {deviceType !== "desktop" ? (
                         <CapitalList
                             templates={templates}
                             filters={filters}
                             onDelete={setDeleteTarget}
                             onSearch={handleSearch}
                             onFilterChange={handleStatusChange}
+                            deviceType={deviceType}
                         />
                     ) : (
                         <CapitalTable

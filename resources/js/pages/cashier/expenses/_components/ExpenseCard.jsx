@@ -1,3 +1,4 @@
+// resources/js/pages/cashier/expenses/_components/ExpenseCard.jsx
 import {
     Package,
     Users,
@@ -6,6 +7,7 @@ import {
     ChevronDown,
     ChevronUp,
     Pencil,
+    Clock,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -48,6 +50,19 @@ const getTypeColor = (type) => {
     }
 };
 
+const getTypeBorder = (type) => {
+    switch (type) {
+        case "owner_withdrawal":
+            return "border-purple-200";
+        case "salary":
+            return "border-green-200";
+        case "raw_material":
+            return "border-blue-200";
+        default:
+            return "border-gray-200";
+    }
+};
+
 const getDetailText = (expense, fmt) => {
     if (
         expense.type === "raw_material" &&
@@ -71,6 +86,7 @@ const fmtPrice = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 export default function ExpenseCard({ expense, onEdit }) {
     const [showNotes, setShowNotes] = useState(false);
+    const isOwnerWithdrawal = expense.type === "owner_withdrawal";
 
     const formatTime = (dateString) => {
         if (!dateString) return "";
@@ -81,14 +97,28 @@ export default function ExpenseCard({ expense, onEdit }) {
         });
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors overflow-hidden">
+        <div
+            className={`bg-white rounded-2xl border ${getTypeBorder(expense.type)} overflow-hidden shadow-sm hover:shadow-md transition-all duration-200`}
+        >
             <div className="flex items-center justify-between gap-3 p-4">
                 <button
                     onClick={() => setShowNotes(!showNotes)}
-                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                    className="flex items-center gap-4 flex-1 min-w-0 text-left"
                 >
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+                    <div
+                        className={`w-12 h-12 rounded-2xl ${getTypeColor(expense.type).split(" ")[0]} flex items-center justify-center shrink-0`}
+                    >
                         {getTypeIcon(expense.type)}
                     </div>
 
@@ -98,7 +128,7 @@ export default function ExpenseCard({ expense, onEdit }) {
                                 {expense.description}
                             </p>
                             <span
-                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${getTypeColor(expense.type)}`}
+                                className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${getTypeColor(expense.type)}`}
                             >
                                 {getTypeLabel(expense.type)}
                             </span>
@@ -110,7 +140,13 @@ export default function ExpenseCard({ expense, onEdit }) {
                                 </span>
                             )}
                             <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs text-slate-400">
+                                <span className="text-xs text-slate-400 flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatDate(
+                                        expense.expensed_at ||
+                                            expense.created_at,
+                                    )}{" "}
+                                    ·{" "}
                                     {formatTime(
                                         expense.expensed_at ||
                                             expense.created_at,
@@ -136,7 +172,7 @@ export default function ExpenseCard({ expense, onEdit }) {
                 <div className="flex items-center gap-2 shrink-0">
                     <p
                         className={`text-base font-black whitespace-nowrap ${
-                            expense.type === "owner_withdrawal"
+                            isOwnerWithdrawal
                                 ? "text-purple-600"
                                 : "text-rose-600"
                         }`}
@@ -156,11 +192,11 @@ export default function ExpenseCard({ expense, onEdit }) {
 
             {showNotes && expense.notes && (
                 <div className="px-4 pb-4 pt-0 border-t border-slate-100">
-                    <div className="p-2 bg-slate-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-xl">
                         <p className="text-xs text-slate-600 wrap-break-word">
                             <FileText
                                 size={10}
-                                className="inline mr-1 text-slate-400"
+                                className="inline mr-1.5 text-slate-400"
                             />
                             {expense.notes}
                         </p>

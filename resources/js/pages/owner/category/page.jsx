@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { DeleteDialog } from "@/components/shared/DeleteDialog";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useDeviceType } from "@/hooks/use-mobile";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
@@ -31,7 +31,7 @@ export default function CategoriesPage({ categories, filters, counts }) {
     const [deleteCategory, setDeleteCategory] = useState(null);
     const [loading, setLoading] = useState(false);
     const { flash } = usePage().props;
-    const isMobile = useMediaQuery("(max-width: 768px)");
+    const deviceType = useDeviceType();
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -140,13 +140,14 @@ export default function CategoriesPage({ categories, filters, counts }) {
                     </Card>
                 </div>
 
-                {isMobile ? (
+                {deviceType !== "desktop" ? (
                     <CategoryList
                         categories={categories}
                         filters={filters}
                         onDelete={setDeleteCategory}
                         onSearch={handleSearch}
                         onFilterChange={handleStatusChange}
+                        deviceType={deviceType}
                     />
                 ) : (
                     <CategoryTable

@@ -16,28 +16,34 @@ class WalletController extends Controller
     {
         $storeId = auth()->user()->store_id;
 
-        $period = $request->input('period', 'monthly');
-        $date = $request->input('date', today()->toDateString());
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
 
         $baseQuery = OwnerWalletTransaction::where('store_id', $storeId)
             ->with('user');
 
-        switch ($period) {
-            case 'weekly':
-                $baseQuery = $baseQuery->whereBetween('transacted_at', [
-                    now()->parse($date)->startOfWeek(),
-                    now()->parse($date)->endOfWeek(),
-                ]);
-                break;
-            case 'daily':
-                $baseQuery = $baseQuery->whereDate('transacted_at', $date);
-                break;
-            default:
-                $baseQuery = $baseQuery
-                    ->whereMonth('transacted_at', now()->parse($date)->month)
-                    ->whereYear('transacted_at', now()->parse($date)->year);
-                break;
+        // Handle date range filter
+        if ($dateFrom && $dateTo) {
+            $baseQuery = $baseQuery->whereBetween('transacted_at', [
+                $dateFrom . ' 00:00:00',
+                $dateTo . ' 23:59:59'
+            ]);
+        } elseif ($dateFrom) {
+            $baseQuery = $baseQuery->whereDate('transacted_at', $dateFrom);
+        } else {
+            // Default: bulan ini
+            $baseQuery = $baseQuery
+                ->whereMonth('transacted_at', now()->month)
+                ->whereYear('transacted_at', now()->year);
         }
+
+        // Debug: log query untuk memastikan filter berjalan
+        \Log::info('Wallet Filter:', [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'sql' => $baseQuery->toSql(),
+            'bindings' => $baseQuery->getBindings()
+        ]);
 
         $allInPeriod = (clone $baseQuery)->get();
 
@@ -69,7 +75,7 @@ class WalletController extends Controller
         return Inertia::render('owner/wallet/page', [
             'transactions' => $transactions,
             'summary' => $summary,
-            'filters' => $request->only(['period', 'date']),
+            'filters' => $request->only(['date_from', 'date_to']),
         ]);
     }
 
@@ -152,7 +158,7 @@ class WalletController extends Controller
         }
 
         DB::transaction(function () use ($validated, $storeId) {
-            OwnerWalletTransaction::create([
+            $wallet = OwnerWalletTransaction::create([
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
                 'flow' => 'out',
@@ -163,7 +169,7 @@ class WalletController extends Controller
                 'transacted_at' => $validated['transacted_at'],
             ]);
 
-            Expense::create([
+            $expense = Expense::create([
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
                 'type' => 'store_transfer_in',
@@ -172,6 +178,8 @@ class WalletController extends Controller
                 'expensed_at' => $validated['transacted_at'],
                 'notes' => $validated['notes'] ?? null,
             ]);
+
+            $wallet->update(['expense_id' => $expense->id]);
         });
 
         return back()->with('success', 'Saldo berhasil dikirim ke kas toko.');
@@ -211,6 +219,33 @@ class WalletController extends Controller
                 ->with('info', 'Transaksi dari penarikan toko hanya bisa diedit dari halaman Pengeluaran.');
         }
 
+        if ($walletTransaction->source === 'store_transfer' && $walletTransaction->expense_id) {
+            $validated = $request->validate([
+                'description' => ['required', 'string', 'max:200'],
+                'notes' => ['nullable', 'string', 'max:500'],
+                'transacted_at' => ['required', 'date'],
+            ]);
+
+            DB::transaction(function () use ($validated, $walletTransaction) {
+                $walletTransaction->update([
+                    'description' => $validated['description'],
+                    'notes' => $validated['notes'] ?? null,
+                    'transacted_at' => $validated['transacted_at'],
+                ]);
+
+                $expense = Expense::where('id', $walletTransaction->expense_id)->first();
+                if ($expense) {
+                    $expense->update([
+                        'description' => $validated['description'],
+                        'notes' => $validated['notes'] ?? null,
+                        'expensed_at' => $validated['transacted_at'],
+                    ]);
+                }
+            });
+
+            return redirect()->route('owner.wallet')->with('success', 'Transfer ke toko dan data terkait berhasil diupdate.');
+        }
+
         $validated = $request->validate([
             'description' => ['required', 'string', 'max:200'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -231,8 +266,16 @@ class WalletController extends Controller
                 ->with('info', 'Transaksi dari penarikan toko hanya bisa dihapus dari halaman Pengeluaran.');
         }
 
-        if ($walletTransaction->source === 'store_transfer') {
-            return back()->withErrors(['error' => 'Transfer ke toko tidak bisa dihapus langsung.']);
+        if ($walletTransaction->source === 'store_transfer' && $walletTransaction->expense_id) {
+            DB::transaction(function () use ($walletTransaction) {
+                $expense = Expense::where('id', $walletTransaction->expense_id)->first();
+                if ($expense) {
+                    $expense->forceDelete();
+                }
+                $walletTransaction->forceDelete();
+            });
+
+            return back()->with('success', 'Transfer ke toko dan data terkait berhasil dihapus.');
         }
 
         $walletTransaction->forceDelete();

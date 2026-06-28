@@ -7,104 +7,94 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
-import { Check, Languages } from "lucide-react";
-import ReactCountryFlag from "react-country-flag";
-
-const languageFlags = {
-    id: "ID",
-    en: "US",
-};
-
-const languageNames = {
-    id: "Indonesia",
-    en: "English",
-};
+import { Globe, Check, Loader2 } from "lucide-react";
 
 export default function LanguageSelector() {
-    const { props } = usePage();
-    const currentLocale = props.locale || "en";
-    const availableLocales = props.available_locales || ["id", "en"];
-    const [isChanging, setIsChanging] = useState(false);
+    const { locale, available_locales } = usePage().props;
+    const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const switchLanguage = (locale) => {
-        if (locale === currentLocale || isChanging) return;
+    const switchLanguage = (lang) => {
+        if (lang === locale || loading) return;
 
-        setIsChanging(true);
+        setLoading(true);
 
         router.post(
-            "/language/switch",
-            {
-                locale: locale,
-            },
+            route("language.switch"),
+            { locale: lang },
             {
                 preserveState: true,
                 preserveScroll: true,
-                replace: true,
                 onSuccess: () => {
-                    console.log("Language changed successfully");
-                    setIsChanging(false);
+                    setLoading(false);
+                    setOpen(false);
+                    // Update locale di page props
+                    window.location.reload(); // Sementara masih reload
                 },
-                onError: (errors) => {
-                    console.error("Gagal ganti bahasa:", errors);
-                    setIsChanging(false);
-                },
-                onFinish: () => {
-                    setIsChanging(false);
+                onError: () => {
+                    setLoading(false);
                 },
             },
         );
     };
 
-    const currentLang = {
-        code: currentLocale,
-        name: languageNames[currentLocale] || "English",
-        flag: languageFlags[currentLocale] || "US",
+    const getFlag = (lang) => {
+        const flags = {
+            id: "🇮🇩",
+            en: "🇬🇧",
+        };
+        return flags[lang] || "🌐";
+    };
+
+    const getLabel = (lang) => {
+        const labels = {
+            id: "Indonesia",
+            en: "English",
+        };
+        return labels[lang] || lang;
     };
 
     return (
-        <DropdownMenu>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="gap-2 bg-white shadow-sm hover:bg-gray-50 border-gray-200"
-                    disabled={isChanging}
+                    className="gap-2 border border-[#e8d9ce] bg-white text-[#1a1110] hover:bg-[#fff3e8] hover:text-[#1a1110]"
+                    disabled={loading}
                 >
-                    <Languages className="h-4 w-4" />
-                    <ReactCountryFlag
-                        countryCode={currentLang.flag}
-                        svg
-                        style={{ width: "16px", height: "16px" }}
-                    />
+                    {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#fe5e00]" />
+                    ) : (
+                        <Globe className="h-4 w-4 text-[#fe5e00]" />
+                    )}
                     <span className="hidden sm:inline">
-                        {isChanging ? "..." : currentLang.name}
+                        {getFlag(locale)} {locale.toUpperCase()}
                     </span>
+                    <span className="sm:hidden">{getFlag(locale)}</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-                {availableLocales.map((locale) => (
+            <DropdownMenuContent
+                align="end"
+                className="min-w-40 border-[#e8d9ce] bg-white text-[#1a1110]"
+            >
+                {available_locales.map((lang) => (
                     <DropdownMenuItem
-                        key={locale}
-                        onSelect={(e) => {
-                            e.preventDefault();
-                            switchLanguage(locale);
-                        }}
-                        className={`gap-2 cursor-pointer ${
-                            currentLocale === locale ? "bg-gray-100" : ""
-                        } ${isChanging ? "opacity-50 pointer-events-none" : ""}`}
-                        disabled={isChanging}
+                        key={lang}
+                        onClick={() => switchLanguage(lang)}
+                        className={`flex items-center justify-between gap-4 cursor-pointer hover:bg-[#fff3e8] ${
+                            locale === lang
+                                ? "text-[#fe5e00]"
+                                : "text-[#1a1110]"
+                        }`}
+                        disabled={loading}
                     >
-                        <ReactCountryFlag
-                            countryCode={languageFlags[locale]}
-                            svg
-                            style={{ width: "18px", height: "18px" }}
-                        />
-                        <div className="flex justify-between items-center gap-10">
-                            <span>{languageNames[locale]}</span>
-                            {currentLocale === locale && (
-                                <Check className="h-4 w-4 text-green-600" />
-                            )}
-                        </div>
+                        <span>
+                            {getFlag(lang)} {getLabel(lang)}
+                        </span>
+                        {locale === lang && (
+                            <Check className="h-4 w-4 text-[#fe5e00]" />
+                        )}
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>

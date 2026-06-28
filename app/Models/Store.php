@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Store extends Model
 {
@@ -13,13 +14,15 @@ class Store extends Model
         'user_id',
         'name',
         'business_type',
+        'phone',
+        'logo',
+        'thumbnail',
         'country',
         'province',
+        'city',
         'address',
         'latitude',
         'longitude',
-        'logo',
-        'thumbnail',
         'is_active',
     ];
 
@@ -44,31 +47,23 @@ class Store extends Model
 
     public static function computeCashBalance(int $storeId): float
     {
-        // Semua pendapatan dari transaksi
-        $totalIncome = Transaction::forStore($storeId)
-            ->completed()
+        $totalIncome = DB::table('transactions')
+            ->where('store_id', $storeId)
+            ->where('status', 'completed')
             ->sum('total');
 
-        // Semua pengeluaran (tanpa filter payment_source)
-        $expenses = Expense::forStore($storeId)
-            ->whereNotIn('type', ['store_transfer_in', 'owner_withdrawal'])
-            ->get()
-            ->sum(fn($e) => $e->total_amount);
+        $totalExpenses = DB::table('expenses')
+            ->where('store_id', $storeId)
+            ->whereIn('type', ['simple', 'raw_material', 'salary', 'owner_withdrawal'])
+            ->sum('amount');
 
-        // Penarikan owner
-        $withdrawals = Expense::forStore($storeId)
-            ->where('type', 'owner_withdrawal')
-            ->get()
-            ->sum(fn($e) => $e->total_amount);
-
-        // Transfer dari owner ke toko
-        $transfersIn = Expense::forStore($storeId)
+        $transfersIn = DB::table('expenses')
+            ->where('store_id', $storeId)
             ->where('type', 'store_transfer_in')
-            ->get()
-            ->sum(fn($e) => $e->total_amount);
+            ->sum('amount');
 
-        $result = $totalIncome - $expenses - $withdrawals + $transfersIn;
+        $result = (float) $totalIncome - (float) $totalExpenses + (float) $transfersIn;
 
-        return max(0, (float) $result);
+        return max(0, $result);
     }
 }

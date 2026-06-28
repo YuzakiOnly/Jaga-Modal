@@ -14,6 +14,7 @@ use App\Http\Controllers\Owner\DashboardController;
 use App\Http\Controllers\Owner\ExpenseController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\TransactionController;
+use App\Http\Controllers\Owner\VariantGroupController;
 use App\Http\Controllers\Owner\WalletController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -60,7 +61,7 @@ Route::middleware(['pending.store'])->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
+Route::middleware(['auth', 'role:cashier,owner,super_admin', 'ensure.store'])
     ->prefix('cashier')
     ->group(function () {
         Route::get('/', function () {
@@ -95,7 +96,7 @@ Route::middleware(['auth', 'role:cashier,owner', 'ensure.store'])
             ->name('cashier.expenses.destroy');
     });
 
-Route::middleware(['auth', 'role:owner', 'ensure.store'])
+Route::middleware(['auth', 'role:owner,super_admin', 'ensure.store'])
     ->prefix('owner')
     ->group(function () {
         Route::get('/', function () {
@@ -105,7 +106,6 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('owner.dashboard');
 
-        // Categories
         Route::get('/categories', [CategoryController::class, 'index'])->name('owner.categories');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('owner.categories.create');
         Route::post('/categories', [CategoryController::class, 'store'])->name('owner.categories.store');
@@ -115,7 +115,6 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('owner.categories.reorder');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('owner.categories.destroy');
 
-        // Products
         Route::get('/products', [ProductController::class, 'index'])->name('owner.products');
         Route::get('/products/create', [ProductController::class, 'create'])->name('owner.products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('owner.products.store');
@@ -125,7 +124,14 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::patch('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('owner.products.toggle');
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('owner.products.destroy');
 
-        // Capital Price Templates
+        Route::get('/variant-groups', [VariantGroupController::class, 'index'])->name('owner.variant-groups');
+        Route::get('/variant-groups/create', [VariantGroupController::class, 'create'])->name('owner.variant-groups.create');
+        Route::post('/variant-groups', [VariantGroupController::class, 'store'])->name('owner.variant-groups.store');
+        Route::get('/variant-groups/{variantGroup}/edit', [VariantGroupController::class, 'edit'])->name('owner.variant-groups.edit');
+        Route::put('/variant-groups/{variantGroup}', [VariantGroupController::class, 'update'])->name('owner.variant-groups.update');
+        Route::patch('/variant-groups/{variantGroup}/toggle', [VariantGroupController::class, 'toggleActive'])->name('owner.variant-groups.toggle');
+        Route::delete('/variant-groups/{variantGroup}', [VariantGroupController::class, 'destroy'])->name('owner.variant-groups.destroy');
+
         Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
         Route::get('/capital-prices/options', [CapitalPriceTemplateController::class, 'options'])->name('owner.capital-prices.options');
         Route::get('/capital-prices/create', [CapitalPriceTemplateController::class, 'create'])->name('owner.capital-prices.create');
@@ -135,18 +141,15 @@ Route::middleware(['auth', 'role:owner', 'ensure.store'])
         Route::patch('/capital-prices/{capitalPrice}/toggle', [CapitalPriceTemplateController::class, 'toggleActive'])->name('owner.capital-prices.toggle');
         Route::delete('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'destroy'])->name('owner.capital-prices.destroy');
 
-        // POS (Owner)
         Route::get('/pos', [TransactionController::class, 'index'])->name('owner.pos');
         Route::post('/pos/transactions', [TransactionController::class, 'store'])->name('owner.transactions.store');
         Route::get('/pos/history', [TransactionController::class, 'history'])->name('owner.transactions.history');
 
-        // Expenses (Owner)
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('owner.expenses');
         Route::post('/expenses', [ExpenseController::class, 'store'])->name('owner.expenses.store');
         Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('owner.expenses.update');
         Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('owner.expenses.destroy');
 
-        // Wallet (Owner)
         Route::get('/wallet', [WalletController::class, 'index'])->name('owner.wallet');
         Route::get('/wallet/create', [WalletController::class, 'create'])->name('owner.wallet.create');
         Route::post('/wallet', [WalletController::class, 'store'])->name('owner.wallet.store');
@@ -172,10 +175,8 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
     });
 
-// Language
 Route::post('/language/switch', [LanguageController::class, 'switch'])->name('language.switch');
 
-// Fallback
 Route::fallback(function () {
     return Inertia::render('errors/NotFound');
 });

@@ -221,31 +221,56 @@
     }
 }
 
-/* Isolasi grafik agar tidak mempengaruhi layout */
 .recharts-wrapper,
-.recharts-surface,
-.recharts-legend-wrapper,
-.recharts-tooltip-wrapper {
-    contain: strict !important;
-    will-change: auto !important;
-    isolation: isolate !important;
-}
-
-/* Force GPU acceleration untuk semua grafik */
-.recharts-wrapper svg {
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Chart container */
-.chart-container {
-    contain: layout style paint;
+.recharts-surface {
+    contain: layout;
     isolation: isolate;
 }
 
-/* Sidebar transition - disable saat ada grafik */
-.sidebar-transition {
-    transition: none !important;
+/* Recharts kasih tabIndex ke elemen Bar/Area/Line/Sector secara default
+   supaya accessible via keyboard. Itu bikin elemen jadi focusable, dan
+   browser nge-render focus outline (warnanya ikut --ring karena rule
+   `outline-ring/50` global di atas) setiap kali elemen itu diklik mouse.
+   Outline ini cuma kosmetik mengganggu, jadi dimatikan khusus di sini
+   tanpa menyentuh outline-ring/50 global yang masih dipakai komponen lain
+   untuk accessibility (focus-visible:ring-2 dst). */
+.recharts-wrapper svg *:focus,
+.recharts-wrapper svg *:focus-visible {
+    outline: none !important;
+}
+
+/* Tooltip Recharts di-render lewat inline style oleh library-nya sendiri,
+   jadi z-index aman di-paksa lewat CSS global di sini. Background tetap
+   diatur oleh className bg-background pada tiap CustomTooltip component. */
+.recharts-tooltip-wrapper {
+    z-index: 50;
+}
+
+html {
+    scrollbar-width: none;
+    scrollbar-color: hsl(var(--border)) transparent;
+}
+
+
+html.dark {
+    scrollbar-color: hsl(var(--border)) transparent;
+}
+
+::-webkit-scrollbar {
+    display: none;
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
 }

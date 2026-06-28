@@ -44,7 +44,9 @@ import {
 } from "@/components/ui/popover";
 
 import { columns } from "./Usercolumns";
+import { UserList } from "./UserList";
 import { roleOptions, roleColorMap } from "@/lib/users/userConstants";
+import { useDeviceType } from "@/hooks/use-mobile";
 
 export function UserTable({
     users,
@@ -58,6 +60,8 @@ export function UserTable({
     const currentUserId = auth?.user?.id;
     const currentUserRole = auth?.user?.role;
     const data = users?.data ?? [];
+    const deviceType = useDeviceType();
+    const isCardView = deviceType === "mobile" || deviceType === "tablet";
 
     const [sorting, setSorting] = React.useState([]);
     const [columnFilters, setColumnFilters] = React.useState([]);
@@ -180,43 +184,45 @@ export function UserTable({
                     </Popover>
                 </div>
 
-                <div className="flex gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="shadow-none! ring-0!"
-                            >
-                                <span className="hidden lg:inline">
-                                    Columns
-                                </span>{" "}
-                                <ColumnsIcon className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {table
-                                .getAllColumns()
-                                .filter(
-                                    (column) =>
-                                        column.getCanHide() ||
-                                        column.id === "name",
-                                )
-                                .map((column) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        disabled={column.id === "name"}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                {!isCardView && (
+                    <div className="flex gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="shadow-none! ring-0!"
+                                >
+                                    <span className="hidden lg:inline">
+                                        Columns
+                                    </span>{" "}
+                                    <ColumnsIcon className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {table
+                                    .getAllColumns()
+                                    .filter(
+                                        (column) =>
+                                            column.getCanHide() ||
+                                            column.id === "name",
+                                    )
+                                    .map((column) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            disabled={column.id === "name"}
+                                            onCheckedChange={(value) =>
+                                                column.toggleVisibility(value)
+                                            }
+                                        >
+                                            {column.id}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
             </div>
 
             {filters?.role && filters.role !== "all" && (
@@ -232,59 +238,69 @@ export function UserTable({
                 </div>
             )}
 
-            <div className="border">
-                <Table className="shadow-none! rounded-4xl!">
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef
-                                                      .header,
-                                                  header.getContext(),
-                                              )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={
-                                        row.getIsSelected() && "selected"
-                                    }
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                            )}
-                                        </TableCell>
+            {isCardView ? (
+                <UserList
+                    users={users}
+                    currentUserId={currentUserId}
+                    currentUserRole={currentUserRole}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                />
+            ) : (
+                <div className="border">
+                    <Table className="shadow-none! rounded-4xl!">
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext(),
+                                                  )}
+                                        </TableHead>
                                     ))}
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={tableCols.length}
-                                    className="h-24 text-center"
-                                >
-                                    <div className="flex items-center justify-center h-24">
-                                        No results.
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={
+                                            row.getIsSelected() && "selected"
+                                        }
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext(),
+                                                )}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={tableCols.length}
+                                        className="h-24 text-center"
+                                    >
+                                        <div className="flex items-center justify-center h-24">
+                                            No results.
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">

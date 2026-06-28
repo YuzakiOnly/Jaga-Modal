@@ -27,27 +27,32 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { getNavItemsByRole } from "@/lib/sidebar-data";
+import { getNavItemsByRole, sharedProjects } from "@/lib/sidebar-data";
 
 function Logo() {
     return (
-        <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold shrink-0">
-            S
-        </div>
+        <img
+            src="/assets/images/logo.png"
+            width={30}
+            height={30}
+            className="rounded-md size-7 shrink-0 group-data-[collapsible=icon]:size-9"
+            alt="Logo"
+        />
     );
 }
 
 export function AppSidebar({
-    appName = "Shadcn UI Kit",
+    appName = "Dashboard Panel",
     projects = [],
     navItems = [],
-    user,
+    user = null,
     ...props
 }) {
     const { url, props: pageProps } = usePage();
     const { setOpenMobile, isMobile } = useSidebar();
     const userRole = pageProps.auth?.user?.role || "owner";
 
+    // Gunakan navItems dari props jika ada, jika tidak ambil dari role
     const filteredNavItems = React.useMemo(() => {
         if (navItems && navItems.length > 0) {
             return filterNavItemsByRole(navItems, userRole);
@@ -55,23 +60,35 @@ export function AppSidebar({
         return getNavItemsByRole(userRole);
     }, [navItems, userRole]);
 
+    // Gunakan user dari props jika ada, jika tidak ambil dari pageProps
+    const userData = React.useMemo(() => {
+        if (user) return user;
+        return {
+            name: pageProps.auth?.user?.name || "User",
+            email: pageProps.auth?.user?.email || "user@example.com",
+            avatar: pageProps.auth?.user?.avatar ?? null,
+            fallback:
+                pageProps.auth?.user?.name?.charAt(0).toUpperCase() || "U",
+        };
+    }, [user, pageProps.auth]);
+
     useEffect(() => {
         if (isMobile) setOpenMobile(false);
-    }, [url, isMobile, setOpenMobile]);
+    }, [url]);
 
     return (
-        <Sidebar collapsible="icon" className="border-none" {...props}>
-            <SidebarHeader className="px-3.5 pt-4 group-data-[collapsible=icon]:px-2.5 shrink-0">
+        <Sidebar collapsible="icon" {...props}>
+            <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-primary/5">
+                                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-primary/5 group-data-[collapsible=icon]:justify-center">
                                     <Logo />
-                                    <span className="font-semibold truncate">
+                                    <span className="font-semibold group-data-[collapsible=icon]:hidden">
                                         {appName}
                                     </span>
-                                    <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden shrink-0" />
+                                    <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -112,15 +129,13 @@ export function AppSidebar({
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-
-            <SidebarContent className="flex-1 min-h-0">
+            <SidebarContent>
                 <ScrollArea className="h-full">
                     <NavMain navItems={filteredNavItems} />
                 </ScrollArea>
             </SidebarContent>
-
-            <SidebarFooter className="shrink-0">
-                <NavUser user={user} />
+            <SidebarFooter>
+                <NavUser user={userData} />
             </SidebarFooter>
         </Sidebar>
     );
@@ -152,10 +167,7 @@ function filterNavItemsByRole(navItems, role) {
                     filteredSubItems.push(subItem);
                 }
                 if (filteredSubItems.length > 0) {
-                    filteredItems.push({
-                        ...item,
-                        items: filteredSubItems,
-                    });
+                    filteredItems.push({ ...item, items: filteredSubItems });
                 }
             } else {
                 filteredItems.push(item);
@@ -163,10 +175,7 @@ function filterNavItemsByRole(navItems, role) {
         }
 
         if (filteredItems.length > 0) {
-            filtered.push({
-                ...group,
-                items: filteredItems,
-            });
+            filtered.push({ ...group, items: filteredItems });
         }
     }
 

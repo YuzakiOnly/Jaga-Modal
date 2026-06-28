@@ -1,3 +1,4 @@
+// resources/js/pages/cashier/dashboard/page.jsx
 import { Head, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 import {
@@ -144,93 +145,97 @@ export default function CashierDashboard({
         <CashierLayout>
             <Head title="Dashboard | JagaModal" />
 
-            <div className="h-full overflow-y-auto bg-slate-50">
-                <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5">
-                    <div className="flex items-end justify-between gap-2">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
-                                Selamat datang
-                            </p>
-                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">
-                                {firstName} 👋
-                            </h1>
+            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-slate-50/80">
+                <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                    <div className="space-y-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+                                    Selamat datang
+                                </p>
+                                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                    {firstName} 👋
+                                </h1>
+                            </div>
+                            <div className="flex items-center gap-4 bg-slate-50 rounded-xl px-4 py-2 border border-slate-200/50">
+                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                    <CalendarDays className="w-4 h-4 text-slate-400" />
+                                    <span className="font-medium truncate max-w-35 sm:max-w-none">
+                                        {today}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-400 bg-white border border-gray-100 rounded-xl px-2.5 sm:px-3 py-2">
-                            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                            <span className="font-medium truncate max-w-35 sm:max-w-none">
-                                {today}
-                            </span>
+
+                        <div className="flex flex-wrap gap-1 p-1 bg-white border border-slate-200/80 rounded-xl w-fit">
+                            {[
+                                { key: "hari_ini", label: "Hari Ini" },
+                                { key: "minggu_ini", label: "Minggu Ini" },
+                                { key: "bulan_ini", label: "Bulan Ini" },
+                            ].map((p) => (
+                                <button
+                                    key={p.key}
+                                    onClick={() => handlePeriodChange(p.key)}
+                                    className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all duration-150 ${
+                                        period === p.key
+                                            ? "bg-emerald-600 text-white shadow-sm"
+                                            : "text-slate-400 hover:text-slate-600"
+                                    }`}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
                         </div>
-                    </div>
 
-                    <div className="flex gap-1 p-1 bg-white border border-gray-100 rounded-xl w-fit">
-                        {[
-                            { key: "hari_ini", label: "Hari Ini" },
-                            { key: "minggu_ini", label: "Minggu Ini" },
-                            { key: "bulan_ini", label: "Bulan Ini" },
-                        ].map((p) => (
-                            <button
-                                key={p.key}
-                                onClick={() => handlePeriodChange(p.key)}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
-                                    period === p.key
-                                        ? "bg-emerald-600 text-white shadow-sm"
-                                        : "text-gray-400 hover:text-gray-600"
-                                }`}
-                            >
-                                {p.label}
-                            </button>
-                        ))}
-                    </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                            <StatCard
+                                label="Saldo Kas Toko"
+                                value={fmt(stats.cash_balance)}
+                                sub="Uang tunai di toko"
+                                icon={Landmark}
+                                accent
+                            />
+                            <StatCard
+                                label="Omzet"
+                                value={fmt(currentStats.revenue)}
+                                sub={formatSubWithPrevious()}
+                                icon={BadgeDollarSign}
+                                trend={revenueTrend}
+                            />
+                            <StatCard
+                                label="Transaksi"
+                                value={fmtNum(currentStats.transactions)}
+                                sub={`Rata-rata ${fmt(stats.avg_transaction)}`}
+                                icon={Receipt}
+                            />
+                            <StatCard
+                                label="Item Terjual"
+                                value={fmtNum(currentStats.products_sold)}
+                                sub={periodItemLabel[period]}
+                                icon={Package}
+                            />
+                            <StatCard
+                                label="Pengeluaran"
+                                value={fmt(currentStats.expense)}
+                                sub={formatExpenseSub()}
+                                icon={Wallet}
+                            />
+                        </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
-                        <StatCard
-                            label="Saldo Kas Toko"
-                            value={fmt(stats.cash_balance)}
-                            sub="Uang tunai di toko"
-                            icon={Landmark}
-                            accent
+                        <MiniBarChart
+                            data={sales_chart}
+                            selectedMonth={selectedMonth}
+                            onMonthChange={handleMonthChange}
+                            availableMonths={available_months}
+                            currentMonthName={current_month_name}
                         />
-                        <StatCard
-                            label="Omzet"
-                            value={fmt(currentStats.revenue)}
-                            sub={formatSubWithPrevious()}
-                            icon={BadgeDollarSign}
-                            trend={revenueTrend}
-                        />
-                        <StatCard
-                            label="Transaksi"
-                            value={fmtNum(currentStats.transactions)}
-                            sub={`Rata-rata ${fmt(stats.avg_transaction)}`}
-                            icon={Receipt}
-                        />
-                        <StatCard
-                            label="Item Terjual"
-                            value={fmtNum(currentStats.products_sold)}
-                            sub={periodItemLabel[period]}
-                            icon={Package}
-                        />
-                        <StatCard
-                            label="Pengeluaran"
-                            value={fmt(currentStats.expense)}
-                            sub={formatExpenseSub()}
-                            icon={Wallet}
+
+                        <RecentTransactions
+                            transactions={recent_transactions}
+                            period={period}
+                            onPeriodChange={handlePeriodChange}
                         />
                     </div>
-
-                    <MiniBarChart
-                        data={sales_chart}
-                        selectedMonth={selectedMonth}
-                        onMonthChange={handleMonthChange}
-                        availableMonths={available_months}
-                        currentMonthName={current_month_name}
-                    />
-
-                    <RecentTransactions
-                        transactions={recent_transactions}
-                        period={period}
-                        onPeriodChange={handlePeriodChange}
-                    />
                 </div>
             </div>
         </CashierLayout>

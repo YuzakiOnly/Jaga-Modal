@@ -13,7 +13,7 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $defaultLocale = config('app.locale', 'en');
+        $defaultLocale = 'id'; 
         $availableLocales = config('app.available_locales', ['id', 'en']);
 
         $locale = $defaultLocale;
@@ -23,8 +23,7 @@ class SetLocale
             if (in_array($sessionLocale, $availableLocales)) {
                 $locale = $sessionLocale;
             }
-        }
-        elseif (Auth::check()) {
+        } elseif (Auth::check()) {
             $user = Auth::user();
             if ($user && isset($user->locale) && in_array($user->locale, $availableLocales)) {
                 $locale = $user->locale;

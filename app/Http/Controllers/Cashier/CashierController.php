@@ -27,7 +27,20 @@ class CashierController extends Controller
 
         $products = Product::where('store_id', $storeId)
             ->where('is_active', true)
-            ->with('category:id,name')
+            ->with([
+                'category:id,name',
+                'variantGroups' => function ($query) {
+                    $query->where('is_active', true)
+                        ->orderBy('sort_order')
+                        ->orderBy('name')
+                        ->with([
+                            'options' => function ($q) {
+                                $q->where('is_active', true)
+                                    ->orderBy('sort_order');
+                            }
+                        ]);
+                },
+            ])
             ->orderBy('name')
             ->get([
                 'id',
@@ -85,54 +98,29 @@ class CashierController extends Controller
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'items.*.is_custom' => ['required', 'boolean'],
+            'items.*.variant_details' => ['nullable', 'array'],
         ]);
 
         $transaction = null;
+        $customer = null;
 
-        DB::transaction(function () use ($validated, $storeId, &$transaction) {
+        DB::transaction(function () use ($validated, $storeId, &$transaction, &$customer) {
             $transactedAt = !empty($validated['transacted_at'])
                 ? Carbon::parse($validated['transacted_at'])
                 : now();
 
-            // Handle customer
-            $customer = null;
-            $customerName = $validated['customer_name'] ?? null;
-            $customerPhone = $validated['customer_phone'] ?? null;
-
-            if ($customerName || $customerPhone) {
-                if ($customerPhone) {
-                    $customer = Customer::where('store_id', $storeId)
-                        ->where('phone', $customerPhone)
-                        ->first();
-                }
-
-                if (!$customer && $customerName) {
-                    $customer = Customer::where('store_id', $storeId)
-                        ->where('name', $customerName)
-                        ->first();
-                }
-
-                if (!$customer) {
-                    $lastCustomer = Customer::where('store_id', $storeId)
-                        ->orderBy('customer_number', 'desc')
-                        ->first();
-
-                    $nextNumber = $lastCustomer ? intval($lastCustomer->customer_number) + 1 : 1;
-                    $customerNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-
-                    $customer = Customer::create([
-                        'store_id' => $storeId,
-                        'customer_number' => $customerNumber,
-                        'name' => $customerName,
-                        'phone' => $customerPhone,
-                    ]);
-                }
-            }
+            // SELALU buat customer untuk setiap transaksi
+            // Ini penting agar semua transaksi memiliki customer
+            $customer = $this->getOrCreateCustomer(
+                $storeId,
+                $validated['customer_name'] ?? null,
+                $validated['customer_phone'] ?? null
+            );
 
             $transaction = Transaction::create([
                 'store_id' => $storeId,
                 'user_id' => auth()->id(),
-                'customer_id' => $customer ? $customer->id : null,
+                'customer_id' => $customer->id, // PASTIKAN customer_id selalu ada
                 'payment_method' => $validated['payment_method'],
                 'amount_paid' => $validated['amount_paid'],
                 'change_amount' => $validated['change_amount'],
@@ -155,6 +143,9 @@ class CashierController extends Controller
                     'qty' => $item['qty'],
                     'discount' => $item['discount'] ?? 0,
                     'subtotal' => $item['subtotal'],
+                    'variant_details' => isset($item['variant_details'])
+                        ? json_encode($item['variant_details'])
+                        : null,
                 ]);
 
                 if (!$item['is_custom'] && $item['product_id']) {
@@ -179,9 +170,57 @@ class CashierController extends Controller
                 'amount_paid' => $validated['amount_paid'],
                 'change' => $validated['change_amount'],
                 'payment_method' => $validated['payment_method'],
-                'customer_name' => $validated['customer_name'] ?? null,
-                'customer_phone' => $validated['customer_phone'] ?? null,
+                'customer_name' => $customer->name,
+                'customer_phone' => $customer->phone,
+                'customer_number' => $customer->customer_number, // PASTIKAN ini dikirim
             ]);
+    }
+
+    /**
+     * Get or create customer - SELALU buat customer untuk setiap transaksi
+     * Ini memastikan semua transaksi memiliki customer_id
+     */
+    private function getOrCreateCustomer($storeId, $name = null, $phone = null)
+    {
+        // Cari berdasarkan phone dulu
+        if ($phone) {
+            $customer = Customer::where('store_id', $storeId)
+                ->where('phone', $phone)
+                ->first();
+
+            if ($customer) {
+                return $customer;
+            }
+        }
+
+        // Cari berdasarkan name
+        if ($name) {
+            $customer = Customer::where('store_id', $storeId)
+                ->where('name', $name)
+                ->first();
+
+            if ($customer) {
+                return $customer;
+            }
+        }
+
+        // Buat customer baru dengan nomor otomatis
+        $lastCustomer = Customer::where('store_id', $storeId)
+            ->orderBy('customer_number', 'desc')
+            ->first();
+
+        $nextNumber = $lastCustomer ? intval($lastCustomer->customer_number) + 1 : 1;
+        $customerNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        // Gunakan nama default jika tidak ada
+        $customerName = $name ?: 'Pelanggan';
+
+        return Customer::create([
+            'store_id' => $storeId,
+            'customer_number' => $customerNumber,
+            'name' => $customerName,
+            'phone' => $phone,
+        ]);
     }
 
     public function history(Request $request)
@@ -242,6 +281,7 @@ class CashierController extends Controller
                             'subtotal' => $item->subtotal,
                             'discount' => $item->discount,
                             'is_custom' => $item->is_custom,
+                            'variant_details' => $item->variant_details,
                         ];
                     }),
                 ];
@@ -320,6 +360,7 @@ class CashierController extends Controller
                         'discount' => $item->discount,
                         'subtotal' => $item->subtotal,
                         'is_custom' => $item->is_custom,
+                        'variant_details' => $item->variant_details,
                     ];
                 }),
             ],

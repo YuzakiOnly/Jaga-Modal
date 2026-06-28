@@ -18,7 +18,7 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $locale = Session::get('locale', config('app.locale', 'en'));
+        $locale = Session::get('locale', 'id'); 
 
         return [
             ...parent::share($request),

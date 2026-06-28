@@ -22,10 +22,17 @@ import LowStockAlert from "./_components/LowStockAlert";
 import ExpenseBreakdown from "./_components/ExpenseBreakdown";
 import RecentTransactions from "./_components/RecentTransactions";
 import ProductSummaryCards from "./_components/ProductSummaryCards";
-import CustomerStatCard from "./_components/CustomerStatCard";
 import MonthlyRevenueChart from "./_components/MonthlyRevenueChart";
 
-const currentMonth = new Date().toISOString().slice(0, 7);
+function toLocalDateString(date) {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+const currentMonth = toLocalDateString(new Date()).slice(0, 7);
 
 function formatRp(value) {
     if (!value && value !== 0) return "Rp 0";
@@ -94,7 +101,6 @@ const Dashboard = memo(function Dashboard({
         initialCustomerMonth ?? params.get("customer_month") ?? currentMonth,
     );
 
-    // Memoize semua data
     const memoizedSalesChart = useMemo(() => sales_chart, [sales_chart]);
     const memoizedMonthlyRevenue = useMemo(
         () => monthly_revenue_chart,
@@ -126,8 +132,8 @@ const Dashboard = memo(function Dashboard({
     const refreshData = (updates = {}) => {
         const url = new URL(window.location.href);
         const current = {
-            start_date: datePickerValue.range?.from?.toISOString(),
-            end_date: datePickerValue.range?.to?.toISOString(),
+            start_date: toLocalDateString(datePickerValue.range?.from),
+            end_date: toLocalDateString(datePickerValue.range?.to),
             comparison: datePickerValue.comparison,
             sales_month: salesMonth,
             product_month: productMonth,
@@ -149,10 +155,11 @@ const Dashboard = memo(function Dashboard({
     };
 
     const handleDateRangeChange = (value) => {
+        console.log("DateRange selected:", value);
         setDatePickerValue(value);
         refreshData({
-            start_date: value.range?.from?.toISOString(),
-            end_date: value.range?.to?.toISOString(),
+            start_date: toLocalDateString(value.range?.from),
+            end_date: toLocalDateString(value.range?.to),
             comparison: value.comparison,
         });
     };
@@ -279,13 +286,6 @@ const Dashboard = memo(function Dashboard({
                     ))}
                 </div>
 
-                <div className="grid gap-3 grid-cols-1">
-                    <CustomerStatCard
-                        customerStats={customer_stats}
-                        period={period_label}
-                    />
-                </div>
-
                 <MonthlyRevenueChart data={memoizedMonthlyRevenue} />
 
                 <SalesChart
@@ -295,6 +295,7 @@ const Dashboard = memo(function Dashboard({
                     onMonthChange={handleSalesMonthChange}
                 />
 
+                <div className="grid gap-4 md:grid-cols-2">
                     <DailyProductChart
                         data={memoizedDailyProduct}
                         selectedMonth={productMonth}
@@ -307,6 +308,7 @@ const Dashboard = memo(function Dashboard({
                         availableMonths={memoizedAvailableMonths}
                         onMonthChange={handleCustomerMonthChange}
                     />
+                </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <TopProducts products={memoizedTopProducts} />

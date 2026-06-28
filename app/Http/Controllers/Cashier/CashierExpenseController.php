@@ -20,14 +20,14 @@ class CashierExpenseController extends Controller
         $expenses = Expense::where('store_id', $storeId)
             ->where('type', '!=', 'store_transfer_in')
             ->whereDate('expensed_at', $date)
-            ->latest('expensed_at')
+            ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(function ($expense) {
                 return [
                     'id' => $expense->id,
                     'description' => $expense->description,
                     'type' => $expense->type,
-                    'amount' => $expense->total_amount,
+                    'amount' => (float) $expense->total_amount,
                     'quantity' => $expense->quantity,
                     'unit_price' => $expense->unit_price,
                     'employee_name' => $expense->employee_name,
@@ -38,12 +38,14 @@ class CashierExpenseController extends Controller
                 ];
             });
 
+        $totalExpense = Expense::where('store_id', $storeId)
+            ->where('type', '!=', 'store_transfer_in')
+            ->whereDate('expensed_at', $date)
+            ->get()
+            ->sum(fn($e) => $e->total_amount);
+
         $summary = [
-            'total' => Expense::where('store_id', $storeId)
-                ->where('type', '!=', 'store_transfer_in')
-                ->whereDate('expensed_at', $date)
-                ->get()
-                ->sum(fn($e) => $e->total_amount),
+            'total' => (float) $totalExpense,
             'count' => $expenses->total(),
         ];
 

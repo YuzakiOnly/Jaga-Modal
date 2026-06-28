@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+// resources/js/pages/cashier/page.jsx
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import { router } from "@inertiajs/react";
 import { toast, Toaster } from "sonner";
-import { Package, Calculator } from "lucide-react";
+import { Package, Calculator, ShoppingBag } from "lucide-react";
 
 import ProductGrid from "./_components/ProductGrid";
 import Cart from "./_components/Cart";
@@ -11,6 +12,7 @@ import SuccessOverlay from "./_components/SuccessOverlay";
 import AddStockDialog from "./_components/AddStockDialog";
 import SearchBar from "./_components/SearchBar";
 import CategoryFilter from "./_components/CategoryFilter";
+import VariantModal from "./_components/VariantModal";
 import CashierLayout from "@/layouts/CashierLayout";
 import { FloatingCalculator } from "@/components/shared/FloatingCalculator";
 
@@ -36,7 +38,8 @@ export default function CashierPage({ products, categories }) {
     const [lastTransactionData, setLastTransactionData] = useState(null);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [showStockDialog, setShowStockDialog] = useState(false);
-    const [mobileCartOpen, setMobileCartOpen] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
+    const [variantProduct, setVariantProduct] = useState(null);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -45,7 +48,6 @@ export default function CashierPage({ products, categories }) {
 
     useSmartRefresh({ ...refreshConfigs.cashier_pos });
 
-    // Reset discount saat cart kosong
     useEffect(() => {
         if (cart.length === 0) {
             setDiscountAmount(0);
@@ -70,7 +72,6 @@ export default function CashierPage({ products, categories }) {
         return result;
     }, [products, activeCategory, searchQuery]);
 
-    // Perhitungan dengan safety check
     const subtotalAmount = useMemo(() => {
         if (!cart || cart.length === 0) return 0;
         return cart.reduce((sum, item) => {
@@ -89,10 +90,23 @@ export default function CashierPage({ products, categories }) {
         return Math.max(0, safeSubtotal - safeDiscount);
     }, [subtotalAmount, discountAmount]);
 
+    // Handle Add to Cart - detect variants
     const handleAddToCart = useCallback((product) => {
+        const hasVariants =
+            product.variant_groups && product.variant_groups.length > 0;
+
+        if (hasVariants) {
+            setVariantProduct(product);
+            return;
+        }
+
+        // Product without variants - add directly
         setCart((prevCart) => {
             const existingIndex = prevCart.findIndex(
-                (item) => item.product_id === product.id,
+                (item) =>
+                    !item.is_custom &&
+                    item.product_id === product.id &&
+                    !item.variant_details,
             );
 
             const basePrice = Number(product.selling_price) || 0;
@@ -116,7 +130,6 @@ export default function CashierPage({ products, categories }) {
                     ...existingItem,
                     qty: newQty,
                     unit_price: basePrice,
-                    base_unit_price: basePrice,
                     subtotal: newQty * (basePrice - existingDiscount),
                 };
                 return newCart;
@@ -135,10 +148,41 @@ export default function CashierPage({ products, categories }) {
                     discount: 0,
                     is_custom: false,
                     image: product.image || null,
+                    variant_details: null,
                 },
             ];
         });
     }, []);
+
+    // Handle variant product added to cart
+    const handleAddVariantToCart = useCallback(
+        (item) => {
+            // Check stock for limited products
+            const product = products.find((p) => p.id === item.product_id);
+            if (product && product.stock_type === "limited") {
+                const existingVariantInCart = cart.find(
+                    (cartItem) =>
+                        cartItem.product_id === item.product_id &&
+                        JSON.stringify(cartItem.variant_details) ===
+                            JSON.stringify(item.variant_details),
+                );
+                const currentQty = existingVariantInCart
+                    ? existingVariantInCart.qty
+                    : 0;
+                if (currentQty + item.qty > product.stock) {
+                    toast.warning(
+                        `Stok ${product.name} hanya tersisa ${product.stock}`,
+                    );
+                    return;
+                }
+            }
+
+            setCart((prev) => [...prev, item]);
+            setVariantProduct(null);
+            toast.success("Item ditambahkan ke pesanan");
+        },
+        [cart, products],
+    );
 
     const handleAddCustomItem = useCallback((item) => {
         setCart((prev) => [
@@ -157,7 +201,7 @@ export default function CashierPage({ products, categories }) {
                 .map((item) => {
                     const key = item.is_custom
                         ? item._customKey
-                        : item.product_id;
+                        : item._cartKey || item.product_id;
                     if (key !== itemKey) return item;
                     const newQuantity = (item.qty || 0) + delta;
                     if (newQuantity <= 0) return null;
@@ -177,7 +221,9 @@ export default function CashierPage({ products, categories }) {
     const handleUpdateDiscount = useCallback((itemKey, discount) => {
         setCart((prev) =>
             prev.map((item) => {
-                const key = item.is_custom ? item._customKey : item.product_id;
+                const key = item.is_custom
+                    ? item._customKey
+                    : item._cartKey || item.product_id;
                 if (key !== itemKey) return item;
                 const unitPrice = item.unit_price || 0;
                 const newDiscount = Math.min(discount || 0, unitPrice);
@@ -194,7 +240,9 @@ export default function CashierPage({ products, categories }) {
     const handleRemoveItem = useCallback((itemKey) => {
         setCart((prev) => {
             const newCart = prev.filter((item) => {
-                const key = item.is_custom ? item._customKey : item.product_id;
+                const key = item.is_custom
+                    ? item._customKey
+                    : item._cartKey || item.product_id;
                 return key !== itemKey;
             });
             return newCart;
@@ -222,7 +270,7 @@ export default function CashierPage({ products, categories }) {
                 customer_name: customer?.customer_name ?? null,
                 customer_phone: customer?.customer_phone ?? null,
                 items: (cart || []).map(
-                    ({ _customKey, base_unit_price, ...rest }) => ({
+                    ({ _customKey, _cartKey, base_unit_price, ...rest }) => ({
                         ...rest,
                         unit_price: rest.unit_price || 0,
                         discount: rest.discount || 0,
@@ -234,6 +282,11 @@ export default function CashierPage({ products, categories }) {
                 onSuccess: (response) => {
                     const transactionData =
                         response.props?.flash?.transaction || {};
+
+                    // Dapatkan customer_number dari response
+                    const customerNumber =
+                        transactionData.customer_number || null;
+
                     setLastTransactionData({
                         total: safeTotalAmount,
                         subtotal: safeSubtotalAmount,
@@ -241,8 +294,13 @@ export default function CashierPage({ products, categories }) {
                         amountPaid: safeAmountPaid,
                         change: Math.max(0, safeAmountPaid - safeTotalAmount),
                         paymentMethod: paymentMethod,
-                        customer_name: customer?.customer_name,
-                        customer_phone: customer?.customer_phone,
+                        customer_name:
+                            customer?.customer_name ||
+                            transactionData.customer_name,
+                        customer_phone:
+                            customer?.customer_phone ||
+                            transactionData.customer_phone,
+                        customer_number: customerNumber, // Tambahkan ini
                         transaction_number: transactionData.transaction_number,
                         cashier_name: auth?.user?.name,
                         items: cart.map((item) => ({
@@ -252,12 +310,13 @@ export default function CashierPage({ products, categories }) {
                             discount: item.discount || 0,
                             subtotal: item.subtotal,
                             is_custom: item.is_custom,
+                            variant_details: item.variant_details,
                         })),
                     });
                     setIsPaymentModalOpen(false);
                     setShowSuccessScreen(true);
                     setIsProcessingPayment(false);
-                    setMobileCartOpen(false);
+                    setCartOpen(false);
                 },
                 onError: (errors) => {
                     console.error("Payment error:", errors);
@@ -282,7 +341,7 @@ export default function CashierPage({ products, categories }) {
         setPaymentMethod("cash");
         setShowSuccessScreen(false);
         setLastTransactionData(null);
-        setMobileCartOpen(false);
+        setCartOpen(false);
         setTimeout(() => {
             document.getElementById("search-input")?.focus();
         }, 100);
@@ -295,107 +354,53 @@ export default function CashierPage({ products, categories }) {
         <CashierLayout>
             <Head title="Kasir | JagaModal" />
 
-            <div className="relative h-full bg-slate-50">
-                {/* Mobile cart button */}
-                <div className="lg:hidden fixed bottom-4 right-4 z-30">
-                    <button
-                        onClick={() => setMobileCartOpen(true)}
-                        className="relative bg-emerald-600 text-white p-3 rounded-full shadow-lg hover:bg-emerald-500 transition-all active:scale-95"
-                    >
-                        <Package className="h-6 w-6" />
-                        {totalItems > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                                {totalItems}
-                            </span>
-                        )}
-                    </button>
-                </div>
+            <div className="h-full flex bg-white">
+                <div className="flex-1 flex flex-col min-w-0 lg:pr-[380px]">
+                    <div className="shrink-0 px-5 lg:px-8 pt-5 lg:pt-7 pb-3">
+                        <div className="flex items-center justify-between mb-5">
+                            <h1 className="text-xl lg:text-2xl font-bold text-slate-800">
+                                Daftar Produk
+                            </h1>
+                        </div>
 
-                {/* Mobile cart drawer */}
-                <div
-                    className={`lg:hidden fixed inset-0 z-40 transition-all duration-300 ${mobileCartOpen ? "visible" : "invisible"}`}
-                >
-                    <div
-                        className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${mobileCartOpen ? "opacity-100" : "opacity-0"}`}
-                        onClick={() => setMobileCartOpen(false)}
-                    />
-                    <div
-                        className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-xl transition-transform duration-300 ease-out ${mobileCartOpen ? "translate-x-0" : "translate-x-full"}`}
-                    >
-                        <Cart
-                            items={cart}
-                            subtotal={subtotalAmount}
-                            total={totalAmount}
-                            discount={discountAmount}
-                            onDiscountChange={setDiscountAmount}
-                            onUpdateQuantity={handleUpdateQuantity}
-                            onUpdateDiscount={handleUpdateDiscount}
-                            onRemoveItem={handleRemoveItem}
-                            onCheckout={() => {
-                                setMobileCartOpen(false);
-                                setIsPaymentModalOpen(true);
-                            }}
-                            onAddCustomItem={handleAddCustomItem}
-                            onClose={() => setMobileCartOpen(false)}
-                        />
-                    </div>
-                </div>
-
-                {/* Sidebar kategori desktop */}
-                <div className="hidden lg:block fixed top-14 left-0 bottom-0 w-64 bg-white border-r border-gray-200 z-20">
-                    <CategoryFilter
-                        categories={allCategoriesList}
-                        activeCategory={activeCategory}
-                        onSelectCategory={setActiveCategory}
-                    />
-                </div>
-
-                {/* Main content */}
-                <div className="h-full flex flex-col lg:pl-64 lg:pr-96">
-                    {/* Top bar */}
-                    <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shrink-0">
-                        <div className="p-4">
-                            <div className="flex gap-2 sm:gap-3">
-                                <div className="flex-1">
-                                    <SearchBar
-                                        value={searchQuery}
-                                        onChange={setSearchQuery}
-                                    />
-                                </div>
+                        <div className="flex items-center justify-between gap-3 mb-6">
+                            <h2 className="text-base font-bold text-slate-800 shrink-0">
+                                Menu
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <SearchBar
+                                    value={searchQuery}
+                                    onChange={setSearchQuery}
+                                />
                                 <FloatingCalculator
                                     customButton={
-                                        <button className="shrink-0 flex items-center justify-center gap-1 px-2 sm:px-4 py-2 sm:py-2.5 bg-gray-50 hover:bg-emerald-50 border border-gray-200 rounded-xl transition-all duration-200 cursor-pointer">
-                                            <Calculator className="h-4 w-4 text-gray-600" />
-                                            <span className="text-xs sm:text-sm font-medium text-gray-700 hidden md:inline">
-                                                Kalkulator
-                                            </span>
+                                        <button className="shrink-0 flex items-center justify-center w-10 h-10 bg-slate-50 hover:bg-orange-50 border border-slate-200 rounded-full transition-all duration-200 cursor-pointer">
+                                            <Calculator className="h-4 w-4 text-slate-500" />
                                         </button>
                                     }
                                 />
                                 <button
                                     onClick={() => setShowStockDialog(true)}
-                                    className="shrink-0 flex items-center justify-center gap-1 px-2 sm:px-4 py-2 sm:py-2.5 bg-gray-50 hover:bg-emerald-50 border border-gray-200 rounded-xl transition-all duration-200 cursor-pointer"
+                                    className="shrink-0 flex items-center justify-center w-10 h-10 bg-slate-50 hover:bg-orange-50 border border-slate-200 rounded-full transition-all duration-200 cursor-pointer"
+                                    title="Tambah Stok"
                                 >
-                                    <Package className="h-4 w-4 text-gray-600" />
-                                    <span className="text-xs sm:text-sm font-medium text-gray-700 hidden md:inline">
-                                        Tambah Stok
-                                    </span>
+                                    <Package className="h-4 w-4 text-slate-500" />
                                 </button>
                             </div>
                         </div>
+
+                        <div className="pb-px overflow-visible">
+                            <CategoryFilter
+                                categories={allCategoriesList}
+                                activeCategory={activeCategory}
+                                onSelectCategory={setActiveCategory}
+                            />
+                        </div>
                     </div>
 
-                    {/* Category filter mobile */}
-                    <div className="lg:hidden block bg-white border-b border-gray-100">
-                        <CategoryFilter
-                            categories={allCategoriesList}
-                            activeCategory={activeCategory}
-                            onSelectCategory={setActiveCategory}
-                        />
-                    </div>
+                    <div className="h-px bg-slate-100 mx-5 lg:mx-8 shrink-0" />
 
-                    {/* Product grid */}
-                    <div className="flex-1 min-h-0 overflow-y-auto">
+                    <div className="flex-1 min-h-0 overflow-y-auto px-5 lg:px-8 pt-6 pb-24 lg:pb-8">
                         <ProductGrid
                             products={filteredProducts}
                             onAddToCart={handleAddToCart}
@@ -404,8 +409,7 @@ export default function CashierPage({ products, categories }) {
                     </div>
                 </div>
 
-                {/* Cart desktop */}
-                <div className="hidden lg:block fixed top-14 right-0 bottom-0 w-96 bg-white border-l border-gray-200 z-20">
+                <div className="hidden lg:block fixed top-0 right-0 bottom-0 w-[380px] bg-white border-l border-slate-100">
                     <Cart
                         items={cart}
                         subtotal={subtotalAmount}
@@ -417,12 +421,70 @@ export default function CashierPage({ products, categories }) {
                         onRemoveItem={handleRemoveItem}
                         onCheckout={() => setIsPaymentModalOpen(true)}
                         onAddCustomItem={handleAddCustomItem}
-                        onClose={() => setMobileCartOpen(false)}
+                        cashierName={auth?.user?.name}
                     />
+                </div>
+
+                <div className="lg:hidden fixed bottom-4 right-4 z-30">
+                    <button
+                        onClick={() => setCartOpen(true)}
+                        className="relative bg-orange-500 text-white p-3.5 rounded-full shadow-lg hover:bg-orange-400 transition-all active:scale-95"
+                    >
+                        <ShoppingBag className="h-6 w-6" />
+                        {totalItems > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-white text-orange-500 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                                {totalItems}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                <div
+                    className={`lg:hidden fixed inset-0 z-40 transition-all duration-300 ${
+                        cartOpen ? "visible" : "invisible"
+                    }`}
+                >
+                    <div
+                        className={`absolute inset-0 bg-slate-900/50 transition-opacity duration-300 ${
+                            cartOpen ? "opacity-100" : "opacity-0"
+                        }`}
+                        onClick={() => setCartOpen(false)}
+                    />
+                    <div
+                        className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                            cartOpen ? "translate-x-0" : "translate-x-full"
+                        }`}
+                    >
+                        <Cart
+                            items={cart}
+                            subtotal={subtotalAmount}
+                            total={totalAmount}
+                            discount={discountAmount}
+                            onDiscountChange={setDiscountAmount}
+                            onUpdateQuantity={handleUpdateQuantity}
+                            onUpdateDiscount={handleUpdateDiscount}
+                            onRemoveItem={handleRemoveItem}
+                            onCheckout={() => {
+                                setCartOpen(false);
+                                setIsPaymentModalOpen(true);
+                            }}
+                            onAddCustomItem={handleAddCustomItem}
+                            onClose={() => setCartOpen(false)}
+                            cashierName={auth?.user?.name}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Variant Modal */}
+            {variantProduct && (
+                <VariantModal
+                    product={variantProduct}
+                    onConfirm={handleAddVariantToCart}
+                    onClose={() => setVariantProduct(null)}
+                />
+            )}
+
             {isPaymentModalOpen && (
                 <PaymentModal
                     subtotal={subtotalAmount}

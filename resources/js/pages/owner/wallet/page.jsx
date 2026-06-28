@@ -1,3 +1,4 @@
+// page.jsx
 import { useState, useEffect } from "react";
 import { Head, usePage, router } from "@inertiajs/react";
 import { toast, Toaster } from "sonner";
@@ -7,15 +8,18 @@ import AppLayout from "@/layouts/dashboard/AppLayout";
 import { PeriodFilter } from "./_components/PeriodFilter";
 import { WalletStats } from "./_components/WalletStats";
 import { WalletTable } from "./_components/WalletTable";
+import { WalletList } from "./_components/WalletList";
 import { TopupDialog } from "./_components/TopupDialog";
 import { SpendDialog } from "./_components/SpendDialog";
 import { SendToStoreDialog } from "./_components/SendToStoreDialog";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
+import { useDeviceType } from "@/hooks/use-mobile";
 
 export default function WalletPage({ transactions, summary, filters }) {
     const { flash } = usePage().props;
+    const deviceType = useDeviceType();
     const [topupOpen, setTopupOpen] = useState(false);
     const [spendOpen, setSpendOpen] = useState(false);
     const [sendToStoreOpen, setSendToStoreOpen] = useState(false);
@@ -31,8 +35,8 @@ export default function WalletPage({ transactions, summary, filters }) {
         <>
             <Head title="Dompet Owner" />
 
-            <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 max-w-6xl mx-auto">
-                <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="space-y-5 p-4 lg:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
                             Dompet Owner
@@ -41,33 +45,36 @@ export default function WalletPage({ transactions, summary, filters }) {
                             Kelola saldo pribadi dari hasil penarikan toko
                         </p>
                     </div>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex flex-wrap gap-2 shrink-0">
                         <button
                             onClick={() => setSendToStoreOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-2.5 sm:px-4 py-2 text-sm font-semibold text-foreground shadow-sm hover:bg-accent transition-colors"
+                            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg border border-border bg-background px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
                         >
-                            <Store className="h-4 w-4 shrink-0" />
+                            <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                             <span className="hidden sm:inline">
                                 Kirim ke Toko
                             </span>
+                            <span className="sm:hidden">Kirim</span>
                         </button>
                         <button
                             onClick={() => setSpendOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-background px-2.5 sm:px-4 py-2 text-sm font-semibold text-destructive shadow-sm hover:bg-destructive/10 transition-colors"
+                            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg border border-destructive/30 bg-background px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-destructive shadow-sm hover:bg-destructive/10 transition-colors"
                         >
-                            <ArrowDownCircle className="h-4 w-4 shrink-0" />
+                            <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                             <span className="hidden sm:inline">
-                                Pengeluaran Pribadi
+                                Pengeluaran
                             </span>
+                            <span className="sm:hidden">Keluar</span>
                         </button>
                         <button
                             onClick={() => setTopupOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-2.5 sm:px-4 py-2 text-sm font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+                            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
                         >
-                            <Plus className="h-4 w-4 shrink-0" />
+                            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                             <span className="hidden sm:inline">
                                 Tambah Saldo
                             </span>
+                            <span className="sm:hidden">Topup</span>
                         </button>
                     </div>
                 </div>
@@ -76,7 +83,11 @@ export default function WalletPage({ transactions, summary, filters }) {
 
                 <WalletStats summary={summary} />
 
-                <WalletTable transactions={transactions} />
+                {deviceType !== "desktop" ? (
+                    <WalletList transactions={transactions} />
+                ) : (
+                    <WalletTable transactions={transactions} />
+                )}
             </div>
 
             <TopupDialog open={topupOpen} onOpenChange={setTopupOpen} />

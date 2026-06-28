@@ -25,21 +25,28 @@ class DashboardController extends Controller
                 ->with('error', 'Please setup your store first.');
         }
 
+        // Ambil parameter filter
         $startDateParam = $request->input('start_date');
         $endDateParam = $request->input('end_date');
         $comparisonKey = $request->input('comparison', 'last_7_days');
 
+        // Validasi dan parsing tanggal
         if ($startDateParam && $endDateParam) {
             $startDate = Carbon::parse($startDateParam)->startOfDay();
             $endDate = Carbon::parse($endDateParam)->endOfDay();
+
+            // Cek apakah start_date dan end_date sama (satu hari)
+            $isSingleDay = $startDate->toDateString() === $endDate->toDateString();
+
             $periodLabel = Carbon::parse($startDateParam)->isoFormat('D MMMM YYYY');
-            if ($startDateParam !== $endDateParam) {
+            if (!$isSingleDay) {
                 $periodLabel = Carbon::parse($startDateParam)->isoFormat('D MMMM YYYY') . ' - ' . Carbon::parse($endDateParam)->isoFormat('D MMMM YYYY');
             }
         } else {
             $startDate = now()->startOfDay();
             $endDate = now()->endOfDay();
             $periodLabel = 'Hari Ini';
+            $isSingleDay = true;
         }
 
         $salesMonth = $request->input('sales_month', now()->format('Y-m'));
@@ -50,8 +57,10 @@ class DashboardController extends Controller
         $productDate = Carbon::parse($productMonth . '-01');
         $customerDate = Carbon::parse($customerMonth . '-01');
 
+        // Data periode yang dipilih
         $currentData = $this->getPeriodData($storeId, $startDate, $endDate);
 
+        // Hitung rata-rata transaksi
         $periodTransactions = Transaction::forStore($storeId)
             ->completed()
             ->whereBetween('transacted_at', [$startDate, $endDate])
@@ -61,13 +70,8 @@ class DashboardController extends Controller
             ? $currentData['total_revenue'] / $periodTransactions
             : 0;
 
-        $comparisons = $this->buildComparisonsFromRange(
-            $storeId,
-            $startDate,
-            $endDate,
-            $currentData,
-            $avgTransaction
-        );
+        // BUILD COMPARISONS DENGAN LOGIKA YANG BENAR
+        $comparisons = $this->buildComparisons($storeId, $startDate, $endDate, $currentData, $avgTransaction);
 
         $salesEffectiveEnd = $this->getEffectiveEnd($salesDate);
         $productEffectiveEnd = $this->getEffectiveEnd($productDate);
@@ -122,12 +126,14 @@ class DashboardController extends Controller
                     'raw_material' => '#3b82f6',
                     'salary' => '#22c55e',
                     'owner_withdrawal' => '#ef4444',
+                    'store_transfer_in' => '#8b5cf6', 
                 ];
                 $labels = [
                     'simple' => 'Simple',
                     'raw_material' => 'Bahan Baku',
                     'salary' => 'Gaji',
                     'owner_withdrawal' => 'Penarikan Owner',
+                    'store_transfer_in' => 'Transfer Masuk',
                 ];
                 return [
                     'name' => $labels[$item->type] ?? $item->type,
@@ -155,7 +161,24 @@ class DashboardController extends Controller
 
         $customerStats = ['total' => $this->getCustomerCount($storeId, $startDate, $endDate)];
 
+        // Pilih data perbandingan yang aktif
         $activeComparisonData = $comparisons[$comparisonKey] ?? $comparisons['last_7_days'];
+
+        // Pastikan data perbandingan memiliki nilai yang benar
+        $comparisonRevenue = $activeComparisonData['revenue'] ?? 0;
+        $comparisonNetProfit = $activeComparisonData['net_profit'] ?? 0;
+        $comparisonProductsSold = $activeComparisonData['products_sold'] ?? 0;
+        $comparisonAvgTransaction = $activeComparisonData['avg_transaction'] ?? 0;
+
+        // Log untuk debugging
+        \Log::info('Dashboard Data:', [
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+            'comparison_key' => $comparisonKey,
+            'current_revenue' => $currentData['total_revenue'],
+            'comparison_revenue' => $comparisonRevenue,
+            'comparison_label' => $activeComparisonData['label'] ?? 'Periode Lalu',
+        ]);
 
         return Inertia::render('owner/dashboard/page', [
             'store' => auth()->user()->store,
@@ -174,11 +197,12 @@ class DashboardController extends Controller
                 'average_margin' => $averageMargin,
                 'net_profit_month' => (float) $netProfitMonth,
 
-                'comparison_revenue' => (float) ($activeComparisonData['revenue'] ?? 0),
-                'comparison_net_profit' => (float) ($activeComparisonData['net_profit'] ?? 0),
-                'comparison_products_sold' => (int) ($activeComparisonData['products_sold'] ?? 0),
-                'comparison_avg_transaction' => (float) ($activeComparisonData['avg_transaction'] ?? 0),
-                'comparison_label' => $activeComparisonData['label'] ?? '7 Hari Lalu',
+                // DATA PERBANDINGAN - PASTIKAN NILAI BENAR
+                'comparison_revenue' => (float) $comparisonRevenue,
+                'comparison_net_profit' => (float) $comparisonNetProfit,
+                'comparison_products_sold' => (int) $comparisonProductsSold,
+                'comparison_avg_transaction' => (float) $comparisonAvgTransaction,
+                'comparison_label' => $activeComparisonData['label'] ?? 'Periode Lalu',
                 'revenue_trend' => $activeComparisonData['trends']['revenue'] ?? null,
                 'net_profit_trend' => $activeComparisonData['trends']['net_profit'] ?? null,
                 'products_sold_trend' => $activeComparisonData['trends']['products_sold'] ?? null,
@@ -213,61 +237,107 @@ class DashboardController extends Controller
             ->count('customer_id');
     }
 
-    private function buildComparisonsFromRange(
+    /**
+     * BUILD COMPARISONS DENGAN LOGIKA YANG BENAR
+     */
+    private function buildComparisons(
         int $storeId,
         Carbon $startDate,
         Carbon $endDate,
         array $currentData,
         float $avgTransaction
     ): array {
-        $yesterdayStart = $startDate->copy()->subDays(1);
-        $yesterdayEnd = $endDate->copy()->subDays(1);
+        $comparisons = [];
+
+        // 1. KEMARIN (H-1)
+        $yesterdayStart = $startDate->copy()->subDay()->startOfDay();
+        $yesterdayEnd = $endDate->copy()->subDay()->endOfDay();
         $yesterdayData = $this->getPeriodData($storeId, $yesterdayStart, $yesterdayEnd);
         $yesterdayAvg = $yesterdayData['transaction_count'] > 0
             ? $yesterdayData['total_revenue'] / $yesterdayData['transaction_count']
             : 0;
 
-        $last7Start = $startDate->copy()->subDays(7);
-        $last7End = $endDate->copy()->subDays(7);
+        $comparisons['yesterday'] = [
+            'label' => 'Kemarin',
+            'revenue' => $yesterdayData['total_revenue'],
+            'net_profit' => $yesterdayData['net_profit'],
+            'products_sold' => $yesterdayData['products_sold'],
+            'avg_transaction' => (float) $yesterdayAvg,
+            'trends' => [
+                'revenue' => $this->calcTrend($currentData['total_revenue'], $yesterdayData['total_revenue']),
+                'net_profit' => $this->calcTrend($currentData['net_profit'], $yesterdayData['net_profit']),
+                'products_sold' => $this->calcTrend($currentData['products_sold'], $yesterdayData['products_sold']),
+                'avg_transaction' => $this->calcTrend($avgTransaction, $yesterdayAvg),
+            ],
+        ];
+
+        // 2. 7 HARI LALU
+        $last7Start = $startDate->copy()->subDays(7)->startOfDay();
+        $last7End = $endDate->copy()->subDays(7)->endOfDay();
         $last7Data = $this->getPeriodData($storeId, $last7Start, $last7End);
         $last7Avg = $last7Data['transaction_count'] > 0
             ? $last7Data['total_revenue'] / $last7Data['transaction_count']
             : 0;
 
-        $last30Start = $startDate->copy()->subDays(30);
-        $last30End = $endDate->copy()->subDays(30);
+        $comparisons['last_7_days'] = [
+            'label' => '7 Hari Lalu',
+            'revenue' => $last7Data['total_revenue'],
+            'net_profit' => $last7Data['net_profit'],
+            'products_sold' => $last7Data['products_sold'],
+            'avg_transaction' => (float) $last7Avg,
+            'trends' => [
+                'revenue' => $this->calcTrend($currentData['total_revenue'], $last7Data['total_revenue']),
+                'net_profit' => $this->calcTrend($currentData['net_profit'], $last7Data['net_profit']),
+                'products_sold' => $this->calcTrend($currentData['products_sold'], $last7Data['products_sold']),
+                'avg_transaction' => $this->calcTrend($avgTransaction, $last7Avg),
+            ],
+        ];
+
+        // 3. 30 HARI LALU
+        $last30Start = $startDate->copy()->subDays(30)->startOfDay();
+        $last30End = $endDate->copy()->subDays(30)->endOfDay();
         $last30Data = $this->getPeriodData($storeId, $last30Start, $last30End);
         $last30Avg = $last30Data['transaction_count'] > 0
             ? $last30Data['total_revenue'] / $last30Data['transaction_count']
             : 0;
 
-        $lastYearStart = $startDate->copy()->subYear();
-        $lastYearEnd = $endDate->copy()->subYear();
+        $comparisons['last_30_days'] = [
+            'label' => '30 Hari Lalu',
+            'revenue' => $last30Data['total_revenue'],
+            'net_profit' => $last30Data['net_profit'],
+            'products_sold' => $last30Data['products_sold'],
+            'avg_transaction' => (float) $last30Avg,
+            'trends' => [
+                'revenue' => $this->calcTrend($currentData['total_revenue'], $last30Data['total_revenue']),
+                'net_profit' => $this->calcTrend($currentData['net_profit'], $last30Data['net_profit']),
+                'products_sold' => $this->calcTrend($currentData['products_sold'], $last30Data['products_sold']),
+                'avg_transaction' => $this->calcTrend($avgTransaction, $last30Avg),
+            ],
+        ];
+
+        // 4. 1 TAHUN LALU
+        $lastYearStart = $startDate->copy()->subYear()->startOfDay();
+        $lastYearEnd = $endDate->copy()->subYear()->endOfDay();
         $lastYearData = $this->getPeriodData($storeId, $lastYearStart, $lastYearEnd);
         $lastYearAvg = $lastYearData['transaction_count'] > 0
             ? $lastYearData['total_revenue'] / $lastYearData['transaction_count']
             : 0;
 
-        $make = fn($data, $avg, $label) => [
-            'label' => $label,
-            'revenue' => $data['total_revenue'],
-            'net_profit' => $data['net_profit'],
-            'products_sold' => $data['products_sold'],
-            'avg_transaction' => (float) $avg,
+        $comparisons['last_year'] = [
+            'label' => '1 Tahun Lalu',
+            'revenue' => $lastYearData['total_revenue'],
+            'net_profit' => $lastYearData['net_profit'],
+            'products_sold' => $lastYearData['products_sold'],
+            'avg_transaction' => (float) $lastYearAvg,
             'trends' => [
-                'revenue' => $this->calcTrend($currentData['total_revenue'], $data['total_revenue']),
-                'net_profit' => $this->calcTrend($currentData['net_profit'], $data['net_profit']),
-                'products_sold' => $this->calcTrend($currentData['products_sold'], $data['products_sold']),
-                'avg_transaction' => $this->calcTrend($avgTransaction, $avg),
+                'revenue' => $this->calcTrend($currentData['total_revenue'], $lastYearData['total_revenue']),
+                'net_profit' => $this->calcTrend($currentData['net_profit'], $lastYearData['net_profit']),
+                'products_sold' => $this->calcTrend($currentData['products_sold'], $lastYearData['products_sold']),
+                'avg_transaction' => $this->calcTrend($avgTransaction, $lastYearAvg),
             ],
         ];
 
-        return [
-            'yesterday' => $make($yesterdayData, $yesterdayAvg, 'Kemarin'),
-            'last_7_days' => $make($last7Data, $last7Avg, '7 Hari Lalu'),
-            'last_30_days' => $make($last30Data, $last30Avg, '30 Hari Lalu'),
-            'last_year' => $make($lastYearData, $lastYearAvg, '1 Tahun Lalu'),
-        ];
+        return $comparisons;
     }
 
     private function getEffectiveEnd(Carbon $date): Carbon
@@ -288,8 +358,10 @@ class DashboardController extends Controller
         })->sum(DB::raw('capital_price * qty'));
 
         $expenses = Expense::forStore($storeId)->whereBetween('expensed_at', [$startDate, $endDate])->get();
-        $expenseTotal = $expenses->where('type', '!=', 'store_transfer_in')->sum(fn($e) => $e->total_amount);
-        $withdrawalTotal = $expenses->where('type', 'owner_withdrawal')->sum(fn($e) => $e->total_amount);
+
+        $expenseTotal = $expenses->whereNotIn('type', ['store_transfer_in', 'owner_withdrawal'])->sum('amount');
+        $withdrawalTotal = $expenses->where('type', 'owner_withdrawal')->sum('amount');
+        $transfersIn = $expenses->where('type', 'store_transfer_in')->sum('amount');
 
         $productsSold = TransactionItem::whereHas('transaction', function ($q) use ($storeId, $startDate, $endDate) {
             $q->forStore($storeId)->completed()->whereBetween('transacted_at', [$startDate, $endDate]);
@@ -303,7 +375,8 @@ class DashboardController extends Controller
             'hpp' => (float) $hpp,
             'expense' => (float) $expenseTotal,
             'withdrawal' => (float) $withdrawalTotal,
-            'net_profit' => (float) ($totalRevenue - $hpp),
+            'transfers_in' => (float) $transfersIn,
+            'net_profit' => (float) ($totalRevenue - $hpp - $expenseTotal),
             'products_sold' => (int) $productsSold,
             'transaction_count' => (int) $transactionCount,
         ];

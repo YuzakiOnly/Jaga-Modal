@@ -1,3 +1,4 @@
+// resources/js/pages/cashier/_components/SuccessOverlay.jsx
 import { useState, useEffect, useRef } from "react";
 import {
     CheckCircle,
@@ -79,17 +80,23 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
 
     const PaymentIcon = PAYMENT_ICONS[transaction.paymentMethod] || Banknote;
 
+    // Cek apakah ada data pelanggan
+    const hasCustomer =
+        transaction.customer_name ||
+        transaction.customer_phone ||
+        transaction.customer_number;
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="bg-emerald-600 p-6 text-center">
+                <div className="bg-orange-600 p-6 text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4">
-                        <CheckCircle className="h-10 w-10 text-emerald-600" />
+                        <CheckCircle className="h-10 w-10 text-orange-600" />
                     </div>
                     <h2 className="text-xl font-bold text-white">
                         Pembayaran Berhasil!
                     </h2>
-                    <p className="text-emerald-100 text-sm mt-1">
+                    <p className="text-orange-100 text-sm mt-1">
                         Transaksi telah selesai
                     </p>
                 </div>
@@ -126,29 +133,43 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                             <span>Kasir</span>
                             <span>{transaction.cashier_name || "Kasir"}</span>
                         </div>
+                        {transaction.customer_number && (
+                            <div className="flex justify-between">
+                                <span>No. Pelanggan</span>
+                                <span className="font-mono font-semibold text-purple-600">
+                                    #{transaction.customer_number}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
-                    {(transaction.customer_name ||
-                        transaction.customer_phone) && (
-                        <div className="bg-gray-50 rounded-lg p-3 my-3 border border-gray-100">
-                            <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    {hasCustomer && (
+                        <div className="bg-purple-50 rounded-lg p-3 my-3 border border-purple-200">
+                            <p className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
                                 <User className="h-3 w-3" />
                                 DATA PELANGGAN
+                                {transaction.customer_number && (
+                                    <span className="ml-auto text-[10px] font-mono bg-purple-200 text-purple-700 px-1.5 py-0.5 rounded">
+                                        #{transaction.customer_number}
+                                    </span>
+                                )}
                             </p>
                             {transaction.customer_name && (
                                 <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-gray-500">Nama</span>
-                                    <span className="font-medium">
+                                    <span className="text-purple-600">
+                                        Nama
+                                    </span>
+                                    <span className="font-medium text-purple-800">
                                         {transaction.customer_name}
                                     </span>
                                 </div>
                             )}
                             {transaction.customer_phone && (
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">
+                                    <span className="text-purple-600">
                                         No. HP
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-purple-800">
                                         {transaction.customer_phone}
                                     </span>
                                 </div>
@@ -159,34 +180,49 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                     <div className="divider my-3"></div>
 
                     <div className="space-y-2">
-                        {transaction.items?.map((item, idx) => (
-                            <div
-                                key={idx}
-                                className="flex justify-between text-sm"
-                            >
-                                <div className="flex-1">
-                                    <span className="font-medium">
-                                        {item.name}
-                                    </span>
-                                    {item.is_custom && (
-                                        <span className="text-[9px] bg-purple-100 text-purple-600 ml-1 px-1 rounded">
-                                            C
+                        {transaction.items?.map((item, idx) => {
+                            const variantLabel = item.variant_details
+                                ? item.variant_details
+                                      .flatMap((g) =>
+                                          g.options.map((o) => o.option_name),
+                                      )
+                                      .join(", ")
+                                : null;
+
+                            return (
+                                <div
+                                    key={idx}
+                                    className="flex justify-between text-sm"
+                                >
+                                    <div className="flex-1">
+                                        <span className="font-medium">
+                                            {item.name}
                                         </span>
-                                    )}
-                                    <span className="text-xs text-gray-400 ml-2">
-                                        {item.qty} ×{" "}
-                                        {formatRupiah(item.unit_price)}
+                                        {variantLabel && (
+                                            <span className="text-[9px] text-orange-600 ml-1">
+                                                ({variantLabel})
+                                            </span>
+                                        )}
+                                        {item.is_custom && (
+                                            <span className="text-[9px] bg-purple-100 text-purple-600 ml-1 px-1 rounded">
+                                                C
+                                            </span>
+                                        )}
+                                        <span className="text-xs text-gray-400 ml-2">
+                                            {item.qty} ×{" "}
+                                            {formatRupiah(item.unit_price)}
+                                        </span>
+                                    </div>
+                                    <span className="font-semibold">
+                                        {formatRupiah(
+                                            (item.unit_price -
+                                                (item.discount || 0)) *
+                                                item.qty,
+                                        )}
                                     </span>
                                 </div>
-                                <span className="font-semibold">
-                                    {formatRupiah(
-                                        (item.unit_price -
-                                            (item.discount || 0)) *
-                                            item.qty,
-                                    )}
-                                </span>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <div className="divider my-3"></div>
@@ -206,7 +242,7 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                         )}
                         <div className="flex justify-between pt-2 border-t border-dashed">
                             <span className="font-bold">TOTAL</span>
-                            <span className="text-xl font-bold text-emerald-600">
+                            <span className="text-xl font-bold text-orange-600">
                                 {formatRupiah(transaction.total)}
                             </span>
                         </div>
@@ -242,7 +278,7 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                                     <span className="text-gray-600">
                                         Kembalian
                                     </span>
-                                    <span className="text-emerald-600 font-bold">
+                                    <span className="text-orange-600 font-bold">
                                         {formatRupiah(transaction.change)}
                                     </span>
                                 </div>
@@ -271,7 +307,7 @@ export default function SuccessOverlay({ transaction, onNewTransaction }) {
                             setShow(false);
                             onNewTransaction();
                         }}
-                        className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors"
+                        className="flex-1 py-2.5 text-sm font-semibold bg-orange-600 text-white rounded-lg hover:bg-orange-500 transition-colors"
                     >
                         Transaksi Baru
                     </button>

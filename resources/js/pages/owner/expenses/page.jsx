@@ -7,6 +7,7 @@ import AppLayout from "@/layouts/dashboard/AppLayout";
 import { PeriodFilter } from "./_components/PeriodFilter";
 import { ExpenseStats } from "./_components/ExpenseStats";
 import { ExpenseTable } from "./_components/ExpenseTable";
+import { ExpenseList } from "./_components/ExpenseList";
 import { ExpenseFormDialog } from "./_components/ExpenseFormDialog";
 import {
     AlertDialog,
@@ -22,16 +23,28 @@ import { Button } from "@/components/ui/button";
 
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
+import { useDeviceType } from "@/hooks/use-mobile";
 
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
-export default function ExpensesPage({ expenses, summary, filters, cashBalance }) {
-    const { flash } = usePage().props;
+export default function ExpensesPage({
+    expenses,
+    summary,
+    filters,
+    cashBalance,
+}) {
+    const { flash, props } = usePage();
+    const deviceType = useDeviceType();
     const [formOpen, setFormOpen] = useState(false);
     const [editTarget, setEditTarget] = useState(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
+
+    // Cek semua props yang masuk
+    console.log("Semua props:", props);
+    console.log("cashBalance dari props:", props.cash_balance);
+    console.log("cashBalance dari parameter:", cashBalance);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -59,11 +72,11 @@ export default function ExpensesPage({ expenses, summary, filters, cashBalance }
                 setDeleteOpen(false);
                 setDeleteTarget(null);
                 setDeleteProcessing(false);
-                toast.success("Pengeluaran berhasil dihapus.");
+                toast.success("Transaksi berhasil dihapus.");
             },
             onError: () => {
                 setDeleteProcessing(false);
-                toast.error("Gagal menghapus pengeluaran.");
+                toast.error("Gagal menghapus transaksi.");
             },
         });
     };
@@ -73,18 +86,21 @@ export default function ExpensesPage({ expenses, summary, filters, cashBalance }
         setEditTarget(null);
     };
 
+    // Gunakan cashBalance dari props jika parameter undefined
+    const balance = cashBalance ?? props.cash_balance ?? 0;
+
     return (
         <>
-            <Head title="Pengeluaran" />
+            <Head title="Kas Toko" />
 
-            <div className="p-3 py-6 md:py-6 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 max-w-6xl mx-auto">
+            <div className="space-y-5 p-4 lg:p-6">
                 <div className="flex items-start sm:items-center justify-between gap-3">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
-                            Pengeluaran
+                            Kas Toko
                         </h1>
                         <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                            Catat dan pantau semua pengeluaran toko
+                            Catat dan pantau semua pemasukan & pengeluaran toko
                         </p>
                     </div>
                     <Button
@@ -94,7 +110,7 @@ export default function ExpensesPage({ expenses, summary, filters, cashBalance }
                     >
                         <Plus className="h-4 w-4" />
                         <span className="hidden sm:inline">
-                            Tambah Pengeluaran
+                            Tambah Transaksi
                         </span>
                     </Button>
                 </div>
@@ -103,32 +119,40 @@ export default function ExpensesPage({ expenses, summary, filters, cashBalance }
 
                 <ExpenseStats summary={summary} />
 
-                <ExpenseTable
-                    expenses={expenses}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
-                />
+                {deviceType !== "desktop" ? (
+                    <ExpenseList
+                        expenses={expenses}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
+                    />
+                ) : (
+                    <ExpenseTable
+                        expenses={expenses}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
+                    />
+                )}
             </div>
 
             <ExpenseFormDialog
                 open={formOpen}
                 onOpenChange={handleFormClose}
                 editTarget={editTarget}
-                cashBalance={cashBalance}
+                cashBalance={balance}
             />
 
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md rounded-xl">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-base sm:text-lg">
-                            Hapus Pengeluaran
+                            Hapus Transaksi
                         </AlertDialogTitle>
                         <AlertDialogDescription asChild>
                             <div className="space-y-2">
                                 <p className="text-sm">
-                                    Apakah Anda yakin ingin menghapus
-                                    pengeluaran ini? Data yang dihapus tidak
-                                    dapat dikembalikan.
+                                    Apakah Anda yakin ingin menghapus transaksi
+                                    ini? Data yang dihapus tidak dapat
+                                    dikembalikan.
                                 </p>
                                 {deleteTarget && (
                                     <div className="mt-2 pt-3 border-t space-y-1">

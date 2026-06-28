@@ -10,8 +10,9 @@ import {
     CheckCircle2,
     Loader2,
     Clock,
-    Send,
     RefreshCw,
+    ShieldCheck,
+    Smartphone,
 } from "lucide-react";
 
 function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
@@ -113,18 +114,29 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
             <AuthHeader
                 title="Verifikasi Nomor HP"
                 description={
-                    <>
-                        Kode 6 digit telah dikirim ke{" "}
-                        <span className="font-semibold text-foreground">
-                            {phone}
-                        </span>{" "}
-                        via WhatsApp / SMS.
-                    </>
+                    <span className="flex flex-col gap-1">
+                        <span className="flex items-center gap-2">
+                            <Smartphone className="h-4 w-4 text-[#fe5e00]" />
+                            <span>
+                                Kode 6 digit dikirim ke{" "}
+                                <span className="font-semibold text-[#1a1110]">
+                                    {phone}
+                                </span>
+                            </span>
+                        </span>
+                        <span className="text-xs text-[#c2a89c]">
+                            via WhatsApp / SMS
+                        </span>
+                    </span>
                 }
                 showDescription
             />
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
+            <form
+                onSubmit={handleSubmit}
+                className="mt-7 space-y-6 font-inter"
+                noValidate
+            >
                 <div className="space-y-3">
                     <div
                         className="flex justify-center gap-2"
@@ -144,11 +156,11 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                                 onKeyDown={(e) => handleKeyDown(i, e)}
                                 disabled={processing}
                                 autoFocus={i === 0}
-                                className={`h-12 w-11 text-center text-lg font-bold tracking-widest transition-all ${
+                                className={`h-14 w-12 text-center text-xl font-bold tracking-widest transition-all border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] focus-visible:border-[#fe5e00] focus-visible:ring-[#fe5e00]/20 ${
                                     hasError
-                                        ? "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                                        ? "border-red-400 bg-red-50 focus-visible:ring-red-200"
                                         : codeComplete && !hasError
-                                          ? "border-emerald-500 bg-emerald-50/50 focus-visible:ring-emerald-500 dark:bg-emerald-950/20"
+                                          ? "border-emerald-500 bg-emerald-50 focus-visible:ring-emerald-200"
                                           : ""
                                 }`}
                             />
@@ -156,7 +168,7 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                     </div>
 
                     {(hasError || localError) && (
-                        <div className="flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+                        <div className="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600 border border-red-200">
                             <AlertCircle className="h-4 w-4 shrink-0" />
                             <span>{hasError ? errorMsg : localError}</span>
                         </div>
@@ -165,7 +177,7 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
 
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-[#fe5e00] hover:bg-[#e55400] text-white border-0 shadow-md shadow-[#fe5e00]/25 transition-colors"
                     size="lg"
                     disabled={processing || !codeComplete}
                 >
@@ -183,9 +195,7 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
             </form>
 
             <div className="mt-6 space-y-3 text-center">
-                <p className="text-sm text-muted-foreground">
-                    Tidak menerima kode?
-                </p>
+                <p className="text-sm text-[#8a6a62]">Tidak menerima kode?</p>
 
                 <Button
                     type="button"
@@ -193,7 +203,7 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                     size="sm"
                     onClick={handleResend}
                     disabled={resending || countdown > 0}
-                    className="min-w-40"
+                    className="min-w-40 border-[#e8d9ce] text-[#1a1110] hover:bg-[#fff3e8] hover:text-[#1a1110]"
                 >
                     {resending ? (
                         <>
@@ -213,23 +223,28 @@ function VerifyPhoneContent({ titlePage, phone, errors: serverErrors }) {
                 </Button>
 
                 {resendMessage && (
-                    <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                    <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700 border border-emerald-200">
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
                         <span>{resendMessage}</span>
                     </div>
                 )}
 
                 {resendError && (
-                    <div className="flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+                    <div className="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600 border border-red-200">
                         <AlertCircle className="h-4 w-4 shrink-0" />
                         <span>{resendError}</span>
                     </div>
                 )}
 
-                <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <p className="flex items-center justify-center gap-1.5 text-xs text-[#c2a89c]">
                     <Clock className="h-3 w-3" />
                     Kode berlaku 10 menit
                 </p>
+            </div>
+
+            <div className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[#c2a89c]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Keamanan data terjamin</span>
             </div>
         </>
     );

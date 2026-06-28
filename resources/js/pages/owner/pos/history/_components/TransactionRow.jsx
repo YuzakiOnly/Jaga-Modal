@@ -7,6 +7,7 @@ import {
     Receipt,
     User,
     Phone,
+    Package,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -55,6 +56,19 @@ export function TransactionRow({ transaction }) {
             ? customer.name
             : `Pelanggan #${customer.customer_number}`
         : null;
+
+    const getVariantLabel = (variantDetails) => {
+        if (!variantDetails) return null;
+        const names = [];
+        Object.values(variantDetails).forEach((options) => {
+            if (Array.isArray(options)) {
+                options.forEach((opt) => {
+                    if (opt?.name) names.push(opt.name);
+                });
+            }
+        });
+        return names.length > 0 ? names.join(", ") : null;
+    };
 
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
@@ -150,34 +164,45 @@ export function TransactionRow({ transaction }) {
                     )}
 
                     <div className="space-y-1.5">
-                        {transaction.items?.map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex justify-between text-xs"
-                            >
-                                <span className="text-muted-foreground">
-                                    {item.name}
-                                    {item.is_custom && (
-                                        <Badge
-                                            variant="outline"
-                                            className="ml-1 px-1 py-0 text-[10px]"
-                                        >
-                                            Custom
-                                        </Badge>
-                                    )}{" "}
-                                    × {item.qty}
-                                    {item.discount > 0 && (
-                                        <span className="text-destructive ml-1">
-                                            (− {formatPrice(item.discount)}
-                                            /item)
+                        {transaction.items?.map((item) => {
+                            const variantLabel = getVariantLabel(
+                                item.variant_details,
+                            );
+                            return (
+                                <div key={item.id}>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">
+                                            {item.name}
+                                            {item.is_custom && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="ml-1 px-1 py-0 text-[10px]"
+                                                >
+                                                    Custom
+                                                </Badge>
+                                            )}{" "}
+                                            × {item.qty}
+                                            {item.discount > 0 && (
+                                                <span className="text-destructive ml-1">
+                                                    (−{" "}
+                                                    {formatPrice(item.discount)}
+                                                    /item)
+                                                </span>
+                                            )}
                                         </span>
+                                        <span className="font-medium tabular-nums">
+                                            {formatPrice(item.subtotal)}
+                                        </span>
+                                    </div>
+                                    {variantLabel && (
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 pl-1 mt-0.5">
+                                            <Package className="h-2.5 w-2.5" />
+                                            <span>{variantLabel}</span>
+                                        </div>
                                     )}
-                                </span>
-                                <span className="font-medium tabular-nums">
-                                    {formatPrice(item.subtotal)}
-                                </span>
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <Separator />

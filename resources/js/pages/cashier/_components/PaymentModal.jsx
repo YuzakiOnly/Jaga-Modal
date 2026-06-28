@@ -8,9 +8,12 @@ import {
     User,
     Phone,
     ChevronDown,
+    Copy,
+    Check,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { QRCodeSVG } from "qrcode.react";
 
 import {
     Popover,
@@ -19,6 +22,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const formatRupiah = (num) => {
     return "Rp " + Math.round(num).toLocaleString("id-ID");
@@ -30,6 +34,13 @@ const PAYMENT_METHODS = [
     { value: "cash", label: "Tunai", icon: Banknote },
     { value: "qris", label: "QRIS", icon: QrCode },
 ];
+
+const QRIS_CONFIG = {
+    merchantName: "TOKO AMENK",
+    merchantId: "ID1026533253591",
+    qrisString:
+        "00020101021126760024ID.CO.SPEEDCASH.MERCHANT01189360081530004455030215ID10260044550300303UKE51440014ID.CO.QRIS.WWW0215ID10265332535910303UKE5204541153033605802ID5910TOKO AMENK6010BANYUWANGI61056842162410509S385187890117202606150904403860703A0163043803",
+};
 
 export default function PaymentModal({
     subtotal,
@@ -51,6 +62,7 @@ export default function PaymentModal({
     const [customerOpen, setCustomerOpen] = useState(false);
     const [customerName, setCustomerName] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
+    const [copied, setCopied] = useState(false);
     const inputRef = useRef(null);
 
     const adjustedTotal = total;
@@ -147,16 +159,23 @@ export default function PaymentModal({
         setTransactionDate(new Date());
     };
 
+    const handleCopyNMD = () => {
+        navigator.clipboard?.writeText(QRIS_CONFIG.merchantId);
+        setCopied(true);
+        toast.success("NMD berhasil disalin");
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
-            <div className="bg-white rounded-2xl w-125 max-w-[90vw] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-2xl w-125 max-w-[95vw] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
                 <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-emerald-100">
-                            <Banknote className="h-5 w-5 text-emerald-600" />
+                        <div className="p-2 rounded-xl bg-orange-100">
+                            <Banknote className="h-5 w-5 text-orange-600" />
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-800">
@@ -174,7 +193,7 @@ export default function PaymentModal({
 
                 <div className="flex-1 overflow-y-auto scrollbar-hide">
                     <div className="p-5">
-                        <div className="bg-gray-50 rounded-xl p-4 mb-5">
+                        <div className="bg-slate-50 rounded-xl p-4 mb-5">
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="text-gray-600">Subtotal</span>
                                 <span className="font-medium text-gray-800">
@@ -195,7 +214,7 @@ export default function PaymentModal({
                                 <span className="font-bold text-gray-800">
                                     Total
                                 </span>
-                                <span className="text-xl font-bold text-emerald-600">
+                                <span className="text-xl font-bold text-orange-600">
                                     {formatRupiah(adjustedTotal)}
                                 </span>
                             </div>
@@ -218,7 +237,7 @@ export default function PaymentModal({
                                                     method.value,
                                                 )
                                             }
-                                            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition ${
+                                            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
                                                 isActive
                                                     ? "bg-slate-700 text-white"
                                                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -235,7 +254,7 @@ export default function PaymentModal({
                         <div className="mb-4">
                             <button
                                 onClick={() => setCustomerOpen((v) => !v)}
-                                className="w-full flex items-center justify-between rounded-lg border px-3 py-2.5 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center justify-between rounded-lg border px-3 py-2.5 hover:bg-slate-50 transition-colors"
                             >
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-gray-400" />
@@ -246,7 +265,7 @@ export default function PaymentModal({
                                         (opsional)
                                     </span>
                                     {hasCustomerData && !customerOpen && (
-                                        <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                                        <span className="flex h-2 w-2 rounded-full bg-orange-500" />
                                     )}
                                 </div>
                                 <ChevronDown
@@ -258,7 +277,7 @@ export default function PaymentModal({
                             </button>
 
                             {customerOpen && (
-                                <div className="rounded-b-lg border border-t-0 px-3 pb-3 pt-3 space-y-3 bg-gray-50">
+                                <div className="rounded-b-lg border border-t-0 px-3 pb-3 pt-3 space-y-3 bg-slate-50">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="space-y-1">
                                             <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
@@ -275,7 +294,7 @@ export default function PaymentModal({
                                                 }
                                                 placeholder="Nama pelanggan"
                                                 maxLength={100}
-                                                className="w-full h-8 px-2.5 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 bg-white"
+                                                className="w-full h-8 px-2.5 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 bg-white"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -294,7 +313,7 @@ export default function PaymentModal({
                                                 }
                                                 placeholder="08xx..."
                                                 maxLength={20}
-                                                className="w-full h-8 px-2.5 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 bg-white"
+                                                className="w-full h-8 px-2.5 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 bg-white"
                                             />
                                         </div>
                                     </div>
@@ -316,8 +335,8 @@ export default function PaymentModal({
                                     onClick={handleUseCurrentDate}
                                     className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
                                         !useCustomDate
-                                            ? "bg-emerald-600 text-white border-emerald-600"
-                                            : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                            ? "bg-orange-600 text-white border-orange-600"
+                                            : "border-gray-200 text-gray-600 hover:border-orange-300 hover:bg-orange-50"
                                     }`}
                                 >
                                     Hari Ini
@@ -331,8 +350,8 @@ export default function PaymentModal({
                                             className={cn(
                                                 "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all",
                                                 useCustomDate
-                                                    ? "bg-emerald-600 text-white border-emerald-600"
-                                                    : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50",
+                                                    ? "bg-orange-600 text-white border-orange-600"
+                                                    : "border-gray-200 text-gray-600 hover:border-orange-300 hover:bg-orange-50",
                                             )}
                                         >
                                             <CalendarIcon className="h-3.5 w-3.5" />
@@ -367,7 +386,7 @@ export default function PaymentModal({
                                 bulan lalu
                             </p>
                             {useCustomDate && transactionDate && (
-                                <p className="text-[10px] text-emerald-600 mt-1">
+                                <p className="text-[10px] text-orange-600 mt-1">
                                     ✓ Transaksi akan dicatat pada tanggal{" "}
                                     {formatShortDate(transactionDate)}
                                 </p>
@@ -396,8 +415,8 @@ export default function PaymentModal({
                                                 ? "border-red-400 text-red-600"
                                                 : paidAmount >= adjustedTotal &&
                                                     paidAmount > 0
-                                                  ? "border-emerald-500 text-emerald-700"
-                                                  : "border-gray-200 focus:border-emerald-400"
+                                                  ? "border-orange-500 text-orange-700"
+                                                  : "border-gray-200 focus:border-orange-400"
                                         }`}
                                     />
                                 </div>
@@ -411,8 +430,8 @@ export default function PaymentModal({
                                             }
                                             className={`py-1.5 px-3 text-xs font-medium rounded-lg border transition-all ${
                                                 paidAmount === amount
-                                                    ? "bg-emerald-600 text-white border-emerald-600"
-                                                    : "border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                                    ? "bg-orange-600 text-white border-orange-600"
+                                                    : "border-gray-200 text-gray-600 hover:border-orange-300 hover:bg-orange-50"
                                             }`}
                                         >
                                             {amount >= 1000
@@ -422,7 +441,7 @@ export default function PaymentModal({
                                     ))}
                                     <button
                                         onClick={handleExactAmount}
-                                        className="py-1.5 px-3 text-xs font-medium rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all"
+                                        className="py-1.5 px-3 text-xs font-medium rounded-lg border border-emerald-300 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-all"
                                     >
                                         Uang Pas
                                     </button>
@@ -433,7 +452,7 @@ export default function PaymentModal({
                                         className={`rounded-lg p-2.5 mb-3 ${
                                             isInsufficient
                                                 ? "bg-red-50 border border-red-100"
-                                                : "bg-emerald-50 border border-emerald-100"
+                                                : "bg-orange-50 border border-orange-100"
                                         }`}
                                     >
                                         <div className="flex justify-between items-center">
@@ -445,7 +464,7 @@ export default function PaymentModal({
                                                     className={`text-xs font-semibold ${
                                                         isInsufficient
                                                             ? "text-red-600"
-                                                            : "text-emerald-700"
+                                                            : "text-orange-700"
                                                     }`}
                                                 >
                                                     {isInsufficient
@@ -457,7 +476,7 @@ export default function PaymentModal({
                                                 className={`text-lg font-bold ${
                                                     isInsufficient
                                                         ? "text-red-600"
-                                                        : "text-emerald-700"
+                                                        : "text-orange-700"
                                                 }`}
                                             >
                                                 {isInsufficient
@@ -476,21 +495,25 @@ export default function PaymentModal({
                         )}
 
                         {selectedPaymentMethod === "qris" && (
-                            <div className="text-center py-3 mb-3">
-                                <div className="bg-gray-100 rounded-xl p-3 inline-block mb-3">
-                                    <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center border-2 border-gray-200">
-                                        <QrCode className="h-20 w-20 text-gray-400" />
-                                    </div>
+                            <div className="flex flex-col items-center py-3 gap-4">
+                                <div className="bg-white rounded-2xl p-4 shadow-lg border-2 border-gray-100">
+                                    <QRCodeSVG
+                                        value={QRIS_CONFIG.qrisString}
+                                        size={260}
+                                        level="H"
+                                        includeMargin={false}
+                                        bgColor="#ffffff"
+                                        fgColor="#000000"
+                                    />
                                 </div>
-                                <p className="text-xs text-gray-600">
-                                    Scan QR Code dengan aplikasi payment
-                                </p>
-                                <p className="text-xl font-bold text-emerald-700 mt-1">
-                                    {formatRupiah(adjustedTotal)}
-                                </p>
-                                <p className="text-[10px] text-gray-400 mt-1">
-                                    QRIS - Semua pembayaran digital
-                                </p>
+                                <div className="text-center space-y-1">
+                                    <p className="text-base font-bold text-gray-800">
+                                        {QRIS_CONFIG.merchantName}
+                                    </p>
+                                    <p className="text-2xl font-bold text-orange-600">
+                                        {formatRupiah(adjustedTotal)}
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -508,7 +531,7 @@ export default function PaymentModal({
                         <button
                             onClick={handleConfirmClick}
                             disabled={!canConfirm}
-                            className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="flex-1 py-2.5 text-sm font-semibold bg-orange-600 text-white rounded-lg hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {isProcessing ? (
                                 <span className="flex items-center justify-center gap-2">

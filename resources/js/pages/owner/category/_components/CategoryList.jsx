@@ -47,6 +47,7 @@ export function CategoryList({
     onDelete,
     onSearch,
     onFilterChange,
+    deviceType,
 }) {
     const data = categories?.data ?? [];
     const [loadingId, setLoadingId] = useState(null);
@@ -170,9 +171,13 @@ export function CategoryList({
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
+            <div
+                className={`grid gap-2 ${deviceType === "tablet" ? "grid-cols-3" : "grid-cols-2"}`}
+            >
                 {data.length === 0 ? (
-                    <div className="col-span-2 flex items-center justify-center h-24 text-sm text-muted-foreground rounded-md border">
+                    <div
+                        className={`${deviceType === "tablet" ? "col-span-3" : "col-span-2"} flex items-center justify-center h-24 text-sm text-muted-foreground rounded-md border`}
+                    >
                         No categories found.
                     </div>
                 ) : (

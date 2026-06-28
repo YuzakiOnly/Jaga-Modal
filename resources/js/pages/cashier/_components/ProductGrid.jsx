@@ -1,22 +1,16 @@
-import { Package, Plus, Infinity } from "lucide-react";
+// resources/js/pages/cashier/_components/ProductGrid.jsx
+import { Package, Infinity } from "lucide-react";
 
 const formatRupiah = (num) => {
     return "Rp " + Number(num).toLocaleString("id-ID");
 };
 
-const StockStatus = ({ product }) => {
-    if (product.stock_type === "unlimited") {
-        return (
-            <span className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                <Infinity size={10} />
-                Unlimited
-            </span>
-        );
-    }
+const StockBadge = ({ product }) => {
+    if (product.stock_type === "unlimited") return null;
 
     if (product.stock <= 0) {
         return (
-            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+            <span className="absolute top-2 left-2 text-[10px] font-bold text-white bg-rose-500 px-2 py-0.5 rounded-full shadow-sm">
                 Habis
             </span>
         );
@@ -24,108 +18,115 @@ const StockStatus = ({ product }) => {
 
     if (product.minimum_stock && product.stock <= product.minimum_stock) {
         return (
-            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+            <span className="absolute top-2 left-2 text-[10px] font-bold text-white bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">
                 Sisa {product.stock}
             </span>
         );
     }
 
-    return (
-        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-            Stok {product.stock}
-        </span>
-    );
+    return null;
 };
 
 export default function ProductGrid({ products, onAddToCart, cartItems }) {
     const cartMap = cartItems.reduce((map, item) => {
-        if (!item.is_custom) {
-            map[item.product_id] = item.qty;
+        if (!item.is_custom && item.product_id) {
+            map[item.product_id] = (map[item.product_id] || 0) + item.qty;
         }
         return map;
     }, {});
 
     if (products.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12">
-                <Package className="h-12 w-12 text-gray-300 mb-3" />
-                <p className="text-gray-500">Produk tidak ditemukan</p>
-                <p className="text-sm text-gray-400 mt-1">
-                    Coba ubah kata kunci pencarian
+            <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+                    <Package className="h-7 w-7 text-slate-300" />
+                </div>
+                <p className="text-slate-600 font-medium">
+                    Produk tidak ditemukan
+                </p>
+                <p className="text-sm text-slate-400 mt-1">
+                    Coba ubah kata kunci pencarian atau kategori
                 </p>
             </div>
         );
     }
 
     return (
-        <div className="p-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {products.map((product) => {
-                    const isOutOfStock =
-                        product.stock_type === "limited" && product.stock <= 0;
-                    const quantityInCart = cartMap[product.id] || 0;
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-5">
+            {products.map((product) => {
+                const isOutOfStock =
+                    product.stock_type === "limited" && product.stock <= 0;
+                const quantityInCart = cartMap[product.id] || 0;
+                const hasVariants =
+                    product.variant_groups && product.variant_groups.length > 0;
 
-                    return (
-                        <button
-                            key={product.id}
-                            onClick={() =>
-                                !isOutOfStock && onAddToCart(product)
-                            }
-                            disabled={isOutOfStock}
-                            className={`group text-left bg-white rounded-lg border transition-all duration-200 overflow-hidden relative ${
-                                isOutOfStock
-                                    ? "opacity-50 cursor-not-allowed border-gray-200"
-                                    : quantityInCart > 0
-                                      ? "border-emerald-400 shadow-sm ring-2 ring-emerald-200"
-                                      : "border-gray-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                return (
+                    <button
+                        key={product.id}
+                        onClick={() => !isOutOfStock && onAddToCart(product)}
+                        disabled={isOutOfStock}
+                        className={`group text-left transition-all duration-200 ${
+                            isOutOfStock
+                                ? "opacity-50 cursor-not-allowed"
+                                : "cursor-pointer"
+                        }`}
+                    >
+                        <div
+                            className={`relative aspect-square rounded-2xl overflow-hidden bg-linear-to-br from-slate-100 to-slate-200 ring-1 ring-slate-200/60 transition-all duration-200 ${
+                                quantityInCart > 0
+                                    ? "ring-2 ring-orange-400"
+                                    : "group-hover:ring-orange-300 group-hover:shadow-lg group-hover:-translate-y-1"
                             }`}
                         >
-                            {quantityInCart > 0 && (
-                                <div className="absolute top-1.5 right-1.5 z-10 bg-emerald-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
-                                    {quantityInCart}
+                            {product.image ? (
+                                <img
+                                    src={`/storage/${product.image}`}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Package className="h-8 w-8 text-slate-300" />
                                 </div>
                             )}
 
-                            <div className="relative aspect-square bg-linear-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
-                                {product.image ? (
-                                    <img
-                                        src={`/storage/${product.image}`}
-                                        alt={product.name}
-                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                    />
-                                ) : (
-                                    <Package className="h-8 w-8 text-gray-300" />
-                                )}
+                            <StockBadge product={product} />
 
-                                {!isOutOfStock && (
-                                    <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition-all duration-200 flex items-center justify-center">
-                                        <div className="bg-emerald-600 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-75 group-hover:scale-100 shadow-lg">
-                                            <Plus className="h-3.5 w-3.5 text-white" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            {product.stock_type === "unlimited" && (
+                                <span className="absolute top-2 left-2 flex items-center gap-0.5 text-[10px] font-bold text-white bg-slate-900/70 px-2 py-0.5 rounded-full">
+                                    <Infinity size={10} />
+                                </span>
+                            )}
 
-                            <div className="p-2">
-                                <p className="text-xs font-semibold text-gray-800 line-clamp-2 mb-1 leading-tight">
-                                    {product.name}
+                            {hasVariants && !isOutOfStock && (
+                                <span className="absolute bottom-2 right-2 text-[9px] font-bold text-white bg-orange-500/90 px-1.5 py-0.5 rounded-full">
+                                    Varian
+                                </span>
+                            )}
+
+                            {quantityInCart > 0 && (
+                                <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                                    {quantityInCart}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-2 px-0.5">
+                            <p className="text-xs font-semibold text-slate-800 truncate">
+                                {product.name}
+                            </p>
+                            <div className="flex items-center justify-between mt-0.5">
+                                <p className="text-[10px] text-slate-400 truncate">
+                                    {product.category?.name || "Produk"}
                                 </p>
-                                <div className="mb-1.5">
-                                    <p className="text-sm font-bold text-emerald-700">
-                                        {formatRupiah(product.selling_price)}
-                                    </p>
-                                </div>
-                                <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate">
-                                        {product.category?.name || "-"}
-                                    </span>
-                                    <StockStatus product={product} />
-                                </div>
+                                <p className="text-xs font-bold text-orange-500 shrink-0 ml-1">
+                                    {formatRupiah(product.selling_price)}
+                                </p>
                             </div>
-                        </button>
-                    );
-                })}
-            </div>
+                        </div>
+                    </button>
+                );
+            })}
         </div>
     );
 }

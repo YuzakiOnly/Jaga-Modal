@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'JagaModal'),
 
     /*
     |--------------------------------------------------------------------------
@@ -65,7 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Jakarta',
 
     /*
     |--------------------------------------------------------------------------
@@ -78,12 +78,11 @@ return [
     |
     */
 
+    'locale' => 'id',
+    'fallback_locale' => 'id', 
+    'faker_locale' => 'id_ID',
 
-    'locale' => env('APP_LOCALE', 'en'), 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
-
-    'available_locales' => explode(',', env('APP_AVAILABLE_LOCALES', 'id,en')),
+    'available_locales' => ['id', 'en'],
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
