@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class StoreSetupController extends Controller
@@ -62,10 +63,11 @@ class StoreSetupController extends Controller
                 'address' => $request->address,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
+                'is_active' => true,
             ];
 
             if ($request->hasFile('logo')) {
-                $logoPath = $request->file('logo')->store('stores/logos', 'public');
+                $logoPath = $request->file('logo')->store('stores/logos', 'private');
                 $storeData['logo'] = $logoPath;
             }
 

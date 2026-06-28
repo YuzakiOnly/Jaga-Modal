@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('employee_invitations', function (Blueprint $table) {
+            $table->id();
+            $table->string('token', 64)->unique();
+            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
+            $table->foreignId('invited_by')->constrained('users')->cascadeOnDelete();
+            $table->string('role')->default('cashier');
+            $table->string('name')->nullable();
+            $table->timestamp('expires_at');
+            $table->timestamp('used_at')->nullable();
+            $table->foreignId('used_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+
+            $table->index(['store_id', 'used_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('employee_invitations');
+    }
+};

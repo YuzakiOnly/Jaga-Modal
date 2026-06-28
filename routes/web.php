@@ -11,11 +11,13 @@ use App\Http\Controllers\Language\LanguageController;
 use App\Http\Controllers\Owner\CapitalPriceTemplateController;
 use App\Http\Controllers\Owner\CategoryController;
 use App\Http\Controllers\Owner\DashboardController;
+use App\Http\Controllers\Owner\EmployeeController;
 use App\Http\Controllers\Owner\ExpenseController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\TransactionController;
 use App\Http\Controllers\Owner\VariantGroupController;
 use App\Http\Controllers\Owner\WalletController;
+use App\Http\Controllers\PrivateFileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -46,6 +48,9 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
+
+    Route::get('/invite/{token}', [EmployeeController::class, 'showInvite'])->name('invite.show');
+    Route::post('/invite/{token}', [EmployeeController::class, 'claimInvite'])->name('invite.claim');
 });
 
 Route::middleware(['pending.store'])->group(function () {
@@ -60,6 +65,17 @@ Route::middleware(['pending.store'])->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Private files route - untuk akses file yang disimpan di storage private
+Route::middleware(['auth'])->group(function () {
+    Route::get('/private-files/{path}', [PrivateFileController::class, 'show'])
+        ->where('path', '.*')
+        ->name('private.files.show');
+
+    Route::get('/private-files/stream/{path}', [PrivateFileController::class, 'stream'])
+        ->where('path', '.*')
+        ->name('private.files.stream');
+});
 
 Route::middleware(['auth', 'role:cashier,owner,super_admin', 'ensure.store'])
     ->prefix('cashier')
@@ -131,6 +147,13 @@ Route::middleware(['auth', 'role:owner,super_admin', 'ensure.store'])
         Route::put('/variant-groups/{variantGroup}', [VariantGroupController::class, 'update'])->name('owner.variant-groups.update');
         Route::patch('/variant-groups/{variantGroup}/toggle', [VariantGroupController::class, 'toggleActive'])->name('owner.variant-groups.toggle');
         Route::delete('/variant-groups/{variantGroup}', [VariantGroupController::class, 'destroy'])->name('owner.variant-groups.destroy');
+
+        Route::get('/employees', [EmployeeController::class, 'index'])->name('owner.employees');
+        Route::get('/employees/create', [EmployeeController::class, 'create'])->name('owner.employees.create');
+        Route::post('/employees', [EmployeeController::class, 'store'])->name('owner.employees.store');
+        Route::post('/employees/invite', [EmployeeController::class, 'invite'])->name('owner.employees.invite');
+        Route::delete('/employees/invitations/{invitation}', [EmployeeController::class, 'revokeInvitation'])->name('owner.employees.invitations.revoke');
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('owner.employees.destroy');
 
         Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
         Route::get('/capital-prices/options', [CapitalPriceTemplateController::class, 'options'])->name('owner.capital-prices.options');

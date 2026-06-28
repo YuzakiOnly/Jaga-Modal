@@ -18,7 +18,7 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $locale = Session::get('locale', 'id'); 
+        $locale = Session::get('locale', 'id');
 
         return [
             ...parent::share($request),
@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => session('success'),
                 'error' => session('error'),
+                'inviteToken' => session('inviteToken'),
             ],
 
             'locale' => $locale,

@@ -19,6 +19,7 @@ export function DeleteDialog({
     onOpenChange,
     routeName,
     title = "Delete",
+    description = "This action is permanent and cannot be undone.",
     meta,
     label = "Delete",
 }) {
@@ -40,9 +41,7 @@ export function DeleteDialog({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>
-                        This action is permanent and cannot be undone.
-                    </DialogDescription>
+                    <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
 
                 <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-1">

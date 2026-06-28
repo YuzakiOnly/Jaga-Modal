@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class Store extends Model
 {
@@ -33,6 +34,19 @@ class Store extends Model
             'longitude' => 'float',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function getLogoUrlAttribute()
+    {
+        if (!$this->logo) {
+            return null;
+        }
+
+        if (Storage::disk('private')->exists($this->logo)) {
+            return route('private.files.stream', ['path' => $this->logo]);
+        }
+
+        return null;
     }
 
     public function user()

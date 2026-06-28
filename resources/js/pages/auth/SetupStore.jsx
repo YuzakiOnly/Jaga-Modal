@@ -66,7 +66,6 @@ function StepBusinessType({
             onChange("Lainnya");
         } else {
             setShowCustomInput(false);
-            // Cari label dari value yang dipilih
             const selected = BUSINESS_TYPES.find((t) => t.value === val);
             onChange(selected ? selected.label : val);
             setCustomBusinessType("");
@@ -79,7 +78,6 @@ function StepBusinessType({
         onChange(val);
     };
 
-    // Cek apakah value valid
     const isValueSelected = value && value.trim() !== "";
     const isCustomValid =
         !showCustomInput ||
@@ -100,7 +98,6 @@ function StepBusinessType({
 
             <div className="grid grid-cols-2 gap-3">
                 {BUSINESS_TYPES.map((type) => {
-                    // Cek apakah button ini aktif - compare dengan label
                     const isActive = value === type.label;
 
                     return (
@@ -285,7 +282,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                         htmlFor="store-phone"
                         className="text-sm font-medium text-[#1a1110] font-inter"
                     >
-                        Nomor Telepon
+                        Nomor Telepon <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c2a89c]">
@@ -306,7 +303,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                         />
                     </div>
                     <p className="text-xs text-[#c2a89c] font-inter">
-                        Nomor yang bisa dihubungi untuk pelanggan (opsional)
+                        Nomor yang bisa dihubungi untuk pelanggan
                     </p>
                     {errors.phone && (
                         <p className="text-xs text-red-600 font-inter">
@@ -328,7 +325,7 @@ function StepStoreInfo({ data, setData, errors, onNext, onBack }) {
                 <Button
                     type="button"
                     className="flex-1 bg-[#fe5e00] hover:bg-[#e55400] text-white border-0 shadow-md shadow-[#fe5e00]/25 transition-colors font-inter"
-                    disabled={!data.name}
+                    disabled={!data.name || !data.phone}
                     onClick={onNext}
                 >
                     Lanjut <ChevronRight className="ml-1 h-4 w-4" />
@@ -495,7 +492,7 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                         <SelectTrigger className="w-full border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] hover:bg-[#fff3e8] focus:ring-[#fe5e00]/20">
                             <SelectValue placeholder="Pilih negara" />
                         </SelectTrigger>
-                        <SelectContent className="border-[#e8d9ce] bg-white text-[#1a1110]">
+                        <SelectContent className="z-[1100] border-[#e8d9ce] bg-white text-[#1a1110]">
                             {COUNTRIES.map((c) => (
                                 <SelectItem key={c.value} value={c.value}>
                                     {c.label}
@@ -523,10 +520,12 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                                 setData("city", "");
                             }}
                         >
-                            <SelectTrigger className="w-full border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] hover:bg-[#fff3e8] focus:ring-[#fe5e00]/20">
+                            <SelectTrigger
+                                className={`w-full border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] hover:bg-[#fff3e8] focus:ring-[#fe5e00]/20 ${!data.province ? "text-[#c2a89c]" : ""}`}
+                            >
                                 <SelectValue placeholder="Pilih provinsi" />
                             </SelectTrigger>
-                            <SelectContent className="max-h-60 overflow-y-auto border-[#e8d9ce] bg-white text-[#1a1110]">
+                            <SelectContent className="z-[1100] max-h-60 overflow-y-auto border-[#e8d9ce] bg-white text-[#1a1110]">
                                 {provinces.map((p) => (
                                     <SelectItem key={p} value={p}>
                                         {p}
@@ -560,10 +559,12 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                             value={data.city || ""}
                             onValueChange={(val) => setData("city", val)}
                         >
-                            <SelectTrigger className="w-full border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] hover:bg-[#fff3e8] focus:ring-[#fe5e00]/20">
+                            <SelectTrigger
+                                className={`w-full border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] hover:bg-[#fff3e8] focus:ring-[#fe5e00]/20 ${!data.city ? "text-[#c2a89c]" : ""}`}
+                            >
                                 <SelectValue placeholder="Pilih kota / kabupaten" />
                             </SelectTrigger>
-                            <SelectContent className="max-h-60 overflow-y-auto border-[#e8d9ce] bg-white text-[#1a1110]">
+                            <SelectContent className="z-[1100] max-h-60 overflow-y-auto border-[#e8d9ce] bg-white text-[#1a1110]">
                                 {cities.map((c) => (
                                     <SelectItem key={c} value={c}>
                                         {c}
@@ -572,12 +573,9 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                             </SelectContent>
                         </Select>
                     ) : (
-                        <Input
-                            placeholder="Masukkan kota / kabupaten"
-                            value={data.city || ""}
-                            onChange={(e) => setData("city", e.target.value)}
-                            className={inputBase}
-                        />
+                        <div className="rounded-xl border border-[#e8d9ce] bg-[#faf5f0] p-3 text-sm text-[#8a6a62] font-inter">
+                            Silakan pilih provinsi terlebih dahulu
+                        </div>
                     )}
                     {errors.city && (
                         <p className="text-xs text-red-600 font-inter">
@@ -611,29 +609,28 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium text-[#1a1110] font-inter">
-                            Pin Lokasi
+                            Pin Lokasi <span className="text-red-500">*</span>
                         </Label>
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={handleLocate}
-                                disabled={locating}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-[#fe5e00] hover:text-[#e55400] underline-offset-4 hover:underline cursor-pointer disabled:opacity-50 font-inter"
-                            >
-                                {locating ? (
-                                    <>
-                                        <Loader2 className="h-3 w-3 animate-spin" />{" "}
-                                        Mendeteksi...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Crosshair className="h-3 w-3" /> Lokasi
-                                        Saya
-                                    </>
-                                )}
-                            </button>
-                        </div>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={handleLocate}
+                        disabled={locating}
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#fe5e00]/30 bg-[#fff3e8] px-3 py-2.5 text-sm font-medium text-[#fe5e00] active:bg-[#fe5e00]/10 disabled:opacity-50 font-inter sm:w-auto"
+                    >
+                        {locating ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Mendeteksi...
+                            </>
+                        ) : (
+                            <>
+                                <Crosshair className="h-4 w-4" />
+                                Lokasi Saya
+                            </>
+                        )}
+                    </button>
 
                     <div className="flex gap-2">
                         <Input
@@ -658,7 +655,7 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
 
                     <div
                         ref={mapContainerRef}
-                        className="h-56 w-full overflow-hidden rounded-xl border border-[#e8d9ce] bg-[#fff8f0]"
+                        className="relative z-0 h-56 w-full overflow-hidden rounded-xl border border-[#e8d9ce] bg-[#fff8f0]"
                         style={{ minHeight: "224px" }}
                     />
 
@@ -693,7 +690,9 @@ function StepLocation({ data, setData, errors, processing, onBack }) {
                         !data.country ||
                         !data.province ||
                         !data.city ||
-                        !data.address
+                        !data.address ||
+                        !data.latitude ||
+                        !data.longitude
                     }
                 >
                     {processing ? (
@@ -736,7 +735,6 @@ function SetupStore({ titlePage }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Jika customBusinessType diisi, gunakan itu sebagai business_type
         if (customBusinessType) {
             setData("business_type", customBusinessType);
         }

@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
+
+    public const MAX_EMPLOYEES_PER_STORE = 5;
 
     protected $fillable = [
         'name',
@@ -24,6 +27,7 @@ class User extends Authenticatable
         'is_primary',
         'phone_verified_at',
         'store_id',
+        'invited_by',
     ];
 
     protected $hidden = [
@@ -69,5 +73,27 @@ class User extends Authenticatable
     public function stores()
     {
         return $this->hasMany(Store::class);
+    }
+
+    public function invitedBy()
+    {
+        return $this->belongsTo(User::class, 'invited_by');
+    }
+
+    public function invitedUsers()
+    {
+        return $this->hasMany(User::class, 'invited_by');
+    }
+
+    public static function activeEmployeeCount(int $storeId): int
+    {
+        return static::where('store_id', $storeId)
+            ->where('role', '!=', 'owner')
+            ->count();
+    }
+
+    public static function hasReachedEmployeeLimit(int $storeId): bool
+    {
+        return static::activeEmployeeCount($storeId) >= static::MAX_EMPLOYEES_PER_STORE;
     }
 }

@@ -19,6 +19,7 @@ import {
     CreditCard,
     TrendingUp,
     SlidersHorizontal,
+    UserPlus,
 } from "lucide-react";
 
 export const sharedProjects = [
@@ -134,6 +135,13 @@ export const ownerItems = [
                 icon: SlidersHorizontal,
                 permission: ["owner", "super_admin"],
                 description: "Manage product variant options"
+            },
+            {
+                title: "Employees",
+                href: "/owner/employees",
+                icon: UserPlus,
+                permission: ["owner", "super_admin"],
+                description: "Manage cashier and staff accounts"
             },
             {
                 title: "Capital Prices (HPP)",
