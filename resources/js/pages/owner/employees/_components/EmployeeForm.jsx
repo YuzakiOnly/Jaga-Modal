@@ -2,7 +2,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "@inertiajs/react";
 import { route } from "ziggy-js";
-import { ChevronLeft, Loader2, Copy, Check, Link2, UserPlus } from "lucide-react";
+import {
+    ChevronLeft,
+    Loader2,
+    Copy,
+    Check,
+    Link2,
+    UserPlus,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -30,12 +37,7 @@ import {
     CardTitle,
     CardDescription,
 } from "@/components/ui/card";
-import {
-    Tabs,
-    TabsList,
-    TabsTrigger,
-    TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 import {
@@ -92,20 +94,16 @@ export default function EmployeeForm({ employeeCount = 0, maxEmployees = 5 }) {
     });
 
     const onSubmitInvite = inviteForm.handleSubmit((data) => {
-        router.post(
-            route("owner.employees.invite"),
-            data,
-            {
-                preserveScroll: true,
-                onSuccess: (page) => {
-                    const token = page.props?.flash?.inviteToken;
-                    if (token) {
-                        const url = `${window.location.origin}/invite/${token}`;
-                        setInviteResult(url);
-                    }
-                },
+        router.post(route("owner.employees.invite"), data, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const token = page.props?.flash?.inviteToken;
+                if (token) {
+                    const url = `${window.location.origin}/invite/${token}`;
+                    setInviteResult(url);
+                }
             },
-        );
+        });
     });
 
     const handleCopy = async () => {
@@ -150,9 +148,8 @@ export default function EmployeeForm({ employeeCount = 0, maxEmployees = 5 }) {
                             Employee limit reached
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            You can only have up to {maxEmployees} employees
-                            per store. Remove an existing employee to add a
-                            new one.
+                            You can only have up to {maxEmployees} employees per
+                            store. Remove an existing employee to add a new one.
                         </p>
                         <Button
                             variant="outline"
@@ -232,8 +229,8 @@ export default function EmployeeForm({ employeeCount = 0, maxEmployees = 5 }) {
                                                     </FormControl>
                                                     <FormDescription>
                                                         Lowercase letters,
-                                                        numbers, and
-                                                        underscores only.
+                                                        numbers, and underscores
+                                                        only.
                                                     </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
@@ -273,9 +270,7 @@ export default function EmployeeForm({ employeeCount = 0, maxEmployees = 5 }) {
                                             name="role"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>
-                                                        Role
-                                                    </FormLabel>
+                                                    <FormLabel>Role</FormLabel>
                                                     <Select
                                                         onValueChange={
                                                             field.onChange
@@ -365,9 +360,9 @@ export default function EmployeeForm({ employeeCount = 0, maxEmployees = 5 }) {
                                         Invite Link Ready
                                     </CardTitle>
                                     <CardDescription>
-                                        Share this link with your new
-                                        employee. It expires in 3 days and can
-                                        only be used once.
+                                        Share this link with your new employee.
+                                        It expires in 3 days and can only be
+                                        used once.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4 px-6 pb-6 pt-0">
@@ -421,8 +416,8 @@ export default function EmployeeForm({ employeeCount = 0, maxEmployees = 5 }) {
                                             </CardTitle>
                                             <CardDescription>
                                                 The employee sets their own
-                                                username and password when
-                                                they open the link.
+                                                username and password when they
+                                                open the link.
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4 px-6 pb-6 pt-0">

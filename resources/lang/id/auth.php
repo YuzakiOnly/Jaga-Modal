@@ -4,7 +4,7 @@ return [
     // Halaman Login
     'welcome_back' => 'Selamat Datang Kembali',
     'sign_in_account' => 'Silakan masuk ke akun Anda',
-    'email_address' => 'Alamat Email',
+    'email_address' => 'Email / Username',
     'password' => 'Kata Sandi',
     'forgot_password' => 'Lupa kata sandi?',
     'sign_in' => 'Masuk',

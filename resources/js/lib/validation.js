@@ -1,13 +1,12 @@
 export function validateLogin(data, lang) {
     const errors = {};
 
-    const emailEmpty = !data.email?.trim();
-    const emailInvalid = data.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+    const loginEmpty = !data.login?.trim();
     const passwordEmpty = !data.password;
     const passwordShort = data.password && data.password.length < 8;
 
-    if (emailEmpty || emailInvalid || passwordEmpty || passwordShort) {
-        errors.email = lang("validation_email_password_invalid");
+    if (loginEmpty || passwordEmpty || passwordShort) {
+        errors.login = lang("validation_email_password_invalid");
         errors.password = "";
     }
 

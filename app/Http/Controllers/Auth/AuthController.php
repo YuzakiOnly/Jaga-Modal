@@ -56,22 +56,83 @@ class AuthController extends Controller
         ]);
     }
 
+    public function showPending()
+    {
+        $userId = Session::get('pending_employee_id');
+
+        if (!$userId) {
+            return redirect()->route('login');
+        }
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            Session::forget('pending_employee_id');
+            return redirect()->route('login');
+        }
+
+        return Inertia::render('auth/EmployeePending', [
+            'titlePage' => 'Waiting for Approval',
+            'status' => $user->approval_status,
+            'name' => $user->name,
+        ]);
+    }
+
+    public function checkPendingStatus()
+    {
+        $userId = Session::get('pending_employee_id');
+
+        if (!$userId) {
+            return response()->json(['status' => 'unknown'], 404);
+        }
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            Session::forget('pending_employee_id');
+            return response()->json(['status' => 'rejected']);
+        }
+
+        return response()->json(['status' => $user->approval_status]);
+    }
+
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $request->validate([
+            'login' => ['required', 'string'],
             'password' => ['required'],
         ]);
+
+        $loginField = filter_var($request->login, FILTER_VALIDATE_EMAIL)
+            ? 'email'
+            : 'username';
+
+        $credentials = [
+            $loginField => $request->login,
+            'password' => $request->password,
+        ];
 
         $guestLocale = Session::get('locale');
 
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors([
-                'email' => __('auth.validation_email_password_invalid'),
-            ])->onlyInput('email');
+                'login' => __('auth.validation_email_password_invalid'),
+            ])->onlyInput('login');
         }
 
         $user = Auth::user();
+
+        if ($user->isPendingApproval()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            Session::put('pending_employee_id', $user->id);
+            Session::save();
+
+            return redirect()->route('employee.pending');
+        }
+
         $availableLocales = config('app.available_locales', ['id', 'en']);
 
         if ($guestLocale && in_array($guestLocale, $availableLocales)) {

@@ -25,6 +25,7 @@ class EmployeeController extends Controller
 
         $employees = User::where('store_id', $storeId)
             ->where('role', '!=', 'owner')
+            ->where('approval_status', 'approved')
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('username', 'like', "%{$search}%")
@@ -33,6 +34,12 @@ class EmployeeController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString();
+
+        $pendingApprovals = User::where('store_id', $storeId)
+            ->where('role', '!=', 'owner')
+            ->where('approval_status', 'pending')
+            ->orderByDesc('created_at')
+            ->get();
 
         $pendingInvitations = EmployeeInvitation::where('store_id', $storeId)
             ->whereNull('used_at')
@@ -43,6 +50,7 @@ class EmployeeController extends Controller
         return Inertia::render('owner/employees/page', [
             'titlePage' => 'Employees',
             'employees' => $employees,
+            'pendingApprovals' => $pendingApprovals,
             'pendingInvitations' => $pendingInvitations,
             'filters' => ['search' => $search],
             'employeeCount' => User::activeEmployeeCount($storeId),
@@ -75,8 +83,8 @@ class EmployeeController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-z0-9_]+$/', Rule::unique('users', 'username')->withTrashed()],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->withTrashed()],
+            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-z0-9_]+$/', Rule::unique('users', 'username')],
+            'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')],
             'role' => ['required', 'string', Rule::in(['cashier'])],
             'password' => ['required', Password::defaults()],
         ], [
@@ -196,8 +204,8 @@ class EmployeeController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-z0-9_]+$/', Rule::unique('users', 'username')->withTrashed()],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->withTrashed()],
+            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-z0-9_]+$/', Rule::unique('users', 'username')],
+            'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')],
             'password' => ['required', Password::defaults()],
         ], [
             'username.regex' => 'Username hanya boleh huruf kecil, angka, dan underscore.',
@@ -215,6 +223,7 @@ class EmployeeController extends Controller
                 'role' => $invitation->role,
                 'store_id' => $invitation->store_id,
                 'invited_by' => $invitation->invited_by,
+                'approval_status' => 'pending',
                 'phone_verified_at' => now(),
             ]);
 
@@ -222,13 +231,40 @@ class EmployeeController extends Controller
 
             DB::commit();
 
-            Auth::login($user);
-            Session::regenerate();
+            Session::put('pending_employee_id', $user->id);
+            Session::save();
 
-            return redirect('/cashier')->with('success', 'Account created. Welcome aboard!');
+            return redirect()->route('employee.pending')
+                ->with('success', 'Account created. Waiting for owner approval.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to create your account. Please try again.']);
         }
+    }
+
+    public function approve(User $employee)
+    {
+        $owner = Auth::user();
+
+        if ($employee->store_id !== $owner->store_id) {
+            abort(403);
+        }
+
+        $employee->update(['approval_status' => 'approved']);
+
+        return back()->with('success', 'Employee approved. They can now log in.');
+    }
+
+    public function reject(User $employee)
+    {
+        $owner = Auth::user();
+
+        if ($employee->store_id !== $owner->store_id) {
+            abort(403);
+        }
+
+        $employee->forceDelete();
+
+        return back()->with('success', 'Employee request rejected and removed.');
     }
 }

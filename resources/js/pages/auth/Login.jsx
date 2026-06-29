@@ -2,7 +2,16 @@ import { Link, useForm } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
+import {
+    User,
+    Lock,
+    Eye,
+    EyeOff,
+    ArrowRight,
+    ShieldCheck,
+    Sparkles,
+    Loader2,
+} from "lucide-react";
 import AuthLayout from "@/Layouts/AuthLayout";
 import { Head } from "@inertiajs/react";
 import { AuthHeader } from "@/components/auth/LoginPage";
@@ -37,7 +46,7 @@ function LoginContent({ titlePage, showDescription = true }) {
         processing,
         errors: serverErrors,
     } = useForm({
-        email: "",
+        login: "",
         password: "",
         remember: false,
     });
@@ -45,7 +54,7 @@ function LoginContent({ titlePage, showDescription = true }) {
     const combinedServerErrors =
         Object.keys(serverErrors).length > 0
             ? {
-                  email: lang("validation_email_password_invalid"),
+                  login: lang("validation_email_password_invalid"),
                   password: " ",
               }
             : {};
@@ -59,7 +68,7 @@ function LoginContent({ titlePage, showDescription = true }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!valueError.onSubmit(["email", "password"], data)) return;
+        if (!valueError.onSubmit(["login", "password"], data)) return;
         post("/login");
     };
 
@@ -73,39 +82,45 @@ function LoginContent({ titlePage, showDescription = true }) {
                 showDescription={showDescription}
             />
 
-            <form onSubmit={handleSubmit} className="mt-7 space-y-4 font-inter" noValidate>
+            <form
+                onSubmit={handleSubmit}
+                className="mt-7 space-y-4 font-inter"
+                noValidate
+            >
                 <Field
                     label={lang("email_address")}
-                    htmlFor="email"
+                    htmlFor="login"
                     error={
-                        valueError.showError("email")
-                            ? valueError.errors.email
+                        valueError.showError("login")
+                            ? valueError.errors.login
                             : null
                     }
                 >
                     <div className="relative">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c2a89c]">
-                            <Mail className="h-4 w-4" />
+                            <User className="h-4 w-4" />
                         </span>
                         <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            autoComplete="email"
+                            id="login"
+                            name="login"
+                            type="text"
+                            autoComplete="username"
                             className={`pl-9 border-[#e8d9ce] bg-[#fffaf5] text-[#1a1110] placeholder:text-[#c2a89c] focus-visible:border-[#fe5e00] focus-visible:ring-[#fe5e00]/20 ${valueError.inputClass(
-                                "email",
+                                "login",
                                 "",
                             )}`}
-                            placeholder={lang("email_address")}
-                            value={data.email}
+                            placeholder={
+                                lang("email_address") || "Email atau Username"
+                            }
+                            value={data.login}
                             onChange={(e) => {
-                                setData("email", e.target.value);
-                                valueError.onChange("email", {
+                                setData("login", e.target.value);
+                                valueError.onChange("login", {
                                     ...data,
-                                    email: e.target.value,
+                                    login: e.target.value,
                                 });
                             }}
-                            onBlur={() => valueError.onBlur("email", data)}
+                            onBlur={() => valueError.onBlur("login", data)}
                         />
                     </div>
                 </Field>

@@ -28,6 +28,7 @@ class User extends Authenticatable
         'phone_verified_at',
         'store_id',
         'invited_by',
+        'approval_status',
     ];
 
     protected $hidden = [
@@ -63,6 +64,16 @@ class User extends Authenticatable
     public function isPrimary(): bool
     {
         return (bool) $this->is_primary;
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->approval_status === 'pending';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approval_status === 'approved';
     }
 
     public function store()

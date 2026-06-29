@@ -5,6 +5,7 @@ import AppLayout from "@/layouts/dashboard/AppLayout";
 import { EmployeeTable } from "./_components/EmployeeTable";
 import { EmployeeList } from "./_components/EmployeeList";
 import { PendingInvitations } from "./_components/PendingInvitations";
+import { PendingApprovals } from "./_components/PendingApprovals";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -21,6 +22,7 @@ import { useDeviceType } from "@/hooks/use-mobile";
 
 export default function EmployeesPage({
     employees,
+    pendingApprovals,
     pendingInvitations,
     filters,
     employeeCount,
@@ -112,6 +114,8 @@ export default function EmployeesPage({
                         </CardHeader>
                     </Card>
                 </div>
+
+                <PendingApprovals approvals={pendingApprovals} />
 
                 <PendingInvitations
                     invitations={pendingInvitations}

@@ -53,6 +53,9 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/invite/{token}', [EmployeeController::class, 'claimInvite'])->name('invite.claim');
 });
 
+Route::get('/employee/pending', [AuthController::class, 'showPending'])->name('employee.pending');
+Route::get('/employee/pending/status', [AuthController::class, 'checkPendingStatus'])->name('employee.pending.status');
+
 Route::middleware(['pending.store'])->group(function () {
     Route::get('/verify-phone', [AuthController::class, 'showVerifyPhone'])->name('verify.phone');
     Route::post('/verify-phone', [AuthController::class, 'verify'])->name('verify.phone.submit');
@@ -153,6 +156,8 @@ Route::middleware(['auth', 'role:owner,super_admin', 'ensure.store'])
         Route::post('/employees', [EmployeeController::class, 'store'])->name('owner.employees.store');
         Route::post('/employees/invite', [EmployeeController::class, 'invite'])->name('owner.employees.invite');
         Route::delete('/employees/invitations/{invitation}', [EmployeeController::class, 'revokeInvitation'])->name('owner.employees.invitations.revoke');
+        Route::patch('/employees/{employee}/approve', [EmployeeController::class, 'approve'])->name('owner.employees.approve');
+        Route::patch('/employees/{employee}/reject', [EmployeeController::class, 'reject'])->name('owner.employees.reject');
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('owner.employees.destroy');
 
         Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
