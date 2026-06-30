@@ -57,7 +57,7 @@ class CapitalPriceTemplateController extends Controller
 
         DB::transaction(function () use ($validated, $ingredients, $storeId) {
             $validated['store_id'] = $storeId;
-            $validated['amount'] = 0; 
+            $validated['amount'] = 0;
 
             $template = CapitalPriceTemplate::create($validated);
 
@@ -70,7 +70,7 @@ class CapitalPriceTemplateController extends Controller
             ->with('success', "Template HPP \"{$validated['name']}\" berhasil dibuat.");
     }
 
-    public function edit(CapitalPriceTemplate $capitalPrice)
+    public function edit($storeSlug, CapitalPriceTemplate $capitalPrice)
     {
         if ($capitalPrice->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -81,7 +81,7 @@ class CapitalPriceTemplateController extends Controller
         ]);
     }
 
-    public function update(Request $request, CapitalPriceTemplate $capitalPrice)
+    public function update(Request $request, $storeSlug, CapitalPriceTemplate $capitalPrice)
     {
         $storeId = auth()->user()->store_id;
 
@@ -104,7 +104,7 @@ class CapitalPriceTemplateController extends Controller
             ->with('success', "Template HPP \"{$capitalPrice->name}\" berhasil diperbarui.");
     }
 
-    public function toggleActive(CapitalPriceTemplate $capitalPrice)
+    public function toggleActive($storeSlug, CapitalPriceTemplate $capitalPrice)
     {
         if ($capitalPrice->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -116,7 +116,7 @@ class CapitalPriceTemplateController extends Controller
         return back()->with('success', "Template \"{$capitalPrice->name}\" {$state}.");
     }
 
-    public function destroy(CapitalPriceTemplate $capitalPrice)
+    public function destroy($storeSlug, CapitalPriceTemplate $capitalPrice)
     {
         if ($capitalPrice->store_id !== auth()->user()->store_id) {
             abort(403);

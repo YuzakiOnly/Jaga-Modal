@@ -97,14 +97,14 @@ export const ownerItems = [
         items: [
             {
                 title: "Dashboard",
-                href: "/owner/dashboard",
+                routeName: "owner.dashboard",
                 icon: LayoutDashboard,
                 permission: ["owner", "super_admin"],
                 description: "Business overview"
             },
             {
                 title: "POS Cashier",
-                href: "/cashier",
+                routeName: "cashier.pos",
                 icon: ShoppingBag,
                 permission: ["owner", "super_admin"],
                 description: "Point of Sale cashier system"
@@ -117,56 +117,56 @@ export const ownerItems = [
         items: [
             {
                 title: "Categories",
-                href: "/owner/categories",
+                routeName: "owner.categories",
                 icon: Tags,
                 permission: ["owner", "super_admin"],
                 description: "Manage product categories"
             },
             {
                 title: "Products",
-                href: "/owner/products",
+                routeName: "owner.products",
                 icon: Boxes,
                 permission: ["owner", "super_admin"],
                 description: "Manage your products"
             },
             {
                 title: "Variant Groups",
-                href: "/owner/variant-groups",
+                routeName: "owner.variant-groups",
                 icon: SlidersHorizontal,
                 permission: ["owner", "super_admin"],
                 description: "Manage product variant options"
             },
             {
                 title: "Employees",
-                href: "/owner/employees",
+                routeName: "owner.employees",
                 icon: UserPlus,
                 permission: ["owner", "super_admin"],
                 description: "Manage cashier and staff accounts"
             },
             {
                 title: "Capital Prices (HPP)",
-                href: "/owner/capital-prices",
+                routeName: "owner.capital-prices",
                 icon: Banknote,
                 permission: ["owner", "super_admin"],
                 description: "Manage capital prices"
             },
             {
                 title: "Point of Sale",
-                href: "/owner/pos",
+                routeName: "owner.pos",
                 icon: ShoppingCart,
                 permission: ["owner", "super_admin"],
                 description: "Process sales",
                 items: [
                     {
                         title: "Cashier",
-                        href: "/owner/pos",
+                        routeName: "owner.pos",
                         icon: Receipt,
                         permission: ["owner", "super_admin"],
                         description: "Make a sale"
                     },
                     {
                         title: "Transaction History",
-                        href: "/owner/pos/history",
+                        routeName: "owner.transactions.history",
                         icon: History,
                         permission: ["owner", "super_admin"],
                         description: "View transaction history"
@@ -175,7 +175,7 @@ export const ownerItems = [
             },
             {
                 title: "Expenses",
-                href: "/owner/expenses",
+                routeName: "owner.expenses",
                 icon: Wallet,
                 permission: ["owner", "super_admin"],
                 description: "Manage expenses"
@@ -188,7 +188,7 @@ export const ownerItems = [
         items: [
             {
                 title: "Wallet",
-                href: "/owner/wallet",
+                routeName: "owner.wallet",
                 icon: CreditCard,
                 permission: ["owner", "super_admin"],
                 description: "Manage your wallet"

@@ -120,7 +120,7 @@ class ProductController extends Controller
             ->with('success', "Product \"{$product->name}\" created successfully.");
     }
 
-    public function edit(Product $product)
+    public function edit($storeSlug, Product $product)
     {
         if ($product->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -140,7 +140,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $storeSlug, Product $product)
     {
         $storeId = auth()->user()->store_id;
 
@@ -175,7 +175,7 @@ class ProductController extends Controller
             ->with('success', "Product \"{$product->name}\" updated successfully.");
     }
 
-    public function toggleActive(Product $product)
+    public function toggleActive($storeSlug, Product $product)
     {
         if ($product->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -187,7 +187,7 @@ class ProductController extends Controller
         return back()->with('success', "Product \"{$product->name}\" {$state}.");
     }
 
-    public function destroy(Product $product)
+    public function destroy($storeSlug, Product $product)
     {
         if ($product->store_id !== auth()->user()->store_id) {
             abort(403);

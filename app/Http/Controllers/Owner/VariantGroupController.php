@@ -101,7 +101,7 @@ class VariantGroupController extends Controller
             ->with('success', "Variant group \"{$validated['name']}\" created successfully.");
     }
 
-    public function edit(VariantGroup $variantGroup)
+    public function edit($storeSlug, VariantGroup $variantGroup)
     {
         if ($variantGroup->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -120,7 +120,7 @@ class VariantGroupController extends Controller
         ]);
     }
 
-    public function update(Request $request, VariantGroup $variantGroup)
+    public function update(Request $request, $storeSlug, VariantGroup $variantGroup)
     {
         $storeId = auth()->user()->store_id;
 
@@ -178,7 +178,7 @@ class VariantGroupController extends Controller
             ->with('success', "Variant group \"{$variantGroup->name}\" updated successfully.");
     }
 
-    public function toggleActive(VariantGroup $variantGroup)
+    public function toggleActive($storeSlug, VariantGroup $variantGroup)
     {
         if ($variantGroup->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -190,7 +190,7 @@ class VariantGroupController extends Controller
         return back()->with('success', "Variant group \"{$variantGroup->name}\" {$state}.");
     }
 
-    public function destroy(VariantGroup $variantGroup)
+    public function destroy($storeSlug, VariantGroup $variantGroup)
     {
         if ($variantGroup->store_id !== auth()->user()->store_id) {
             abort(403);

@@ -159,9 +159,9 @@ export default function CustomerTransactionChart({
                             <SelectValue placeholder="Pilih bulan" />
                         </SelectTrigger>
                         <SelectContent>
-                            {availableMonths.map((m) => (
+                            {availableMonths.map((m, index) => (
                                 <SelectItem
-                                    key={m.value}
+                                    key={`customer-${m.value}-${index}`}
                                     value={m.value}
                                     className="hover:bg-primary/10 transition-colors duration-150"
                                 >

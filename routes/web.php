@@ -30,11 +30,17 @@ Route::get('/', function () {
         }
 
         if ($user->isOwner()) {
-            return redirect('/owner/dashboard');
+            $slug = $user->store?->slug;
+            return $slug
+                ? redirect("/{$slug}/overview/dashboard")
+                : redirect()->route('store.setup');
         }
 
         if ($user->isCashier()) {
-            return redirect('/cashier');
+            $slug = $user->store?->slug;
+            return $slug
+                ? redirect("/{$slug}/cashier")
+                : redirect()->route('login');
         }
 
         return redirect('/login');
@@ -69,7 +75,6 @@ Route::middleware(['pending.store'])->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Private files route - untuk akses file yang disimpan di storage private
 Route::middleware(['auth'])->group(function () {
     Route::get('/private-files/{path}', [PrivateFileController::class, 'show'])
         ->where('path', '.*')
@@ -80,112 +85,123 @@ Route::middleware(['auth'])->group(function () {
         ->name('private.files.stream');
 });
 
-Route::middleware(['auth', 'role:cashier,owner,super_admin', 'ensure.store'])
-    ->prefix('cashier')
+Route::middleware(['auth', 'ensure.store', 'validate.store-slug'])
+    ->prefix('{storeSlug}')
     ->group(function () {
-        Route::get('/', function () {
-            return redirect('/cashier');
+
+        // ── Cashier (role: cashier, owner, super_admin) ──
+        Route::middleware(['role:cashier,owner,super_admin'])
+            ->prefix('cashier')
+            ->group(function () {
+            Route::get('/', [CashierController::class, 'index'])
+                ->name('cashier.pos');
+
+            Route::get('/dashboard', [CashierDashboardController::class, 'index'])
+                ->name('cashier.dashboard');
+
+            Route::post('/transactions', [CashierController::class, 'store'])
+                ->name('cashier.transactions.store');
+
+            Route::post('/stock-adjust', [CashierController::class, 'stockAdjust'])
+                ->name('cashier.stock-adjust');
+
+            Route::get('/history', [CashierHistoryController::class, 'index'])
+                ->name('cashier.history');
+
+            Route::get('/expenses', [CashierExpenseController::class, 'index'])
+                ->name('cashier.expenses');
+
+            Route::post('/expenses', [CashierExpenseController::class, 'store'])
+                ->name('cashier.expenses.store');
+
+            Route::put('/expenses/{expense}', [CashierExpenseController::class, 'update'])
+                ->name('cashier.expenses.update');
+
+            Route::delete('/expenses/{expense}', [CashierExpenseController::class, 'destroy'])
+                ->name('cashier.expenses.destroy');
         });
 
-        Route::get('/dashboard', [CashierDashboardController::class, 'index'])
-            ->name('cashier.dashboard');
+        // ── Owner-only groups (role: owner, super_admin) ──
+        Route::middleware(['role:owner,super_admin'])->group(function () {
 
-        Route::get('/', [CashierController::class, 'index'])
-            ->name('cashier.pos');
+            // Overview
+            Route::prefix('overview')->group(function () {
+                Route::get('/dashboard', [DashboardController::class, 'index'])
+                    ->name('owner.dashboard');
+            });
 
-        Route::post('/transactions', [CashierController::class, 'store'])
-            ->name('cashier.transactions.store');
+            // Store Management
+            Route::prefix('store-management')->group(function () {
+                Route::get('/categories', [CategoryController::class, 'index'])->name('owner.categories');
+                Route::get('/categories/create', [CategoryController::class, 'create'])->name('owner.categories.create');
+                Route::post('/categories', [CategoryController::class, 'store'])->name('owner.categories.store');
+                Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('owner.categories.edit');
+                Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('owner.categories.update');
+                Route::patch('/categories/{category}/toggle', [CategoryController::class, 'toggleActive'])->name('owner.categories.toggle');
+                Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('owner.categories.reorder');
+                Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('owner.categories.destroy');
 
-        Route::post('/stock-adjust', [CashierController::class, 'stockAdjust'])
-            ->name('cashier.stock-adjust');
+                Route::get('/products', [ProductController::class, 'index'])->name('owner.products');
+                Route::get('/products/create', [ProductController::class, 'create'])->name('owner.products.create');
+                Route::post('/products', [ProductController::class, 'store'])->name('owner.products.store');
+                Route::post('/products/stock-adjust', [ProductController::class, 'stockAdjust'])->name('owner.products.stock-adjust');
+                Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('owner.products.edit');
+                Route::put('/products/{product}', [ProductController::class, 'update'])->name('owner.products.update');
+                Route::patch('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('owner.products.toggle');
+                Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('owner.products.destroy');
 
-        Route::get('/history', [CashierHistoryController::class, 'index'])
-            ->name('cashier.history');
+                Route::get('/variant-groups', [VariantGroupController::class, 'index'])->name('owner.variant-groups');
+                Route::get('/variant-groups/create', [VariantGroupController::class, 'create'])->name('owner.variant-groups.create');
+                Route::post('/variant-groups', [VariantGroupController::class, 'store'])->name('owner.variant-groups.store');
+                Route::get('/variant-groups/{variantGroup}/edit', [VariantGroupController::class, 'edit'])->name('owner.variant-groups.edit');
+                Route::put('/variant-groups/{variantGroup}', [VariantGroupController::class, 'update'])->name('owner.variant-groups.update');
+                Route::patch('/variant-groups/{variantGroup}/toggle', [VariantGroupController::class, 'toggleActive'])->name('owner.variant-groups.toggle');
+                Route::delete('/variant-groups/{variantGroup}', [VariantGroupController::class, 'destroy'])->name('owner.variant-groups.destroy');
 
-        Route::get('/expenses', [CashierExpenseController::class, 'index'])
-            ->name('cashier.expenses');
+                Route::get('/employees', [EmployeeController::class, 'index'])->name('owner.employees');
+                Route::get('/employees/create', [EmployeeController::class, 'create'])->name('owner.employees.create');
+                Route::post('/employees', [EmployeeController::class, 'store'])->name('owner.employees.store');
+                Route::post('/employees/invite', [EmployeeController::class, 'invite'])->name('owner.employees.invite');
+                Route::delete('/employees/invitations/{invitation}', [EmployeeController::class, 'revokeInvitation'])->name('owner.employees.invitations.revoke');
+                Route::patch('/employees/{employee}/approve', [EmployeeController::class, 'approve'])->name('owner.employees.approve');
+                Route::patch('/employees/{employee}/reject', [EmployeeController::class, 'reject'])->name('owner.employees.reject');
+                Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('owner.employees.destroy');
 
-        Route::post('/expenses', [CashierExpenseController::class, 'store'])
-            ->name('cashier.expenses.store');
+                Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
+                Route::get('/capital-prices/options', [CapitalPriceTemplateController::class, 'options'])->name('owner.capital-prices.options');
+                Route::get('/capital-prices/create', [CapitalPriceTemplateController::class, 'create'])->name('owner.capital-prices.create');
+                Route::post('/capital-prices', [CapitalPriceTemplateController::class, 'store'])->name('owner.capital-prices.store');
+                Route::get('/capital-prices/{capitalPrice}/edit', [CapitalPriceTemplateController::class, 'edit'])->name('owner.capital-prices.edit');
+                Route::put('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'update'])->name('owner.capital-prices.update');
+                Route::patch('/capital-prices/{capitalPrice}/toggle', [CapitalPriceTemplateController::class, 'toggleActive'])->name('owner.capital-prices.toggle');
+                Route::delete('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'destroy'])->name('owner.capital-prices.destroy');
 
-        Route::put('/expenses/{expense}', [CashierExpenseController::class, 'update'])
-            ->name('cashier.expenses.update');
+                Route::get('/pos', [TransactionController::class, 'index'])->name('owner.pos');
+                Route::post('/pos/transactions', [TransactionController::class, 'store'])->name('owner.transactions.store');
+                Route::get('/pos/history', [TransactionController::class, 'history'])->name('owner.transactions.history');
 
-        Route::delete('/expenses/{expense}', [CashierExpenseController::class, 'destroy'])
-            ->name('cashier.expenses.destroy');
-    });
+                Route::get('/expenses', [ExpenseController::class, 'index'])->name('owner.expenses');
+                Route::get('/expenses/create', [ExpenseController::class, 'create'])->name('owner.expenses.create');
+                Route::post('/expenses', [ExpenseController::class, 'store'])->name('owner.expenses.store');
+                Route::get('/expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('owner.expenses.edit');
+                Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('owner.expenses.update');
+                Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('owner.expenses.destroy');
+            });
 
-Route::middleware(['auth', 'role:owner,super_admin', 'ensure.store'])
-    ->prefix('owner')
-    ->group(function () {
-        Route::get('/', function () {
-            return redirect('/owner/dashboard');
+            // Finance
+            Route::prefix('finance')->group(function () {
+                Route::get('/wallet', [WalletController::class, 'index'])->name('owner.wallet');
+                Route::get('/wallet/topup', [WalletController::class, 'topup'])->name('owner.wallet.topup');
+                Route::get('/wallet/spend', [WalletController::class, 'spend'])->name('owner.wallet.spend');
+                Route::get('/wallet/create', [WalletController::class, 'create'])->name('owner.wallet.create');
+                Route::post('/wallet', [WalletController::class, 'store'])->name('owner.wallet.store');
+                Route::post('/wallet/spend', [WalletController::class, 'storeSpend'])->name('owner.wallet.spend.store');
+                Route::post('/wallet/send-to-store', [WalletController::class, 'storeSendToStore'])->name('owner.wallet.send-to-store');
+                Route::get('/wallet/{walletTransaction}/edit', [WalletController::class, 'edit'])->name('owner.wallet.edit');
+                Route::put('/wallet/{walletTransaction}', [WalletController::class, 'update'])->name('owner.wallet.update');
+                Route::delete('/wallet/{walletTransaction}', [WalletController::class, 'destroy'])->name('owner.wallet.destroy');
+            });
         });
-
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('owner.dashboard');
-
-        Route::get('/categories', [CategoryController::class, 'index'])->name('owner.categories');
-        Route::get('/categories/create', [CategoryController::class, 'create'])->name('owner.categories.create');
-        Route::post('/categories', [CategoryController::class, 'store'])->name('owner.categories.store');
-        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('owner.categories.edit');
-        Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('owner.categories.update');
-        Route::patch('/categories/{category}/toggle', [CategoryController::class, 'toggleActive'])->name('owner.categories.toggle');
-        Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('owner.categories.reorder');
-        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('owner.categories.destroy');
-
-        Route::get('/products', [ProductController::class, 'index'])->name('owner.products');
-        Route::get('/products/create', [ProductController::class, 'create'])->name('owner.products.create');
-        Route::post('/products', [ProductController::class, 'store'])->name('owner.products.store');
-        Route::post('/products/stock-adjust', [ProductController::class, 'stockAdjust'])->name('owner.products.stock-adjust');
-        Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('owner.products.edit');
-        Route::put('/products/{product}', [ProductController::class, 'update'])->name('owner.products.update');
-        Route::patch('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('owner.products.toggle');
-        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('owner.products.destroy');
-
-        Route::get('/variant-groups', [VariantGroupController::class, 'index'])->name('owner.variant-groups');
-        Route::get('/variant-groups/create', [VariantGroupController::class, 'create'])->name('owner.variant-groups.create');
-        Route::post('/variant-groups', [VariantGroupController::class, 'store'])->name('owner.variant-groups.store');
-        Route::get('/variant-groups/{variantGroup}/edit', [VariantGroupController::class, 'edit'])->name('owner.variant-groups.edit');
-        Route::put('/variant-groups/{variantGroup}', [VariantGroupController::class, 'update'])->name('owner.variant-groups.update');
-        Route::patch('/variant-groups/{variantGroup}/toggle', [VariantGroupController::class, 'toggleActive'])->name('owner.variant-groups.toggle');
-        Route::delete('/variant-groups/{variantGroup}', [VariantGroupController::class, 'destroy'])->name('owner.variant-groups.destroy');
-
-        Route::get('/employees', [EmployeeController::class, 'index'])->name('owner.employees');
-        Route::get('/employees/create', [EmployeeController::class, 'create'])->name('owner.employees.create');
-        Route::post('/employees', [EmployeeController::class, 'store'])->name('owner.employees.store');
-        Route::post('/employees/invite', [EmployeeController::class, 'invite'])->name('owner.employees.invite');
-        Route::delete('/employees/invitations/{invitation}', [EmployeeController::class, 'revokeInvitation'])->name('owner.employees.invitations.revoke');
-        Route::patch('/employees/{employee}/approve', [EmployeeController::class, 'approve'])->name('owner.employees.approve');
-        Route::patch('/employees/{employee}/reject', [EmployeeController::class, 'reject'])->name('owner.employees.reject');
-        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('owner.employees.destroy');
-
-        Route::get('/capital-prices', [CapitalPriceTemplateController::class, 'index'])->name('owner.capital-prices');
-        Route::get('/capital-prices/options', [CapitalPriceTemplateController::class, 'options'])->name('owner.capital-prices.options');
-        Route::get('/capital-prices/create', [CapitalPriceTemplateController::class, 'create'])->name('owner.capital-prices.create');
-        Route::post('/capital-prices', [CapitalPriceTemplateController::class, 'store'])->name('owner.capital-prices.store');
-        Route::get('/capital-prices/{capitalPrice}/edit', [CapitalPriceTemplateController::class, 'edit'])->name('owner.capital-prices.edit');
-        Route::put('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'update'])->name('owner.capital-prices.update');
-        Route::patch('/capital-prices/{capitalPrice}/toggle', [CapitalPriceTemplateController::class, 'toggleActive'])->name('owner.capital-prices.toggle');
-        Route::delete('/capital-prices/{capitalPrice}', [CapitalPriceTemplateController::class, 'destroy'])->name('owner.capital-prices.destroy');
-
-        Route::get('/pos', [TransactionController::class, 'index'])->name('owner.pos');
-        Route::post('/pos/transactions', [TransactionController::class, 'store'])->name('owner.transactions.store');
-        Route::get('/pos/history', [TransactionController::class, 'history'])->name('owner.transactions.history');
-
-        Route::get('/expenses', [ExpenseController::class, 'index'])->name('owner.expenses');
-        Route::post('/expenses', [ExpenseController::class, 'store'])->name('owner.expenses.store');
-        Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('owner.expenses.update');
-        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('owner.expenses.destroy');
-
-        Route::get('/wallet', [WalletController::class, 'index'])->name('owner.wallet');
-        Route::get('/wallet/create', [WalletController::class, 'create'])->name('owner.wallet.create');
-        Route::post('/wallet', [WalletController::class, 'store'])->name('owner.wallet.store');
-        Route::post('/wallet/spend', [WalletController::class, 'storeSpend'])->name('owner.wallet.spend');
-        Route::post('/wallet/send-to-store', [WalletController::class, 'storeSendToStore'])->name('owner.wallet.send-to-store');
-        Route::get('/wallet/{walletTransaction}/edit', [WalletController::class, 'edit'])->name('owner.wallet.edit');
-        Route::put('/wallet/{walletTransaction}', [WalletController::class, 'update'])->name('owner.wallet.update');
-        Route::delete('/wallet/{walletTransaction}', [WalletController::class, 'destroy'])->name('owner.wallet.destroy');
     });
 
 Route::middleware(['auth', 'role:super_admin'])

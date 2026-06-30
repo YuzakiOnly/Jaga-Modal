@@ -25,7 +25,7 @@ class HandleInertiaRequests extends Middleware
 
             'auth' => [
                 'user' => $request->user()
-                    ? $request->user()->load('store:id,name,business_type,logo')
+                    ? $request->user()->load('store:id,name,slug,business_type,logo')
                     : null,
             ],
 

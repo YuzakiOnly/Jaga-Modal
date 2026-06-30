@@ -1,10 +1,9 @@
-// PeriodFilter.jsx - untuk Expense
 import { router } from "@inertiajs/react";
 import { route } from "ziggy-js";
 import { DatePicker } from "@/components/date-range-picker";
 import { format } from "date-fns";
 
-export function PeriodFilter({ filters, routeName = "owner.expenses" }) {
+export function PeriodFilter({ filters }) {
     const dateFrom = filters?.date_from;
     const dateTo = filters?.date_to;
 
@@ -22,7 +21,7 @@ export function PeriodFilter({ filters, routeName = "owner.expenses" }) {
             const to = dateRange.to || from;
 
             router.get(
-                route(routeName),
+                route("owner.expenses"),
                 {
                     date_from: format(from, "yyyy-MM-dd"),
                     date_to: format(to, "yyyy-MM-dd"),

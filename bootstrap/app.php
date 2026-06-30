@@ -6,6 +6,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\Language\EnsureLocaleIsConsistent;
 use App\Http\Middleware\Language\SetLocale;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\ValidateStoreSlug;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'pending.store' => PendingStoreSetup::class,
             'ensure.store' => EnsureUserHasStore::class,
+            'validate.store-slug' => ValidateStoreSlug::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

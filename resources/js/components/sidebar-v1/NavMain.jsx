@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Link, usePage } from "@inertiajs/react";
+import { route } from "ziggy-js";
 
 import {
     SidebarGroup,
@@ -32,6 +33,18 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+function resolveHref(item) {
+    if (item.routeName) {
+        try {
+            const url = route(item.routeName);
+            return url.replace(/^https?:\/\/[^/]+/, "");
+        } catch {
+            return "#";
+        }
+    }
+    return item.href || "#";
+}
+
 function isUrlActive(currentUrl, itemUrl) {
     if (!itemUrl) return false;
     if (currentUrl === itemUrl) return true;
@@ -46,7 +59,7 @@ function isUrlActive(currentUrl, itemUrl) {
 function isAnySubItemActive(items, currentUrl) {
     if (!items) return false;
     for (const item of items) {
-        if (isUrlActive(currentUrl, item.href)) return true;
+        if (isUrlActive(currentUrl, resolveHref(item))) return true;
         if (item.items && isAnySubItemActive(item.items, currentUrl))
             return true;
     }
@@ -112,7 +125,8 @@ export function NavMain({ navItems = [] }) {
                     <SidebarGroupContent className="flex flex-col gap-0.5">
                         <SidebarMenu>
                             {nav.items.map((item, itemIdx) => {
-                                const isActive = isUrlActive(url, item.href);
+                                const itemHref = resolveHref(item);
+                                const isActive = isUrlActive(url, itemHref);
                                 const hasActiveChild = item.items
                                     ? isAnySubItemActive(item.items, url)
                                     : false;
@@ -186,9 +200,9 @@ export function NavMain({ navItems = [] }) {
                                                                         asChild
                                                                     >
                                                                         <Link
-                                                                            href={
-                                                                                sub.href
-                                                                            }
+                                                                            href={resolveHref(
+                                                                                sub,
+                                                                            )}
                                                                         >
                                                                             <span>
                                                                                 {
@@ -224,7 +238,7 @@ export function NavMain({ navItems = [] }) {
                                                             asChild
                                                         >
                                                             <Link
-                                                                href={item.href}
+                                                                href={itemHref}
                                                             >
                                                                 {item.icon && (
                                                                     <item.icon className="shrink-0" />
@@ -246,10 +260,14 @@ export function NavMain({ navItems = [] }) {
                                                                     sub,
                                                                     subIdx,
                                                                 ) => {
+                                                                    const subHref =
+                                                                        resolveHref(
+                                                                            sub,
+                                                                        );
                                                                     const isSubActive =
                                                                         isUrlActive(
                                                                             url,
-                                                                            sub.href,
+                                                                            subHref,
                                                                         );
                                                                     return (
                                                                         <SidebarMenuSubItem
@@ -265,7 +283,7 @@ export function NavMain({ navItems = [] }) {
                                                                             >
                                                                                 <Link
                                                                                     href={
-                                                                                        sub.href
+                                                                                        subHref
                                                                                     }
                                                                                     target={
                                                                                         sub.newTab
@@ -301,7 +319,7 @@ export function NavMain({ navItems = [] }) {
                                                         isActive={isActive}
                                                         asChild
                                                     >
-                                                        <Link href={item.href}>
+                                                        <Link href={itemHref}>
                                                             {item.icon && (
                                                                 <item.icon className="shrink-0" />
                                                             )}

@@ -2,15 +2,22 @@ import "./bootstrap";
 import "../css/app.css";
 
 import { createRoot } from "react-dom/client";
-import { createInertiaApp } from "@inertiajs/react";
+import { createInertiaApp, router } from "@inertiajs/react";
 import { Ziggy } from "@/ziggy.js";
-import { route } from "ziggy-js";
+import { route, setCurrentStoreSlug } from "ziggy-js";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const appName = import.meta.env.VITE_APP_NAME || "Jaga Modal";
 
 window.route = route;
 window.Ziggy = Ziggy;
+
+router.on("success", (event) => {
+    const slug = event?.detail?.page?.props?.auth?.user?.store?.slug;
+    if (slug) {
+        setCurrentStoreSlug(slug);
+    }
+});
 
 createInertiaApp({
     title: (title) => {
@@ -35,6 +42,11 @@ createInertiaApp({
     },
 
     setup({ el, App, props }) {
+        const slug = props?.initialPage?.props?.auth?.user?.store?.slug;
+        if (slug) {
+            setCurrentStoreSlug(slug);
+        }
+
         const root = createRoot(el);
 
         root.render(

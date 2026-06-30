@@ -1,4 +1,3 @@
-// WalletStats.jsx
 import { Wallet, TrendingUp, TrendingDown, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

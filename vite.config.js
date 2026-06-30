@@ -16,6 +16,7 @@ export default defineConfig({
 
     resolve: {
         alias: {
+            'ziggy-js': path.resolve(__dirname, './resources/js/lib/ziggy-wrapper.js'),
             '@': path.resolve(__dirname, './resources/js'),
         },
     },
@@ -25,7 +26,7 @@ export default defineConfig({
         port: 5173,
         strictPort: true,
         hmr: {
-            host: 'localhost', 
+            host: 'localhost',
         },
     },
 })

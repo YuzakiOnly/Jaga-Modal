@@ -1,29 +1,31 @@
 import { useState, useEffect } from "react";
-import { Head, usePage, router } from "@inertiajs/react";
-import { toast, Toaster } from "sonner";
 import { route } from "ziggy-js";
-import { Plus } from "lucide-react";
+import { Head, router, usePage } from "@inertiajs/react";
 import AppLayout from "@/layouts/dashboard/AppLayout";
-import { PeriodFilter } from "./_components/PeriodFilter";
-import { ExpenseStats } from "./_components/ExpenseStats";
 import { ExpenseTable } from "./_components/ExpenseTable";
 import { ExpenseList } from "./_components/ExpenseList";
-import { ExpenseFormDialog } from "./_components/ExpenseFormDialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
+import {
+    Card,
+    CardAction,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+    Wallet,
+    TrendingDown,
+    ArrowLeftRight,
+    Loader2,
+    Plus,
+} from "lucide-react";
+import { Toaster, toast } from "sonner";
+import { DeleteDialog } from "@/components/shared/DeleteDialog";
+import { useDeviceType } from "@/hooks/use-mobile";
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { refreshConfigs } from "@/hooks/refreshConfig";
-import { useDeviceType } from "@/hooks/use-mobile";
+import { PeriodFilter } from "./_components/PeriodFilter";
 
 const fmt = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
@@ -31,20 +33,12 @@ export default function ExpensesPage({
     expenses,
     summary,
     filters,
-    cashBalance,
+    cash_balance,
 }) {
-    const { flash, props } = usePage();
+    const [deleteExpense, setDeleteExpense] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const { flash } = usePage().props;
     const deviceType = useDeviceType();
-    const [formOpen, setFormOpen] = useState(false);
-    const [editTarget, setEditTarget] = useState(null);
-    const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [deleteProcessing, setDeleteProcessing] = useState(false);
-
-    // Cek semua props yang masuk
-    console.log("Semua props:", props);
-    console.log("cashBalance dari props:", props.cash_balance);
-    console.log("cashBalance dari parameter:", cashBalance);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -53,146 +47,131 @@ export default function ExpensesPage({
 
     useSmartRefresh({ ...refreshConfigs.owner_expenses });
 
-    const handleEdit = (expense) => {
-        setEditTarget(expense);
-        setFormOpen(true);
-    };
+    const total = summary?.total ?? 0;
+    const byType = summary?.by_type ?? {};
+    const totalPengeluaran =
+        (byType.simple || 0) +
+        (byType.raw_material || 0) +
+        (byType.salary || 0) +
+        (byType.owner_withdrawal || 0);
+    const totalPemasukan = byType.store_transfer_in || 0;
 
-    const handleDeleteClick = (expense) => {
-        setDeleteTarget(expense);
-        setDeleteOpen(true);
-    };
+    const stats = [
+        {
+            title: "Total Transaksi",
+            value: total,
+            icon: TrendingDown,
+            iconColor: "text-rose-500",
+            bgColor: "bg-rose-50",
+        },
+        {
+            title: "Pengeluaran",
+            value: totalPengeluaran,
+            icon: Wallet,
+            iconColor: "text-rose-500",
+            bgColor: "bg-rose-50",
+        },
+        {
+            title: "Transfer Masuk",
+            value: totalPemasukan,
+            icon: ArrowLeftRight,
+            iconColor: "text-emerald-500",
+            bgColor: "bg-emerald-50",
+            showSign: true,
+            isIncome: true,
+        },
+    ];
 
-    const confirmDelete = () => {
-        if (!deleteTarget) return;
-        setDeleteProcessing(true);
-        router.delete(route("owner.expenses.destroy", deleteTarget.id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setDeleteOpen(false);
-                setDeleteTarget(null);
-                setDeleteProcessing(false);
-                toast.success("Transaksi berhasil dihapus.");
-            },
-            onError: () => {
-                setDeleteProcessing(false);
-                toast.error("Gagal menghapus transaksi.");
-            },
-        });
+    const handleAdd = () => {
+        router.get(route("owner.expenses.create"));
     };
-
-    const handleFormClose = () => {
-        setFormOpen(false);
-        setEditTarget(null);
-    };
-
-    // Gunakan cashBalance dari props jika parameter undefined
-    const balance = cashBalance ?? props.cash_balance ?? 0;
 
     return (
         <>
             <Head title="Kas Toko" />
-
-            <div className="space-y-5 p-4 lg:p-6">
-                <div className="flex items-start sm:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
+            <div className="space-y-6 p-4 md:p-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold tracking-tight">
                             Kas Toko
                         </h1>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                            Catat dan pantau semua pemasukan & pengeluaran toko
-                        </p>
+                        {loading && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
                     </div>
                     <Button
-                        onClick={() => setFormOpen(true)}
-                        size="default"
-                        className="gap-2 shrink-0"
+                        onClick={handleAdd}
+                        className="h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-4"
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">
                             Tambah Transaksi
                         </span>
                     </Button>
                 </div>
 
-                <PeriodFilter filters={filters} />
+                <div className="grid grid-cols-3 gap-4">
+                    {stats.map((stat) => (
+                        <Card key={stat.title} className="shadow-none">
+                            <CardHeader className="p-4 sm:p-6">
+                                <CardDescription>{stat.title}</CardDescription>
+                                <CardTitle className="font-display text-2xl">
+                                    {stat.showSign && stat.value >= 0
+                                        ? "+"
+                                        : ""}
+                                    {fmt(Math.abs(stat.value))}
+                                </CardTitle>
+                                <CardAction>
+                                    <Badge variant="outline" className="p-2">
+                                        <stat.icon
+                                            className={`h-3.5 w-3.5 ${stat.iconColor}`}
+                                        />
+                                    </Badge>
+                                </CardAction>
+                            </CardHeader>
+                        </Card>
+                    ))}
+                </div>
 
-                <ExpenseStats summary={summary} />
+                <PeriodFilter filters={filters} />
 
                 {deviceType !== "desktop" ? (
                     <ExpenseList
                         expenses={expenses}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteClick}
+                        onDelete={setDeleteExpense}
                     />
                 ) : (
                     <ExpenseTable
                         expenses={expenses}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteClick}
+                        onDelete={setDeleteExpense}
                     />
                 )}
             </div>
 
-            <ExpenseFormDialog
-                open={formOpen}
-                onOpenChange={handleFormClose}
-                editTarget={editTarget}
-                cashBalance={balance}
+            <DeleteDialog
+                item={deleteExpense}
+                open={!!deleteExpense}
+                onOpenChange={(open) => !open && setDeleteExpense(null)}
+                routeName="owner.expenses.destroy"
+                title="Hapus Transaksi"
+                label="Hapus Transaksi"
+                meta={
+                    <>
+                        <p className="text-sm font-medium text-destructive">
+                            Transaksi:{" "}
+                            <span className="font-bold wrap-break-word">
+                                {deleteExpense?.description}
+                            </span>
+                        </p>
+                        <p className="text-sm font-medium">
+                            Jumlah:{" "}
+                            <span className="font-bold">
+                                {fmt(deleteExpense?.amount)}
+                            </span>
+                        </p>
+                    </>
+                }
             />
-
-            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md rounded-xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-base sm:text-lg">
-                            Hapus Transaksi
-                        </AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            <div className="space-y-2">
-                                <p className="text-sm">
-                                    Apakah Anda yakin ingin menghapus transaksi
-                                    ini? Data yang dihapus tidak dapat
-                                    dikembalikan.
-                                </p>
-                                {deleteTarget && (
-                                    <div className="mt-2 pt-3 border-t space-y-1">
-                                        <p className="text-sm text-foreground">
-                                            <span className="font-semibold">
-                                                Deskripsi:
-                                            </span>{" "}
-                                            {deleteTarget.description}
-                                        </p>
-                                        <p className="text-sm text-foreground">
-                                            <span className="font-semibold">
-                                                Jumlah:
-                                            </span>{" "}
-                                            <span className="text-destructive">
-                                                {fmt(deleteTarget.amount)}
-                                            </span>
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
-                        <AlertDialogCancel
-                            disabled={deleteProcessing}
-                            className="w-full sm:w-auto"
-                        >
-                            Batal
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={confirmDelete}
-                            disabled={deleteProcessing}
-                            className="bg-destructive hover:bg-destructive/90 w-full sm:w-auto"
-                        >
-                            {deleteProcessing ? "Menghapus..." : "Hapus"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <Toaster position="top-right" richColors />
         </>
     );

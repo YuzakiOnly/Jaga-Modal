@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Store extends Model
 {
@@ -14,6 +15,7 @@ class Store extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'slug',
         'business_type',
         'phone',
         'logo',
@@ -26,6 +28,29 @@ class Store extends Model
         'longitude',
         'is_active',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Store $store) {
+            if (empty($store->slug)) {
+                $store->slug = static::generateUniqueSlug($store->name);
+            }
+        });
+    }
+
+    public static function generateUniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'store';
+        $slug = $base;
+        $suffix = 1;
+
+        while (static::where('slug', $slug)->exists()) {
+            $suffix++;
+            $slug = "{$base}-{$suffix}";
+        }
+
+        return $slug;
+    }
 
     protected function casts(): array
     {

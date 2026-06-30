@@ -166,9 +166,9 @@ function SalesChartComponent({
                             <SelectValue placeholder="Pilih bulan" />
                         </SelectTrigger>
                         <SelectContent>
-                            {availableMonths.map((m) => (
+                            {availableMonths.map((m, index) => (
                                 <SelectItem
-                                    key={m.value}
+                                    key={`sales-${m.value}-${index}`}
                                     value={m.value}
                                     className="hover:bg-primary/10 transition-colors duration-150"
                                 >

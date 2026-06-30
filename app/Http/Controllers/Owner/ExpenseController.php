@@ -25,7 +25,6 @@ class ExpenseController extends Controller
             ->with('user')
             ->withTrashed();
 
-        // Handle date range filter
         if ($dateFrom && $dateTo) {
             $baseQuery = $baseQuery->whereBetween('expensed_at', [
                 $dateFrom . ' 00:00:00',
@@ -34,7 +33,6 @@ class ExpenseController extends Controller
         } elseif ($dateFrom) {
             $baseQuery = $baseQuery->whereDate('expensed_at', $dateFrom);
         } else {
-            // Default: bulan ini
             $baseQuery = $baseQuery
                 ->whereMonth('expensed_at', now()->month)
                 ->whereYear('expensed_at', now()->year);
@@ -65,6 +63,16 @@ class ExpenseController extends Controller
             'summary' => $summary,
             'filters' => $request->only(['date_from', 'date_to']),
             'cash_balance' => $cashBalance,
+        ]);
+    }
+
+    public function create()
+    {
+        $storeId = auth()->user()->store_id;
+        $cashBalance = Store::computeCashBalance($storeId);
+
+        return Inertia::render('owner/expenses/create/page', [
+            'cashBalance' => $cashBalance,
         ]);
     }
 
@@ -104,7 +112,22 @@ class ExpenseController extends Controller
             }
         });
 
-        return back()->with('success', 'Transaksi berhasil dicatat.');
+        return redirect()->route('owner.expenses')->with('success', 'Transaksi berhasil dicatat.');
+    }
+
+    public function edit(Expense $expense)
+    {
+        $this->authorizeStore($expense);
+
+        $storeId = auth()->user()->store_id;
+        $cashBalance = Store::computeCashBalance($storeId) + $expense->amount;
+
+        $formattedExpense = $this->formatExpense($expense);
+
+        return Inertia::render('owner/expenses/edit/page', [
+            'expense' => $formattedExpense,
+            'cashBalance' => $cashBalance,
+        ]);
     }
 
     public function update(Request $request, Expense $expense)
@@ -196,7 +219,7 @@ class ExpenseController extends Controller
             }
         });
 
-        return back()->with('success', 'Transaksi berhasil diperbarui.');
+        return redirect()->route('owner.expenses')->with('success', 'Transaksi berhasil diperbarui.');
     }
 
     public function destroy(Expense $expense)
@@ -219,7 +242,7 @@ class ExpenseController extends Controller
             $expense->forceDelete();
         });
 
-        return back()->with('success', 'Transaksi berhasil dihapus.');
+        return redirect()->route('owner.expenses')->with('success', 'Transaksi berhasil dihapus.');
     }
 
     private function getExpenseAmount(string $type, array $validated): float

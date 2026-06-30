@@ -52,8 +52,8 @@ class CategoryController extends Controller
             'categories' => $categories,
             'filters' => $request->only(['search', 'status', 'sort', 'direction']),
             'counts' => [
-                'total'    => (clone $baseQuery)->count(),
-                'active'   => (clone $baseQuery)->where('is_active', true)->count(),
+                'total' => (clone $baseQuery)->count(),
+                'active' => (clone $baseQuery)->where('is_active', true)->count(),
                 'inactive' => (clone $baseQuery)->where('is_active', false)->count(),
             ],
         ]);
@@ -95,7 +95,7 @@ class CategoryController extends Controller
             ->with('success', "Category \"{$validated['name']}\" created successfully.");
     }
 
-    public function edit(Category $category)
+    public function edit($storeSlug, Category $category)
     {
         if ($category->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -106,7 +106,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function update(Request $request, Category $category)
+    public function update(Request $request, $storeSlug, Category $category)
     {
         $storeId = auth()->user()->store_id;
 
@@ -134,7 +134,7 @@ class CategoryController extends Controller
             ->with('success', "Category \"{$category->name}\" updated successfully.");
     }
 
-    public function toggleActive(Category $category)
+    public function toggleActive($storeSlug, Category $category)
     {
         if ($category->store_id !== auth()->user()->store_id) {
             abort(403);
@@ -162,7 +162,7 @@ class CategoryController extends Controller
         return back()->with('success', 'Category order updated.');
     }
 
-    public function destroy(Category $category)
+    public function destroy($storeSlug, Category $category)
     {
         if ($category->store_id !== auth()->user()->store_id) {
             abort(403);

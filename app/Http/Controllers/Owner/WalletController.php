@@ -22,7 +22,6 @@ class WalletController extends Controller
         $baseQuery = OwnerWalletTransaction::where('store_id', $storeId)
             ->with('user');
 
-        // Handle date range filter
         if ($dateFrom && $dateTo) {
             $baseQuery = $baseQuery->whereBetween('transacted_at', [
                 $dateFrom . ' 00:00:00',
@@ -31,19 +30,10 @@ class WalletController extends Controller
         } elseif ($dateFrom) {
             $baseQuery = $baseQuery->whereDate('transacted_at', $dateFrom);
         } else {
-            // Default: bulan ini
             $baseQuery = $baseQuery
                 ->whereMonth('transacted_at', now()->month)
                 ->whereYear('transacted_at', now()->year);
         }
-
-        // Debug: log query untuk memastikan filter berjalan
-        \Log::info('Wallet Filter:', [
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-            'sql' => $baseQuery->toSql(),
-            'bindings' => $baseQuery->getBindings()
-        ]);
 
         $allInPeriod = (clone $baseQuery)->get();
 
@@ -79,9 +69,29 @@ class WalletController extends Controller
         ]);
     }
 
+    public function topup()
+    {
+        return Inertia::render('owner/wallet/topup/page');
+    }
+
+    public function spend()
+    {
+        $storeId = auth()->user()->store_id;
+        $currentBalance = OwnerWalletTransaction::balanceForStore($storeId);
+
+        return Inertia::render('owner/wallet/spend/page', [
+            'currentBalance' => $currentBalance,
+        ]);
+    }
+
     public function create()
     {
-        return Inertia::render('owner/wallet/create/page');
+        $storeId = auth()->user()->store_id;
+        $currentBalance = OwnerWalletTransaction::balanceForStore($storeId);
+
+        return Inertia::render('owner/wallet/create/page', [
+            'currentBalance' => $currentBalance,
+        ]);
     }
 
     public function store(Request $request)
@@ -182,10 +192,10 @@ class WalletController extends Controller
             $wallet->update(['expense_id' => $expense->id]);
         });
 
-        return back()->with('success', 'Saldo berhasil dikirim ke kas toko.');
+        return redirect()->route('owner.wallet')->with('success', 'Saldo berhasil dikirim ke kas toko.');
     }
 
-    public function edit(OwnerWalletTransaction $walletTransaction)
+    public function edit($storeSlug, OwnerWalletTransaction $walletTransaction)
     {
         abort_if($walletTransaction->store_id !== auth()->user()->store_id, 403);
 
@@ -193,8 +203,6 @@ class WalletController extends Controller
             return redirect()->route('owner.expenses')
                 ->with('info', 'Transaksi dari penarikan toko hanya bisa diedit dari halaman Pengeluaran.');
         }
-
-        $currentBalance = OwnerWalletTransaction::balanceForStore(auth()->user()->store_id);
 
         return Inertia::render('owner/wallet/edit/page', [
             'transaction' => [
@@ -206,11 +214,10 @@ class WalletController extends Controller
                 'flow' => $walletTransaction->flow,
                 'source' => $walletTransaction->source,
             ],
-            'currentBalance' => $currentBalance,
         ]);
     }
 
-    public function update(Request $request, OwnerWalletTransaction $walletTransaction)
+    public function update(Request $request, $storeSlug, OwnerWalletTransaction $walletTransaction)
     {
         abort_if($walletTransaction->store_id !== auth()->user()->store_id, 403);
 
@@ -257,7 +264,7 @@ class WalletController extends Controller
         return redirect()->route('owner.wallet')->with('success', 'Transaksi berhasil diupdate.');
     }
 
-    public function destroy(OwnerWalletTransaction $walletTransaction)
+    public function destroy($storeSlug, OwnerWalletTransaction $walletTransaction)
     {
         abort_if($walletTransaction->store_id !== auth()->user()->store_id, 403);
 
@@ -275,11 +282,11 @@ class WalletController extends Controller
                 $walletTransaction->forceDelete();
             });
 
-            return back()->with('success', 'Transfer ke toko dan data terkait berhasil dihapus.');
+            return redirect()->route('owner.wallet')->with('success', 'Transfer ke toko dan data terkait berhasil dihapus.');
         }
 
         $walletTransaction->forceDelete();
 
-        return back()->with('success', 'Entri dompet berhasil dihapus.');
+        return redirect()->route('owner.wallet')->with('success', 'Entri dompet berhasil dihapus.');
     }
 }
